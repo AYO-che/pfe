@@ -1,36 +1,26 @@
-// emailHelper.js
 import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+export const sendResetPasswordEmail = async ({ to, resetToken }) => {
+  const transporter = nodemailer.createTransport({
+    host: "sandbox.smtp.mailtrap.io",
+    port: 2525,
+    auth: {
+      user: "dabcf73ff5e793",
+      pass: "16395d28932cef",
+    },
+  });
 
-export const sendSessionEmail = async ({ to, subject, text }) => {
-  try {
-    await transporter.sendMail({
-      from: `"Chrysalise" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      text,
-    });
-  } catch (error) {
-    console.error("Email sending error:", error);
-  }
-};
+  const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`;
 
-export const sendResetPasswordEmail = async ({ to, firstName, resetToken }) => {
-  try {
-    await transporter.sendMail({
-      from: `"Chrysalise" <${process.env.EMAIL_USER}>`,
-      to,
-      subject: "Reset your password",
-      text: `Hi ${firstName ?? "there"},\n\nYour password reset token is:\n\n${resetToken}\n\nSend it to POST /reset-password with your new password.\nThis token expires in 1 hour.\n\nIf you did not request this, ignore this email.`,
-    });
-  } catch (error) {
-    console.error("Email sending error:", error);
-  }
+  await transporter.sendMail({
+    from: '"Your App" <no-reply@test.com>',
+    to,
+    subject: "Reset your password",
+    html: `
+      <h3>Reset Password</h3>
+      <a href="${resetLink}">${resetLink}</a>
+    `,
+  });
+
+  console.log("Email sent");
 };

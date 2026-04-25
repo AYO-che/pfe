@@ -7,7 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: false,
   sameSite: "lax",
   maxAge: 24 * 60 * 60 * 1000,
 };
@@ -15,7 +15,20 @@ const cookieOptions = {
 // ------------------- SIGNUP -------------------
 export const signup = async (req, res) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      dateOfBirth,
+      gender,
+      weight,
+      height,
+      goal,
+      activityLevel,
+      medicalConditions,
+      allergies,
+    } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
@@ -28,18 +41,61 @@ export const signup = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // 1️⃣ CREATE USER
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, firstName, lastName },
+      data: {
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+      },
     });
 
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    // 2️⃣ CREATE PROFILE
+await prisma.profile.create({
+  data: {
+    userId: user.id,
+
+    // 🔥 REQUIRED FIELDS (must exist)
+    dateOfBirth: new Date(dateOfBirth),
+    gender: gender,
+    weight: parseFloat(weight),
+    height: parseFloat(height),
+    goal: goal,
+    activityLevel: activityLevel,
+
+    // ✅ ARRAYS SAFE
+    medicalConditions:
+      typeof medicalConditions === "string" && medicalConditions.trim() !== ""
+        ? medicalConditions.split(",").map((i) => i.trim())
+        : [],
+
+    allergies:
+      typeof allergies === "string" && allergies.trim() !== ""
+        ? allergies.split(",").map((i) => i.trim())
+        : [],
+  },
+});
+
+
+    // 3️⃣ TOKEN
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
     res
       .cookie("token", token, cookieOptions)
       .status(201)
-      .json({ user: { id: user.id, email: user.email, firstName, lastName } });
+      .json({
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName,
+          lastName,
+        },
+      });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -56,6 +112,7 @@ export const login = async (req, res) => {
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
+
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -69,19 +126,29 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
-    res
-      .cookie("token", token, cookieOptions)
-      .status(200)
-      .json({ message: "Login successful" });
+    res.cookie("token", token, cookieOptions);
+
+    return res.status(200).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 // ------------------- CHANGE PASSWORD -------------------
 export const changePassword = async (req, res) => {
   try {
@@ -166,6 +233,7 @@ export const logout = (req, res) => {
 // ------------------- GOOGLE CALLBACK -------------------
 export const googleCallback = async (req, res) => {
   const profile = req.user;
+
   try {
     const email = profile.emails?.[0]?.value;
     if (!email) throw new Error("No email from Google profile");
@@ -184,15 +252,50 @@ export const googleCallback = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
-    res
-      .cookie("token", token, cookieOptions)
-      .redirect(`${process.env.CLIENT_URL}/dashboard`);
+    res.cookie("token", token, cookieOptions);
+    res.redirect(`${process.env.CLIENT_URL}/profile`);
   } catch (err) {
     console.error("Google auth error:", err);
-    res.status(500).json({ message: "Google authentication failed" });
+    return res.redirect(`${process.env.CLIENT_URL}/login?error=google_failed`);
+  }
+};
+
+// ------------------- GET ME -------------------
+export const getMe = async (req, res) => {
+  try {
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        image: true,
+        role: true,
+        profile: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid token" });
   }
 };

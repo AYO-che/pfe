@@ -24,7 +24,7 @@ export const getOrCreateConversation = async (req, res) => {
           nutritionId,
           status: { in: ["ACTIVE", "EXPIRED", "CANCELLED"] },
           offer: {
-            type: { in: ["CONSULTATION", "PLAN"] },
+  type: { in: ["CONSULTATION", "PLAN"] },
           },
         },
       });
@@ -151,7 +151,7 @@ export const sendMessage = async (req, res) => {
           nutritionId: conversation.nutritionId,
           status: { in: ["ACTIVE", "EXPIRED", "CANCELLED"] },
           offer: {
-            type: { in: ["CONSULTATION", "PLAN"] },
+          type: { in: ["CONSULTATION", "PLAN"] },
           },
         },
       });

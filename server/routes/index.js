@@ -2,6 +2,7 @@ import express from "express";
 import passport from "../passport.js";
 import { authenticateToken } from "../middleware/checkauth.js";
 import { authorizeRoles } from "../middleware/checkroles.js";
+import axios from "axios";
 
 /* =========================
    CONTROLLERS IMPORTS
@@ -15,6 +16,7 @@ import {
   googleCallback,
   changePassword,
   forgotPassword,
+  getMe ,
 } from "../controllers/authController.js";
 
 // Users
@@ -25,6 +27,7 @@ import {
   createNutritionist,
   updateUser,
   deleteUser,
+  getNutritionistsByOfferType,
 } from "../controllers/userController.js";
 
 // Profile
@@ -75,14 +78,14 @@ import {
   getSubscriptionById,
   getNutritionSubscriptions,
   cancelSubscription,
-} from "../controllers/subscriptionController.js";
+} from "../controllers/SubscriptionController.js";
 
 // Payments
 import {
   createPayment,
   getMyPayments,
   getPaymentById,
-} from "../controllers/paymentController.js";
+} from "../controllers/PaymentController.js";
 
 // Sessions
 import {
@@ -90,7 +93,8 @@ import {
   getMySessions,
   getSessionById,
   updateSessionStatus,
-} from "../controllers/sessionController.js";
+  getOccupiedSlots,
+} from "../controllers/SessionController.js";
 
 // Reviews
 import {
@@ -134,6 +138,16 @@ import {
   sendMessage,
 } from "../controllers/messageController.js";
 
+// User Plans
+import {
+  getMyCurrentPlanDay,
+  getMyUserPlans,
+  createOrUpdateDailyTracking,
+  getDailyTracking,
+  getDailyTrackingByDate,
+  getUserPlanById,
+} from "../controllers/userPlanController.js";
+
 const router = express.Router();
 
 /* =========================
@@ -153,7 +167,7 @@ router.get(
   passport.authenticate("google", { session: false }),
   googleCallback
 );
-
+router.get("/me", getMe);
 router.post("/logout", logout);
 router.post("/forgot-password", forgotPassword);
 router.patch("/change-password", authenticateToken, changePassword);
@@ -162,14 +176,14 @@ router.patch("/change-password", authenticateToken, changePassword);
    USER ROUTES
 ========================= */
 
-// Nutritionists
+// ✅ PUBLIC — no auth — MUST come before /nutritionists protected routes
+router.get("/nutritionists/public", getNutritionistsByOfferType);
+
 router.get("/nutritionists", authenticateToken, authorizeRoles("ADMIN"), getAllNutritionists);
 router.post("/nutritionists", authenticateToken, authorizeRoles("ADMIN"), createNutritionist);
-
-// Clients
 router.get("/clients", authenticateToken, authorizeRoles("ADMIN"), getAllClients);
+router.get("/nutritionists/by-type", authenticateToken, authorizeRoles("CLIENT", "ADMIN"), getNutritionistsByOfferType);
 
-// Shared — get, update, delete any user by ID
 router.get(
   "/users/:id",
   authenticateToken,
@@ -204,30 +218,10 @@ router.patch("/profile", authenticateToken, authorizeRoles("CLIENT"), updateProf
    STRIPE ROUTES
 ========================= */
 
-router.post(
-  "/stripe/create-account",
-  authenticateToken,
-  authorizeRoles("NUTRITION"),
-  createConnectedAccount
-);
-
-router.post(
-  "/stripe/onboarding",
-  authenticateToken,
-  authorizeRoles("NUTRITION"),
-  generateOnboardingLink
-);
-
-router.get(
-  "/stripe/status",
-  authenticateToken,
-  authorizeRoles("NUTRITION", "ADMIN"),
-  getStripeAccountStatus
-);
-
-router.get("/stripe/success", (req, res) => {
-  res.send("Stripe onboarding completed successfully!");
-});
+router.post("/stripe/create-account", authenticateToken, authorizeRoles("NUTRITION"), createConnectedAccount);
+router.post("/stripe/onboarding", authenticateToken, authorizeRoles("NUTRITION"), generateOnboardingLink);
+router.get("/stripe/status", authenticateToken, authorizeRoles("NUTRITION", "ADMIN"), getStripeAccountStatus);
+router.get("/stripe/success", (req, res) => res.send("Stripe onboarding completed successfully!"));
 
 /* =========================
    RESUME ROUTES
@@ -251,10 +245,9 @@ router.delete("/offers/:id", authenticateToken, authorizeRoles("NUTRITION", "ADM
    PLAN ROUTES
 ========================= */
 
-//  Static routes MUST come before /:id routes
 router.get("/plans/mine", authenticateToken, authorizeRoles("NUTRITION"), getMyPlans);
 router.get("/plans/recommended", authenticateToken, authorizeRoles("CLIENT"), getRecommendedPlans);
-router.get("/plans", authenticateToken, getAllPlans);
+router.get("/plans", getAllPlans);
 router.get("/plans/:id", authenticateToken, getPlanById);
 router.post("/plans", authenticateToken, authorizeRoles("NUTRITION"), createPlan);
 router.patch("/plans/:id", authenticateToken, authorizeRoles("NUTRITION", "ADMIN"), updatePlan);
@@ -265,8 +258,6 @@ router.delete("/plans/:id", authenticateToken, authorizeRoles("NUTRITION", "ADMI
 ========================= */
 
 router.post("/subscriptions", authenticateToken, authorizeRoles("CLIENT"), createSubscription);
-
-//  Static routes MUST come before /:id routes
 router.get("/subscriptions/mine", authenticateToken, authorizeRoles("CLIENT"), getMySubscriptions);
 router.get("/subscriptions/nutrition", authenticateToken, authorizeRoles("NUTRITION"), getNutritionSubscriptions);
 router.get("/subscriptions/:id", authenticateToken, getSubscriptionById);
@@ -284,8 +275,8 @@ router.get("/payments/:id", authenticateToken, getPaymentById);
    SESSION ROUTES
 ========================= */
 
-// Static routes MUST come before /:id routes
 router.get("/sessions/mine", authenticateToken, authorizeRoles("CLIENT", "NUTRITION"), getMySessions);
+router.get("/sessions/occupied/:nutritionId", authenticateToken, authorizeRoles("CLIENT"), getOccupiedSlots);
 router.get("/sessions", authenticateToken, authorizeRoles("ADMIN"), getAllSessions);
 router.get("/sessions/:id", authenticateToken, getSessionById);
 router.patch("/sessions/:id/status", authenticateToken, authorizeRoles("NUTRITION", "ADMIN"), updateSessionStatus);
@@ -322,7 +313,6 @@ router.patch("/blog/:id/status", authenticateToken, authorizeRoles("ADMIN"), upd
    NOTIFICATION ROUTES
 ========================= */
 
-//  Static routes MUST come before /:id routes
 router.get("/notifications/unread-count", authenticateToken, getUnreadCount);
 router.get("/notifications", authenticateToken, getMyNotifications);
 router.patch("/notifications/read-all", authenticateToken, markAllAsRead);
@@ -337,5 +327,74 @@ router.post("/conversations", authenticateToken, authorizeRoles("CLIENT", "NUTRI
 router.get("/conversations", authenticateToken, authorizeRoles("CLIENT", "NUTRITION"), getMyConversations);
 router.get("/conversations/:conversationId/messages", authenticateToken, getMessages);
 router.post("/conversations/:conversationId/messages", authenticateToken, sendMessage);
+
+/* =========================
+   USER PLAN ROUTES
+========================= */
+
+router.get("/user-plans/mine", authenticateToken, authorizeRoles("CLIENT"), getMyUserPlans);
+router.get("/user-plans/current-day", authenticateToken, authorizeRoles("CLIENT"), getMyCurrentPlanDay);
+router.get("/user-plans/:id", authenticateToken, authorizeRoles("CLIENT"), getUserPlanById);
+router.post("/user-plans/:userPlanId/tracking", authenticateToken, authorizeRoles("CLIENT"), createOrUpdateDailyTracking);
+router.get("/user-plans/:userPlanId/tracking", authenticateToken, authorizeRoles("CLIENT"), getDailyTracking);
+router.get("/user-plans/:userPlanId/tracking/:date", authenticateToken, authorizeRoles("CLIENT"), getDailyTrackingByDate);
+
+
+/* =========================
+   CHAT ROUTE
+========================= */
+
+router.post("/chat", async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ error: "Message is required" });
+
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+//
+
+
+
+  let retries = 2;
+
+
+
+  while (retries > 0) {
+    try {
+      const response = await axios.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          model: "llama-3.1-8b-instant",
+          messages: [
+            {
+              role: "system",
+              content: `You are Chrysalis, a friendly nutrition assistant.
+Rules:
+- ALWAYS respond in English only
+- Be warm, friendly and encouraging
+- Keep answers short and practical
+- Only talk about nutrition, food, and health topics
+- If asked something unrelated, politely redirect
+- Never be robotic`
+            },
+            { role: "user", content: message }
+          ],
+          max_tokens: 300,
+          temperature: 0.7
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${GROQ_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          timeout: 30000
+        }
+      );
+      const reply = response.data?.choices?.[0]?.message?.content?.trim();
+      return res.json({ reply });
+    } catch (error) {
+      retries--;
+      if (retries === 0) return res.status(500).json({ error: "Chatbot failed. Try again later." });
+    }
+  }
+});
 
 export default router;

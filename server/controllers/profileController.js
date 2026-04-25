@@ -2,6 +2,8 @@ import prisma from "../prismaClient.js";
 
 // Create a profile (after signup)
 export const createProfile = async (req, res) => {
+   console.log("Body received:", req.body);  // ← add this
+  console.log("User:", req.user);    
   try {
     const userId = req.user.id;
     const { dateOfBirth, gender, weight, height, goal, activityLevel, medicalConditions, allergies } = req.body;
@@ -50,30 +52,54 @@ export const getProfile = async (req, res) => {
 };
 
 // Update the profile
+
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { dateOfBirth, gender, weight, height, goal, activityLevel, medicalConditions, allergies } = req.body;
-
-    const profile = await prisma.profile.update({
-      where: { userId },
+    const {
+      firstName, lastName, dateOfBirth,
+      gender, weight, height, goal, activityLevel,
+      medicalConditions, allergies,
+    } = req.body;
+ 
+    // Update name on user
+    await prisma.user.update({
+      where: { id: userId },
       data: {
-        ...(dateOfBirth !== undefined && { dateOfBirth: new Date(dateOfBirth) }),
-        ...(gender !== undefined && { gender }),
-        ...(weight !== undefined && { weight }),
-        ...(height !== undefined && { height }),
-        ...(goal !== undefined && { goal }),
-        ...(activityLevel !== undefined && { activityLevel }),
-        ...(medicalConditions !== undefined && { medicalConditions }),
-        ...(allergies !== undefined && { allergies }),
+        ...(firstName && { firstName }),
+        ...(lastName  && { lastName  }),
       },
     });
-
-    res.json({ profile });
+ 
+    // Upsert profile (create if doesn't exist, update if it does)
+    await prisma.profile.upsert({
+      where: { userId },
+      create: {
+        userId,
+        dateOfBirth:       dateOfBirth ? new Date(dateOfBirth) : new Date("2000-01-01"),
+        gender:            gender            || "other",
+        weight:            weight            || 0,
+        height:            height            || 0,
+        goal:              goal              || "Maintain Weight",
+        activityLevel:     activityLevel     || "Moderate",
+        medicalConditions: medicalConditions || [],
+        allergies:         allergies         || [],
+      },
+      update: {
+        ...(dateOfBirth    && { dateOfBirth: new Date(dateOfBirth) }),
+        ...(gender         && { gender }),
+        ...(weight != null && { weight: Number(weight) }),
+        ...(height != null && { height: Number(height) }),
+        ...(goal           && { goal }),
+        ...(activityLevel  && { activityLevel }),
+        medicalConditions: medicalConditions || [],
+        allergies:         allergies         || [],
+      },
+    });
+ 
+    res.json({ message: "Profile updated" });
   } catch (err) {
-    if (err.code === "P2025") {
-      return res.status(404).json({ message: "Profile not found" });
-    }
+    console.error("updateProfile error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

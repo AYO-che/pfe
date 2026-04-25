@@ -105,6 +105,9 @@ export const createPlan = async (req, res) => {
         message: "offerName, offerPrice, offerDurationDays, title and content are required",
       });
 
+    if (!content.days || !Array.isArray(content.days) || content.days.length === 0)
+      return res.status(400).json({ message: "Content must have a non-empty days array" });
+
     const result = await prisma.$transaction(async (tx) => {
       const offer = await tx.offer.create({
         data: {
@@ -244,7 +247,6 @@ export const deletePlan = async (req, res) => {
     if (req.user.role !== "ADMIN" && existing.nutritionId !== nutritionId)
       return res.status(403).json({ message: "You can only delete your own plans" });
 
-    // Check no active subscriptions exist
     const activeSubscriptions = await prisma.subscription.findFirst({
       where: { offerId: existing.offerId, status: { in: ["ACTIVE", "PENDING"] } },
     });
@@ -255,7 +257,6 @@ export const deletePlan = async (req, res) => {
 
     await prisma.$transaction(async (tx) => {
       await tx.plan.delete({ where: { id } });
-
       await tx.offer.update({
         where: { id: existing.offerId },
         data: { isActive: false },
@@ -301,6 +302,131 @@ export const getRecommendedPlans = async (req, res) => {
     });
 
     res.json({ recommendedPlans });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+// =====================
+// 8️⃣ Assign a private plan directly to a patient (NUTRITION only)
+// =====================
+export const assignPlanToPatient = async (req, res) => {
+  try {
+    const nutritionId = req.user.id;
+    const {
+      patientId,
+      title,
+      content,
+      offerDurationDays,
+      goals,
+      activityLevels,
+      medicalConditions,
+      images,
+      videos,
+      pdfUrl,
+    } = req.body;
+
+    if (!patientId || !title || !content)
+      return res.status(400).json({
+        message: "patientId, title and content are required",
+      });
+
+    if (!content.days || !Array.isArray(content.days) || content.days.length === 0)
+      return res.status(400).json({ message: "Content must have a non-empty days array" });
+
+    // Check the patient has an active subscription with this nutritionist
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        patientId,
+        nutritionId,
+        status: "ACTIVE",
+      },
+    });
+
+    if (!subscription)
+      return res.status(403).json({
+        message: "Patient must have an active subscription with you",
+      });
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Create a free offer for the private plan
+      const offer = await tx.offer.create({
+        data: {
+          nutritionId,
+          name: `Private Plan — ${title}`,
+          type: "PLAN",
+          price: 0,
+          durationDays: offerDurationDays ?? 30,
+          isActive: true,
+        },
+      });
+
+      // Create the plan linked to both nutritionist and patient
+      const plan = await tx.plan.create({
+        data: {
+          offerId: offer.id,
+          nutritionId,
+          patientId,
+          isPrivate: true,
+          title,
+          content,
+          goals: goals ?? [],
+          activityLevels: activityLevels ?? [],
+          medicalConditions: medicalConditions ?? [],
+          images: images ?? [],
+          videos: videos ?? [],
+          pdfUrl: pdfUrl ?? null,
+        },
+      });
+
+      // Auto-create UserPlan so it shows up immediately for the patient
+      const userPlan = await tx.userPlan.create({
+        data: {
+          userId: patientId,
+          planId: plan.id,
+          subscriptionId: subscription.id,
+          startDate: new Date(),
+        },
+      });
+
+      // Notify the patient
+      await tx.notification.create({
+        data: {
+          userId: patientId,
+          title: "New Plan Assigned",
+          message: `Your nutritionist assigned you a new plan: ${title}`,
+        },
+      });
+
+      return { plan, offer, userPlan };
+    });
+
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// =====================
+// 9️⃣ Get plans assigned to a specific patient (NUTRITION)
+// =====================
+export const getPatientPlans = async (req, res) => {
+  try {
+    const nutritionId = req.user.id;
+    const { patientId } = req.params;
+
+    const plans = await prisma.plan.findMany({
+      where: { nutritionId, patientId },
+      include: {
+        offer: true,
+        userPlans: {
+          where: { userId: patientId },
+          include: { dailyTracking: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json({ plans });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }

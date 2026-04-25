@@ -172,3 +172,14 @@ export const deleteBlogPost = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+export const getMyPosts = async (req, res) => {
+  try {
+    const posts = await prisma.blogPost.findMany({
+      where:   { authorId: req.user.id },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json({ posts });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
