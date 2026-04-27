@@ -75,11 +75,10 @@ body, html {
 
 const MENU = [
   { section: "ACCOUNT",       key: "info",     path: "/profile",        icon: "👤", label: "My Profile"       },
-  { section: "CONSULTATIONS", key: "chatroom", path: "/profile/chat",   icon: "💬", label: "Chat Room"         },
   { section: "MY PLAN",       key: "plan",     path: "/profile/plan",   icon: "📋", label: "My Diet Plan"      },
   { section: "MY PLAN",       key: "progress", path: "/profile/progress",icon: "📈", label: "Progress"         },
+  { section: "MY PLAN", key: "mood", path: "/profile/mood", icon: "😊", label: "Mood & Symptoms" },
   { section: "OTHER",         key: "notifs",   path: "/profile/notifs", icon: "🔔", label: "Notifications"     },
-  { section: "OTHER",         key: "plans",    path: "/plans",          icon: "🥗", label: "Browse Plans"      },
   { section: "OTHER",         key: "calories", path: "/calories",       icon: "🤖", label: "AI Calories"       },
 ];
 

@@ -4,20 +4,21 @@ import { CSS, MOCK_PLAN, Field, SectionTitle } from "./Shared";
 
 export default function ProfileInfoPage() {
   const { user } = useAuth();
-
-  const isFirstTime = !user?.profile;
-  const [form, setForm] = useState({
-    firstName:         user?.firstName               || "",
-    lastName:          user?.lastName                || "",
-    age:               user?.profile?.age            || "",
-    gender:            user?.profile?.gender         || "",
-    weight:            user?.profile?.weight         || "",
-    height:            user?.profile?.height         || "",
-    goal:              user?.profile?.goal           || "",
-    activityLevel:     user?.profile?.activityLevel  || "",
-    medicalConditions: user?.profile?.medicalConditions?.join(", ") || "",
-    allergies:         user?.profile?.allergies?.join(", ")         || "",
-  });
+const isFirstTime = !user?.profile;
+ const [form, setForm] = useState({
+  firstName:         user?.firstName               || "",
+  lastName:          user?.lastName                || "",
+  dateOfBirth:       user?.profile?.dateOfBirth
+    ? new Date(user.profile.dateOfBirth).toISOString().split("T")[0]
+    : "",
+  gender:            user?.profile?.gender         || "",
+  weight:            user?.profile?.weight         || "",
+  height:            user?.profile?.height         || "",
+  goal:              user?.profile?.goal           || "",
+  activityLevel:     user?.profile?.activityLevel  || "",
+  medicalConditions: user?.profile?.medicalConditions?.join(", ") || "",
+  allergies:         user?.profile?.allergies?.join(", ")         || "",
+});
 
   const [avatar, setAvatar]   = useState(user?.avatar || null);
   const [editing, setEditing] = useState(isFirstTime);
@@ -45,17 +46,57 @@ export default function ProfileInfoPage() {
     r.onload = e => setAvatar(e.target.result);
     r.readAsDataURL(file);
   };
+const handleSave = async () => {
+  setSaving(true);
+  try {
+    const isNew = !user?.profile;
 
-  const handleSave = async () => {
-    setSaving(true);
-    // TODO: await fetch("/api/user/profile", { method: "PUT", body: JSON.stringify({ ...form, avatar }) });
-    await new Promise(r => setTimeout(r, 800));
-    setSaving(false);
+    // Save name to user
+    await fetch(`http://localhost:5000/users/${user.id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName: form.firstName,
+        lastName:  form.lastName,
+      }),
+    });
+
+    // Save profile health data
+    const res = await fetch("http://localhost:5000/profile", {
+      method:      isNew ? "POST" : "PATCH",
+      credentials: "include",
+      headers:     { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dateOfBirth:       form.dateOfBirth || null,
+        gender:            form.gender      || null,
+        weight:            form.weight      ? Number(form.weight) : null,
+        height:            form.height      ? Number(form.height) : null,
+        goal:              form.goal        || null,
+        activityLevel:     form.activityLevel || null,
+        medicalConditions: form.medicalConditions
+          ? form.medicalConditions.split(",").map(s => s.trim()).filter(Boolean)
+          : [],
+        allergies: form.allergies
+          ? form.allergies.split(",").map(s => s.trim()).filter(Boolean)
+          : [],
+      }),
+    });
+
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.message || "Save failed");
+    }
+
     setSaved(true);
     setEditing(false);
     setTimeout(() => setSaved(false), 3500);
-  };
-
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    setSaving(false);
+  }
+};
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif" }}>
       <style>{CSS}</style>
@@ -155,13 +196,16 @@ export default function ProfileInfoPage() {
             <SectionTitle bg="#e8f5e9" title="Personal Info" icon="👤" />
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <Field label="First Name" val={form.firstName} editing={editing} field="firstName" setForm={setForm} placeholder="Yasmine" />
-                <Field label="Last Name"  val={form.lastName}  editing={editing} field="lastName"  setForm={setForm} placeholder="Benali" />
+                <Field label="First Name" val={form.firstName} editing={editing} field="firstName" setForm={setForm} placeholder=" Fname" />
+                <Field label="Last Name"  val={form.lastName}  editing={editing} field="lastName"  setForm={setForm} placeholder="Lname" />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <Field label="Age"    val={form.age}    editing={editing} field="age"    setForm={setForm} type="number" placeholder="27" />
-                <Field label="Gender" val={form.gender} editing={editing} field="gender" setForm={setForm} options={["Female", "Male", "Other"]} />
+                <Field label="Age"    val={form.age}    editing={editing} field="age"    setForm={setForm} type="number" placeholder="age" />
+                <Field label="Gender" val={form.gender} editing={editing} field="gender" setForm={setForm} options={["Female", "Male"]} />
+              <Field label="Date of Birth" val={form.dateOfBirth} editing={editing} field="dateOfBirth" setForm={setForm} type="date" />
+              
               </div>
+
             </div>
           </div>
 

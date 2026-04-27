@@ -1,69 +1,292 @@
-import { useState } from "react";
-import { useAuth } from "../../context/Authcontext";
-import { CSS, MOCK_NOTIFS, NOTIF_META } from "./Shared";
+import React, { useState, useEffect, useCallback } from "react";
+import { CSS } from "./Shared";
+
+const fmtTime = (iso) => {
+  if (!iso) return "";
+  const d    = new Date(iso);
+  const diff = Date.now() - d;
+  if (diff < 60000)    return "just now";
+  if (diff < 3600000)  return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
+const getNotifStyle = (n, idx) => {
+  const palettes = [
+    { bg: "linear-gradient(135deg,#e8f5e9,#f0fdf4)", dot: "#2d6b50", accent: "#2d6b50", icon: "🌿" },
+    { bg: "linear-gradient(135deg,#fefce8,#fdf6c0)", dot: "#b8a200", accent: "#b8a200", icon: "⭐" },
+    { bg: "linear-gradient(135deg,#eff6ff,#dbeafe)", dot: "#1a6fa0", accent: "#1a6fa0", icon: "📋" },
+    { bg: "linear-gradient(135deg,#fdf4ff,#f3e8ff)", dot: "#7a3fa0", accent: "#7a3fa0", icon: "💜" },
+    { bg: "linear-gradient(135deg,#fff7ed,#ffedd5)", dot: "#c2410c", accent: "#c2410c", icon: "🔥" },
+  ];
+  return palettes[idx % palettes.length];
+};
+
+const DownloadBtn = ({ url }) => {
+  if (!url) return null;
+  return React.createElement(
+    "a",
+    {
+      href: url,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      onClick: (e) => e.stopPropagation(),
+      style: {
+        display: "inline-flex", alignItems: "center", gap: 5,
+        padding: "5px 12px",
+        background: "linear-gradient(135deg,#1a3329,#2d6b50)",
+        color: "#f5e642", border: "none", borderRadius: 8,
+        fontSize: 11, fontWeight: 700, cursor: "pointer",
+        textDecoration: "none", boxShadow: "0 2px 8px rgba(26,51,41,0.2)",
+      },
+    },
+    React.createElement(
+      "svg",
+      { width: 11, height: 11, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.5, strokeLinecap: "round", strokeLinejoin: "round" },
+      React.createElement("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+      React.createElement("polyline", { points: "7 10 12 15 17 10" }),
+      React.createElement("line", { x1: 12, y1: 15, x2: 12, y2: 3 })
+    ),
+    " Download PDF"
+  );
+};
 
 export default function ProfileNotifsPage() {
-  const { user } = useAuth();
-  const [notifs, setNotifs]       = useState(user?.notifications || MOCK_NOTIFS);
-  const [visibleCount, setVisible] = useState(4);
+  const [notifs,       setNotifs]       = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [visibleCount, setVisibleCount] = useState(6);
 
-  const unread  = notifs.filter(n => !n.read).length;
-  const markAll = () => setNotifs(n => n.map(x => ({ ...x, read: true })));
+  const fetchNotifs = useCallback(async () => {
+    try {
+      const res  = await fetch("/notifications", { credentials: "include" });
+      const data = await res.json();
+      const normalized = (data.notifications ?? []).map((n) => ({
+        ...n,
+        url: n.url ?? n.link ?? null,
+      }));
+      setNotifs(normalized);
+    } catch {}
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchNotifs(); }, [fetchNotifs]);
+
+  const markAllRead = async () => {
+    await fetch("/notifications/read-all", { method: "PATCH", credentials: "include" });
+    setNotifs((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  };
+
+  const markOneRead = async (id) => {
+    await fetch(`/notifications/${id}/read`, { method: "PATCH", credentials: "include" });
+    setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n));
+  };
+
+  const deleteNotif = async (id) => {
+    await fetch(`/notifications/${id}`, { method: "DELETE", credentials: "include" });
+    setNotifs((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const unread = notifs.filter((n) => !n.isRead).length;
 
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif" }}>
       <style>{CSS}</style>
+      <style>{`@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
 
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: "#1a3329" }}>Notifications</div>
-        <div style={{ fontSize: 13, color: "#5a7a6e", marginTop: 4 }}>Stay up to date with your plan and appointments.</div>
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: "#1a3329" }}>
+          Notifications
+        </div>
+        <div style={{ fontSize: 13, color: "#5a7a6e", marginTop: 4 }}>
+          Stay up to date with your plan and appointments.
+        </div>
       </div>
 
-      <div className="pr-card pr-slide-in">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+     
+      <div className="pr-card pr-slide-in" style={{ padding: 0, overflow: "hidden" }}>
+
+        {/* Toolbar */}
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "16px 20px",
+          background: "linear-gradient(135deg,#f7fdf9,#edf7f2)",
+          borderBottom: "1px solid rgba(79,158,122,0.12)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 16 }}>🔔</span>
+            <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 700, color: "#1a3329" }}>
+              All Notifications
+            </span>
             {unread > 0 && (
-              <span style={{ background: "#f5e642", color: "#1a3329", borderRadius: 999, padding: "2px 8px", fontSize: 10.5, fontWeight: 800 }}>{unread} new</span>
+              <span style={{
+                background: "linear-gradient(135deg,#1a3329,#2d6b50)",
+                color: "#f5e642", borderRadius: 999, padding: "2px 8px",
+                fontSize: 10.5, fontWeight: 800,
+              }}>
+                {unread} new
+              </span>
             )}
           </div>
           {unread > 0 && (
-            <button onClick={markAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 600, color: "#4f9e7a", fontFamily: "'DM Sans',sans-serif" }}>
-              Mark all read
+            <button onClick={markAllRead} style={{
+              background: "linear-gradient(135deg,#e8f5e9,#c8edd0)",
+              border: "1px solid rgba(45,107,80,0.2)",
+              borderRadius: 8, cursor: "pointer",
+              fontSize: 12, fontWeight: 600, color: "#2d6b50",
+              fontFamily: "'DM Sans',sans-serif", padding: "6px 12px",
+            }}>
+              ✓ Mark all read
             </button>
           )}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          {notifs.slice(0, visibleCount).map(n => {
-            const m = NOTIF_META[n.type] || NOTIF_META.blog;
-            return (
-              <div
-                key={n.id}
-                className="pr-notif"
-                style={{ background: n.read ? "transparent" : "rgba(245,230,66,0.04)", border: `1px solid ${n.read ? "transparent" : "rgba(245,230,66,0.15)"}` }}
-                onClick={() => setNotifs(p => p.map(x => x.id === n.id ? { ...x, read: true } : x))}
-              >
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: m.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{m.icon}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 3 }}>
-                    <span style={{ fontSize: 10.5, fontWeight: 700, color: m.color, background: m.bg, borderRadius: 999, padding: "2px 7px" }}>{m.label}</span>
-                    <span style={{ fontSize: 11, color: "#9ab8ae", flexShrink: 0 }}>{n.date}</span>
-                  </div>
-                  <div style={{ fontSize: 13, color: "#1a3329", fontWeight: n.read ? 400 : 600, lineHeight: 1.5 }}>{n.text}</div>
-                </div>
-                {!n.read && <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#f5e642", flexShrink: 0, marginTop: 8 }} />}
-              </div>
-            );
-          })}
-        </div>
-
-        {notifs.length > visibleCount && (
-          <button
-            onClick={() => setVisible(v => v + 3)}
-            style={{ width: "100%", marginTop: 12, background: "transparent", border: "1.5px solid rgba(79,158,122,0.18)", borderRadius: 10, padding: "10px 0", fontSize: 13, fontWeight: 600, color: "#4f9e7a", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
-            Load more
-          </button>
+        {/* Loading skeletons */}
+        {loading && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 0" }}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} style={{
+                height: 80, margin: "0 16px", borderRadius: 12,
+                background: "linear-gradient(90deg,#f0f7f3 25%,#e0ede8 50%,#f0f7f3 75%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 1.4s infinite",
+                animationDelay: `${i * 0.1}s`,
+              }} />
+            ))}
+          </div>
         )}
+
+        {/* Empty state */}
+        {!loading && notifs.length === 0 && (
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            padding: "60px 20px", gap: 12,
+          }}>
+            <div style={{
+              width: 72, height: 72, borderRadius: "50%",
+              background: "linear-gradient(135deg,#e8f5e9,#c8edd0)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 32, boxShadow: "0 4px 16px rgba(45,107,80,0.15)",
+            }}>🔔</div>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, color: "#1a3329" }}>
+              All caught up!
+            </div>
+            <p style={{ fontSize: 13, textAlign: "center", color: "#5a7a6e", margin: 0 }}>
+              No notifications yet. We'll let you know<br />when something happens.
+            </p>
+          </div>
+        )}
+
+        {/* Notification list */}
+        {!loading && notifs.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", padding: "8px 16px 16px" }}>
+            {notifs.slice(0, visibleCount).map((n, idx) => {
+              const palette = getNotifStyle(n, idx);
+              return (
+                <div key={n.id}>
+                  <div
+                    onClick={() => !n.isRead && markOneRead(n.id)}
+                    style={{
+                      display: "flex", alignItems: "flex-start", gap: 12,
+                      padding: "14px 12px", borderRadius: 14, cursor: "pointer",
+                      transition: "all 0.18s",
+                      background: n.isRead ? "transparent" : palette.bg,
+                      border: `1px solid ${n.isRead ? "transparent" : `${palette.dot}20`}`,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {/* Icon bubble */}
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                      background: n.isRead ? "#f0f7f3" : palette.bg,
+                      border: `1.5px solid ${palette.dot}30`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 18,
+                    }}>
+                      {palette.icon}
+                    </div>
+
+                    {/* Body */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {n.title && (
+                        <div style={{
+                          fontSize: 11, fontWeight: 700, color: palette.accent,
+                          background: `${palette.dot}15`, borderRadius: 999,
+                          padding: "2px 8px", display: "inline-block", marginBottom: 4,
+                        }}>
+                          {n.title}
+                        </div>
+                      )}
+                      <div style={{
+                        fontSize: 13, color: "#1a3329", lineHeight: 1.55,
+                        fontWeight: n.isRead ? 400 : 600,
+                        wordBreak: "break-word", marginBottom: 8,
+                      }}>
+                        {n.message}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                        <span style={{
+                          fontSize: 11, color: "#9ab8ae",
+                          background: "#f0f7f3", borderRadius: 999,
+                          padding: "2px 8px", fontWeight: 500,
+                        }}>
+                          🕐 {fmtTime(n.createdAt)}
+                        </span>
+                        <DownloadBtn url={n.url} />
+                      </div>
+                    </div>
+
+                    {/* Unread dot + delete */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                      {!n.isRead && (
+                        <div style={{
+                          width: 8, height: 8, borderRadius: "50%",
+                          background: `linear-gradient(135deg,${palette.dot},${palette.accent})`,
+                        }} />
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteNotif(n.id); }}
+                        style={{
+                          background: "rgba(229,62,62,0.07)", border: "none",
+                          cursor: "pointer", color: "#e53e3e",
+                          padding: 5, borderRadius: 8, lineHeight: 0,
+                          transition: "background 0.2s",
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/>
+                          <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {idx < notifs.slice(0, visibleCount).length - 1 && (
+                    <div style={{ height: 1, background: "rgba(26,51,41,0.05)", margin: "0 0 4px" }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Load more */}
+        {!loading && notifs.length > visibleCount && (
+          <div style={{ padding: "0 16px 16px" }}>
+            <button
+              onClick={() => setVisibleCount((v) => v + 4)}
+              style={{
+                width: "100%", background: "linear-gradient(135deg,#f0f9f4,#e8f5e9)",
+                border: "1.5px solid rgba(79,158,122,0.25)", borderRadius: 12,
+                padding: "11px 0", fontSize: 13, fontWeight: 600,
+                color: "#2d6b50", cursor: "pointer", fontFamily: "'DM Sans',sans-serif",
+              }}
+            >
+              Load more ↓
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );

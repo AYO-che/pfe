@@ -18,6 +18,7 @@ const nutritionSelect = {
 export const getAllPlans = async (req, res) => {
   try {
     const plans = await prisma.plan.findMany({
+      where: { isPrivate: false },
       include: {
         offer: true,
         nutrition: nutritionSelect,
@@ -35,6 +36,7 @@ export const getAllPlans = async (req, res) => {
 export const getPlanById = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id;
 
     const plan = await prisma.plan.findUnique({
       where: { id },
@@ -45,6 +47,16 @@ export const getPlanById = async (req, res) => {
     });
 
     if (!plan) return res.status(404).json({ message: "Plan not found" });
+
+    // Private plan — only nutritionist, patient or admin can see it
+    if (
+      plan.isPrivate &&
+      plan.nutritionId !== userId &&
+      plan.patientId !== userId &&
+      req.user?.role !== "ADMIN"
+    ) {
+      return res.status(403).json({ message: "Access forbidden" });
+    }
 
     res.json({ plan });
   } catch (err) {
@@ -72,9 +84,8 @@ export const getMyPlans = async (req, res) => {
 };
 
 // =====================
-// 4️⃣ Create a plan (NUTRITION)
-// Offer + Plan created atomically in one transaction
-// =====================
+// 4️⃣ Create a PUBLIC plan (PDF based — no tracking)
+/// =====================
 export const createPlan = async (req, res) => {
   try {
     const nutritionId = req.user.id;
@@ -85,12 +96,9 @@ export const createPlan = async (req, res) => {
       offerPrice,
       offerDurationDays,
       hasFreeTrial,
-      includesSessions,
       title,
-      content,
       images,
       videos,
-      pdfUrl,
       goals,
       activityLevels,
       minWeight,
@@ -100,24 +108,28 @@ export const createPlan = async (req, res) => {
       medicalConditions,
     } = req.body;
 
-    if (!offerName || !offerPrice || !offerDurationDays || !title || !content)
+    if (!offerName || !offerPrice || !offerDurationDays || !title)
       return res.status(400).json({
-        message: "offerName, offerPrice, offerDurationDays, title and content are required",
+        message: "offerName, offerPrice, offerDurationDays and title are required",
       });
 
-    if (!content.days || !Array.isArray(content.days) || content.days.length === 0)
-      return res.status(400).json({ message: "Content must have a non-empty days array" });
+    // Get the uploaded file path from multer instead of a URL string
+    if (!req.file)
+      return res.status(400).json({ message: "A PDF file is required for public plans" });
+
+const pdfUrl = `${process.env.SERVER_URL || "http://localhost:5000"}/uploads/${req.file.filename}`;
 
     const result = await prisma.$transaction(async (tx) => {
       const offer = await tx.offer.create({
         data: {
+          nutritionId,
           name: offerName,
           description: offerDescription ?? null,
           type: "PLAN",
-          price: offerPrice,
-          durationDays: offerDurationDays,
-          hasFreeTrial: hasFreeTrial ?? false,
-          includesSessions: includesSessions ?? false,
+          price: parseFloat(offerPrice),           // body fields from FormData are strings
+          durationDays: parseInt(offerDurationDays),
+          hasFreeTrial: hasFreeTrial === "true",
+          includesSessions: false,
           isActive: true,
         },
       });
@@ -126,18 +138,19 @@ export const createPlan = async (req, res) => {
         data: {
           offerId: offer.id,
           nutritionId,
+          isPrivate: false,
           title,
-          content,
-          images: images ?? [],
-          videos: videos ?? [],
-          pdfUrl: pdfUrl ?? null,
-          goals: goals ?? [],
-          activityLevels: activityLevels ?? [],
-          minWeight: minWeight ?? null,
-          maxWeight: maxWeight ?? null,
-          minHeight: minHeight ?? null,
-          maxHeight: maxHeight ?? null,
-          medicalConditions: medicalConditions ?? [],
+          content: {},
+          pdfUrl,
+          images:            parseJsonField(images,            []),
+          videos:            parseJsonField(videos,            []),
+          goals:             parseJsonField(goals,             []),
+          activityLevels:    parseJsonField(activityLevels,    []),
+          medicalConditions: parseJsonField(medicalConditions, []),
+          minWeight:  minWeight  ? parseFloat(minWeight)  : null,
+          maxWeight:  maxWeight  ? parseFloat(maxWeight)  : null,
+          minHeight:  minHeight  ? parseFloat(minHeight)  : null,
+          maxHeight:  maxHeight  ? parseFloat(maxHeight)  : null,
         },
       });
 
@@ -146,9 +159,18 @@ export const createPlan = async (req, res) => {
 
     res.status(201).json(result);
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("createPlan error:", err);
+    res.status(500).json({ message: "Server error", detail: err.message });
   }
 };
+
+// Helper — FormData sends arrays/objects as JSON strings, guard against both
+function parseJsonField(value, fallback) {
+  if (!value) return fallback;
+  if (Array.isArray(value)) return value;
+  try { return JSON.parse(value); }
+  catch { return fallback; }
+}
 
 // =====================
 // 5️⃣ Update a plan (NUTRITION — own plans only, or ADMIN)
@@ -234,7 +256,6 @@ export const updatePlan = async (req, res) => {
 
 // =====================
 // 6️⃣ Delete a plan (NUTRITION — own plans only, or ADMIN)
-// Hard deletes the plan and deactivates the linked offer
 // =====================
 export const deletePlan = async (req, res) => {
   try {
@@ -270,7 +291,7 @@ export const deletePlan = async (req, res) => {
 };
 
 // =====================
-// 7️⃣ Get recommended plans for logged-in client
+// 7️⃣ Get recommended plans for logged-in client (PDF plans only)
 // =====================
 export const getRecommendedPlans = async (req, res) => {
   try {
@@ -284,6 +305,7 @@ export const getRecommendedPlans = async (req, res) => {
 
     const recommendedPlans = await prisma.plan.findMany({
       where: {
+        isPrivate: false,
         offer: { isActive: true },
         AND: [
           { goals: { has: profile.goal } },
@@ -306,8 +328,10 @@ export const getRecommendedPlans = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 // =====================
-// 8️⃣ Assign a private plan directly to a patient (NUTRITION only)
+// 8️⃣ Assign a PRIVATE plan to a patient (NUTRITION only)
+// This is the plan with daily tracking — assigned after consultation
 // =====================
 export const assignPlanToPatient = async (req, res) => {
   try {
@@ -330,6 +354,7 @@ export const assignPlanToPatient = async (req, res) => {
         message: "patientId, title and content are required",
       });
 
+    // Private plans MUST have content.days for daily tracking
     if (!content.days || !Array.isArray(content.days) || content.days.length === 0)
       return res.status(400).json({ message: "Content must have a non-empty days array" });
 
@@ -348,7 +373,6 @@ export const assignPlanToPatient = async (req, res) => {
       });
 
     const result = await prisma.$transaction(async (tx) => {
-      // Create a free offer for the private plan
       const offer = await tx.offer.create({
         data: {
           nutritionId,
@@ -360,7 +384,6 @@ export const assignPlanToPatient = async (req, res) => {
         },
       });
 
-      // Create the plan linked to both nutritionist and patient
       const plan = await tx.plan.create({
         data: {
           offerId: offer.id,
@@ -368,7 +391,7 @@ export const assignPlanToPatient = async (req, res) => {
           patientId,
           isPrivate: true,
           title,
-          content,
+          content,           // ← has content.days for tracking
           goals: goals ?? [],
           activityLevels: activityLevels ?? [],
           medicalConditions: medicalConditions ?? [],
@@ -378,7 +401,7 @@ export const assignPlanToPatient = async (req, res) => {
         },
       });
 
-      // Auto-create UserPlan so it shows up immediately for the patient
+      // Auto-create UserPlan for daily tracking
       const userPlan = await tx.userPlan.create({
         data: {
           userId: patientId,
@@ -388,7 +411,6 @@ export const assignPlanToPatient = async (req, res) => {
         },
       });
 
-      // Notify the patient
       await tx.notification.create({
         data: {
           userId: patientId,

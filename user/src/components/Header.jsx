@@ -1,14 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import logo from "../assets/logo.jpg";
 import p1 from "../assets/p1.jpg";
 import p2 from "../assets/p2.jpg";
 import p3 from "../assets/p3.jpg";
 import { useAuth } from "../context/Authcontext";
 
-// ─── Inject CSS once at module level (outside component) ──────────────────────
-// This prevents the stale-CSS bug where the style tag was only injected
-// on first render and never re-evaluated when user/role changed.
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap');
   *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -50,6 +47,7 @@ const CSS = `
   .hdr-avatar-btn:hover { transform:scale(1.08); box-shadow:0 5px 16px rgba(26,51,41,0.3); border-color:#f5e642; }
   .hdr-notif-btn { position:relative; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.7); border:1px solid rgba(79,158,122,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.22s ease; flex-shrink:0; }
   .hdr-notif-btn:hover { background:#fff; box-shadow:0 3px 10px rgba(26,51,41,0.1); }
+  .hdr-notif-btn.active { background:#fff; box-shadow:0 3px 10px rgba(26,51,41,0.12); border-color:var(--green-mid); }
   .hdr-notif-badge { position:absolute; top:-3px; right:-3px; width:16px; height:16px; border-radius:50%; background:#f5e642; border:2px solid #fff; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:800; color:#1a3329; }
   .hdr-user-dropdown { position:absolute; top:calc(100% + 10px); right:0; width:220px; background:#fff; border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow-md); padding:10px; z-index:300; animation:dropIn 0.22s ease; }
   .hdr-user-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; font-size:14px; font-weight:500; color:var(--text); cursor:pointer; transition:background var(--transition); border:none; background:none; width:100%; font-family:'DM Sans',sans-serif; text-decoration:none; }
@@ -91,10 +89,182 @@ const CSS = `
   .mob-prem-desc { font-size:11.5px; color:var(--text-muted); }
   .mob-actions { display:flex; gap:8px; margin-top:12px; }
   .mob-actions .btn { flex:1; text-align:center; padding:10px; }
+
+  /* ── NOTIFICATION DROPDOWN ── */
+  .notif-dropdown-wrap { position:relative; }
+  .notif-dropdown {
+    position:absolute;
+    top:calc(100% + 12px);
+    right:0;
+    width:360px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:20px;
+    box-shadow:0 16px 48px rgba(26,51,41,0.16);
+    z-index:400;
+    overflow:hidden;
+    animation:notifDrop 0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+  @media(max-width:420px){ .notif-dropdown { width:calc(100vw - 32px); right:-60px; } }
+  @keyframes notifDrop {
+    from { opacity:0; transform:translateY(-8px) scale(0.97); }
+    to   { opacity:1; transform:translateY(0)   scale(1);    }
+  }
+
+  .notif-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 18px 12px;
+    border-bottom:1px solid rgba(26,51,41,0.06);
+  }
+  .notif-header-title {
+    font-family:'DM Sans',sans-serif;
+    font-size:15px;
+    font-weight:700;
+    color:#1a3329;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .notif-count-pill {
+    background:linear-gradient(135deg,#1a3329,#2d6b50);
+    color:#f5e642;
+    font-size:10px;
+    font-weight:800;
+    padding:2px 8px;
+    border-radius:999px;
+  }
+  .notif-mark-all {
+    font-size:12px;
+    font-weight:600;
+    color:var(--green-mid);
+    background:none;
+    border:none;
+    cursor:pointer;
+    font-family:'DM Sans',sans-serif;
+    padding:4px 8px;
+    border-radius:8px;
+    transition:background var(--transition);
+  }
+  .notif-mark-all:hover { background:rgba(45,107,80,0.08); }
+  .notif-mark-all:disabled { opacity:0.4; cursor:default; }
+
+  .notif-list {
+    max-height:380px;
+    overflow-y:auto;
+    padding:8px 0;
+  }
+  .notif-list::-webkit-scrollbar { width:3px; }
+  .notif-list::-webkit-scrollbar-thumb { background:#daeee5; border-radius:10px; }
+
+  .notif-item {
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    padding:12px 18px;
+    cursor:default;
+    transition:background 0.18s;
+    position:relative;
+  }
+  .notif-item:hover { background:#f7fdf9; }
+  .notif-item.unread { background:#f0fbf5; }
+  .notif-item.unread:hover { background:#e8f7f0; }
+
+  .notif-unread-dot {
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:linear-gradient(135deg,#1a3329,#2d6b50);
+    flex-shrink:0;
+    margin-top:5px;
+  }
+  .notif-unread-dot.hidden { background:transparent; }
+
+  .notif-item-body { flex:1; min-width:0; }
+  .notif-item-msg {
+    font-size:13px;
+    color:#1a3329;
+    line-height:1.45;
+    margin-bottom:5px;
+    word-break:break-word;
+  }
+  .notif-item-meta {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .notif-item-time {
+    font-size:11px;
+    color:rgba(26,51,41,0.4);
+    flex-shrink:0;
+  }
+  .notif-pdf-btn {
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:4px 10px;
+    background:linear-gradient(135deg,#1a3329,#2d6b50);
+    color:#f5e642;
+    border:none;
+    border-radius:8px;
+    font-size:11px;
+    font-weight:700;
+    font-family:'DM Sans',sans-serif;
+    cursor:pointer;
+    text-decoration:none;
+    transition:opacity 0.2s, transform 0.2s;
+    flex-shrink:0;
+  }
+  .notif-pdf-btn:hover { opacity:0.88; transform:translateY(-1px); }
+
+  .notif-divider { height:1px; background:rgba(26,51,41,0.05); margin:2px 0; }
+
+  .notif-empty {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:40px 20px;
+    gap:10px;
+    color:rgba(26,51,41,0.4);
+  }
+  .notif-empty-icon { font-size:32px; }
+  .notif-empty p { font-size:13px; text-align:center; }
+
+  .notif-loading {
+    padding:20px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .notif-skeleton {
+    height:52px;
+    border-radius:12px;
+    background:linear-gradient(90deg,#f0f7f3 25%,#e0ede8 50%,#f0f7f3 75%);
+    background-size:200% 100%;
+    animation:shimmer 1.4s infinite;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  .notif-footer {
+    padding:10px 18px 14px;
+    border-top:1px solid rgba(26,51,41,0.06);
+    display:flex;
+    justify-content:center;
+  }
+  .notif-see-all {
+    font-size:13px;
+    font-weight:600;
+    color:var(--green-mid);
+    text-decoration:none;
+    padding:6px 16px;
+    border-radius:10px;
+    transition:background var(--transition);
+  }
+  .notif-see-all:hover { background:rgba(45,107,80,0.08); }
 `;
 
-// Inject CSS at module load time — runs once when the file is first imported,
-// not inside a component lifecycle, so it is never blocked by user being null.
 if (typeof document !== "undefined" && !document.getElementById("hdr-v3-css")) {
   const s = document.createElement("style");
   s.id = "hdr-v3-css";
@@ -119,63 +289,208 @@ const IconLogout = (
   </svg>
 );
 
-// ─── Premium items (CLIENT only) ──────────────────────────────────────────────
 const PREMIUM_ITEMS = [
   { label: "AI Calories Calculator",             desc: "Track your daily intake with smart AI-powered insights.",   image: p1, href: "/ai-premium"  },
   { label: "Health Plans by Specialists",        desc: "Personalised programs crafted by certified nutritionists.", image: p2, href: "/plans"       },
   { label: "Follow-up Care with a Nutritionist", desc: "Ongoing support and check-ins with your dedicated coach.", image: p3, href: "/specialists" },
 ];
 
+// ─── Time formatter ───────────────────────────────────────────────────────────
+const fmtTime = (iso) => {
+  if (!iso) return "";
+  const d    = new Date(iso);
+  const diff = Date.now() - d;
+  if (diff < 60000)    return "just now";
+  if (diff < 3600000)  return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
+// ─── Notification Dropdown ────────────────────────────────────────────────────
+function NotifDropdown({ onClose }) {
+  const [notifs,  setNotifs]  = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotifs = useCallback(async () => {
+    try {
+      const res  = await fetch("/notifications", { credentials: "include" });
+      const data = await res.json();
+      const normalized = (data.notifications ?? []).map((n) => ({
+        ...n,
+        url: n.url ?? n.link ?? null,
+      }));
+      setNotifs(normalized);
+    } catch { }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchNotifs(); }, [fetchNotifs]);
+
+  const markAllRead = async () => {
+    await fetch("/notifications/read-all", {
+      method: "PATCH",
+      credentials: "include",
+    });
+    setNotifs((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  };
+
+  const unreadCount = notifs.filter((n) => !n.isRead).length;
+
+  return (
+    <div className="notif-dropdown">
+      <div className="notif-header">
+        <span className="notif-header-title">
+          Notifications
+          {unreadCount > 0 && (
+            <span className="notif-count-pill">{unreadCount} new</span>
+          )}
+        </span>
+        <button
+          className="notif-mark-all"
+          onClick={markAllRead}
+          disabled={unreadCount === 0}
+        >
+          Mark all read
+        </button>
+      </div>
+
+      <div className="notif-list">
+        {loading && (
+          <div className="notif-loading">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="notif-skeleton" style={{ animationDelay: `${i * 0.1}s` }} />
+            ))}
+          </div>
+        )}
+
+        {!loading && notifs.length === 0 && (
+          <div className="notif-empty">
+            <span className="notif-empty-icon">🔔</span>
+            <p>You're all caught up!<br />No notifications yet.</p>
+          </div>
+        )}
+
+        {!loading && notifs.map((n, idx) => (
+          <div key={n.id}>
+            <div className={`notif-item ${!n.isRead ? "unread" : ""}`}>
+              <span className={`notif-unread-dot ${n.isRead ? "hidden" : ""}`} />
+              <div className="notif-item-body">
+                {n.title && (
+                  <p className="notif-item-title">{n.title}</p>
+                )}
+                <p className="notif-item-msg">{n.message}</p>
+                <div className="notif-item-meta">
+                  <span className="notif-item-time">{fmtTime(n.createdAt)}</span>
+                  {n.url && (
+                    <a                             
+                      href={n.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="notif-pdf-btn"
+                      onClick={onClose}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                      Download PDF
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+            {idx < notifs.length - 1 && <div className="notif-divider" />}
+          </div>
+        ))}
+      </div>
+
+      {notifs.length > 0 && (
+        <div className="notif-footer">
+          <Link to="/profile/notifs" className="notif-see-all" onClick={onClose}>
+            See all notifications →
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+// ─── Main Header ──────────────────────────────────────────────────────────────
 export default function Header() {
   const [premOpen,       setPremOpen]       = useState(false);
   const [mobileOpen,     setMobileOpen]     = useState(false);
   const [mobilePremOpen, setMobilePremOpen] = useState(false);
   const [userMenuOpen,   setUserMenuOpen]   = useState(false);
+  const [notifOpen,      setNotifOpen]      = useState(false);
+  const [unreadCount,    setUnreadCount]    = useState(0);
   const [isDesktop,      setIsDesktop]      = useState(
     typeof window !== "undefined" ? window.innerWidth >= 769 : true
   );
 
-  const premRef = useRef(null);
-  const userRef = useRef(null);
+  const premRef  = useRef(null);
+  const userRef  = useRef(null);
+  const notifRef = useRef(null);
 
-  // ── Auth — user updates reactively when fetchUser() resolves ───────────────
   const { isLoggedIn, user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // ── Role check: Prisma enum "CLIENT" | "NUTRITION" | "ADMIN" ──────────────
-  // Derived directly from user so it re-renders automatically when user loads.
-const isNutrition = user?.role === "NUTRITION";
+  const isNutrition  = user?.role === "NUTRITION";
+  const firstName    = user?.firstName || "U";
+  const profileHref  = isNutrition ? "/resume/profile" : "/profile";
+  const profileLabel = isNutrition ? "My Resume" : "My Profile";
 
-const unreadCount = user?.notifications?.filter(n => !n.isRead).length || 0;
+  // ── Fetch unread count ──────────────────────────────────────────────────────
+  const fetchUnreadCount = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      const res  = await fetch("/notifications/unread-count", { credentials: "include" });
+      const data = await res.json();
+      setUnreadCount(data.count ?? 0);
+    } catch { /* noop */ }
+  }, [isLoggedIn]);
 
-const firstName = user?.firstName || "U";
+  useEffect(() => {
+    fetchUnreadCount();
+    // Poll every 60s for new notifications
+    const interval = setInterval(fetchUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
-const profileHref = isNutrition ? "/resume/profile" : "/profile";
+  // Reset count when dropdown opens (notifications will be fetched fresh)
+  const handleBellClick = () => {
+    setNotifOpen((v) => !v);
+    setUserMenuOpen(false);
+    setPremOpen(false);
+  };
 
-const profileLabel = isNutrition ? "My Resume" : "My Profile";
-  // Close dropdowns on outside click
+  // When dropdown closes, re-fetch count to reflect mark-all-read
+  useEffect(() => {
+    if (!notifOpen) fetchUnreadCount();
+  }, [notifOpen, fetchUnreadCount]);
+
+  // ── Close on outside click ──────────────────────────────────────────────────
   useEffect(() => {
     const h = (e) => {
-      if (premRef.current && !premRef.current.contains(e.target)) setPremOpen(false);
-      if (userRef.current && !userRef.current.contains(e.target)) setUserMenuOpen(false);
+      if (premRef.current  && !premRef.current.contains(e.target))  setPremOpen(false);
+      if (userRef.current  && !userRef.current.contains(e.target))  setUserMenuOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  // Track desktop/mobile
   useEffect(() => {
     const h = () => setIsDesktop(window.innerWidth >= 769);
     window.addEventListener("resize", h);
     return () => window.removeEventListener("resize", h);
   }, []);
 
-  // Close mobile menu on navigation
   useEffect(() => {
     setMobileOpen(false);
     setPremOpen(false);
     setUserMenuOpen(false);
-  }, [user?.role]); // also fires when role becomes known after login
+    setNotifOpen(false);
+  }, [user?.role]);
 
   const handlePremiumClick = (href) => {
     navigate(isLoggedIn ? href : `/login?redirect=${href}`);
@@ -197,12 +512,11 @@ const profileLabel = isNutrition ? "My Resume" : "My Profile";
           {/* Logo */}
           <Link to="/"><img src={logo} alt="logo" style={{ height: 140, marginRight: 20 }} /></Link>
 
-          {/* ── Desktop nav ──────────────────────────────────────────────── */}
+          {/* Desktop nav */}
           <nav className="hdr-nav">
             <Link to="/"      className="nav-link">Home</Link>
             <Link to="/blogs" className="nav-link">Blogs</Link>
 
-            {/* CLIENT only — Offers dropdown */}
             {!isNutrition && (
               <div ref={premRef} style={{ position: "relative" }}>
                 <button
@@ -231,30 +545,37 @@ const profileLabel = isNutrition ? "My Resume" : "My Profile";
                 )}
               </div>
             )}
-            {/* NUTRITION: only Home + Blogs — nothing extra */}
           </nav>
 
-          {/* ── Actions ──────────────────────────────────────────────────── */}
+          {/* Actions */}
           <div className="hdr-actions">
             {isDesktop && (
               isLoggedIn ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
 
-                  {/* Bell */}
-                  <button
-                    className="hdr-notif-btn"
-                    onClick={() => navigate(
-                      isNutrition ? "/nutritionist/notifications" : "/profile",
-                      isNutrition ? undefined : { state: { tab: "notifs" } }
+                  {/* Bell + Notification Dropdown */}
+                  <div className="notif-dropdown-wrap" ref={notifRef}>
+                    <button
+                      className={`hdr-notif-btn${notifOpen ? " active" : ""}`}
+                      onClick={handleBellClick}
+                      aria-label="Notifications"
+                    >
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                        stroke="#2d6b50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                      </svg>
+                      {unreadCount > 0 && (
+                        <span className="hdr-notif-badge">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {notifOpen && (
+                      <NotifDropdown onClose={() => setNotifOpen(false)} />
                     )}
-                  >
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
-                      stroke="#2d6b50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                    </svg>
-                    {unreadCount > 0 && <span className="hdr-notif-badge">{unreadCount}</span>}
-                  </button>
+                  </div>
 
                   {/* Avatar + dropdown */}
                   <div ref={userRef} style={{ position: "relative" }}>
@@ -266,7 +587,6 @@ const profileLabel = isNutrition ? "My Resume" : "My Profile";
 
                     {userMenuOpen && (
                       <div className="hdr-user-dropdown">
-                        {/* Name + role pill */}
                         <div style={{ padding: "10px 12px", borderBottom: "1px solid rgba(79,158,122,0.1)", marginBottom: 6 }}>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
                             <div style={{ fontSize: 13.5, fontWeight: 700, color: "#1a3329" }}>
@@ -279,7 +599,6 @@ const profileLabel = isNutrition ? "My Resume" : "My Profile";
                           <div style={{ fontSize: 12, color: "#5a7a6e" }}>{user?.email}</div>
                         </div>
 
-                        {/* Role-aware profile link */}
                         <Link to={profileHref} className="hdr-user-item" onClick={() => setUserMenuOpen(false)}>
                           {isNutrition ? IconResume : IconProfile}
                           {profileLabel}
@@ -312,13 +631,12 @@ const profileLabel = isNutrition ? "My Resume" : "My Profile";
           </div>
         </div>
 
-        {/* ── Mobile menu ──────────────────────────────────────────────────── */}
+        {/* Mobile menu */}
         {mobileOpen && (
           <div className="mobile-menu">
             <Link to="/"      className="mob-link" onClick={() => setMobileOpen(false)}>Home</Link>
             <Link to="/blogs" className="mob-link" onClick={() => setMobileOpen(false)}>Blogs</Link>
 
-            {/* CLIENT only — Offers */}
             {!isNutrition && (
               <>
                 <div className="mob-divider"/>
@@ -353,16 +671,16 @@ const profileLabel = isNutrition ? "My Resume" : "My Profile";
                   {profileLabel}
                 </Link>
 
+                {/* Mobile notifications link */}
                 <Link
-                  to={isNutrition ? "/nutritionist/notifications" : "/profile"}
-                  state={isNutrition ? undefined : { tab: "notifs" }}
+                  to="/profile/notifs"
                   className="mob-link"
                   onClick={() => setMobileOpen(false)}
                 >
                   Notifications
                   {unreadCount > 0 && (
                     <span style={{ background: "#f5e642", color: "#1a3329", borderRadius: 999, padding: "1px 7px", fontSize: 11, fontWeight: 800 }}>
-                      {unreadCount}
+                      {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
                 </Link>

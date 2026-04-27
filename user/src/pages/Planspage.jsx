@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/Authcontext";
 
@@ -160,7 +159,7 @@ export default function PlansPage() {
     (async () => {
       try {
         setLoading(true); setError(null);
-        const res = await fetch("/api/plans", { signal: controller.signal });
+        const res = await fetch("/plans", { signal: controller.signal });
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         const data = await res.json();
         setPlans((data.plans ?? []).map(mapPlan));
@@ -188,7 +187,6 @@ export default function PlansPage() {
 
   return (
     <div className="plans-page">
-      <Header />
 
       <section className="plans-hero">
         <div className="plans-hero-dots" />

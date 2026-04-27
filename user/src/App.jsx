@@ -15,9 +15,9 @@ import NutritionistLayout from "./layouts/NutritionistLayout";
 // --- PATIENT PAGES ---
 import ProfileInfoPage     from "./pages/patient/Profileinfopage";
 import ProfileChatPage     from "./pages/patient/Profilechatpage";
-import ProfilePlanPage     from "./pages/patient/Profileplanpage";
 import ProfileProgressPage from "./pages/patient/ProgressPage";
 import ProfileNotifsPage   from "./pages/patient/NotifsPage";
+import MoodPage            from "./pages/patient/MoodPage";
 
 // --- NUTRITION PAGES ---
 import OverviewPage         from "./pages/nutrition/OverviewPage";
@@ -40,7 +40,6 @@ import AIPremiumPage    from "./pages/AIPremiumPage";
 import StripeSuccess    from "./pages/StripeSuccess";
 import PatientSetup     from "./pages/Patientsetup";
 import CreateResumePage from "./pages/CreateResumePage";
-import PlansPage        from "./pages/Planspage";
 import MobileScan       from "./pages/MobileScan";
 import CaloriesAI       from "./pages/CaloriesAI";
 import Payment          from "./pages/Payment";
@@ -68,7 +67,7 @@ function App() {
           <Route path="/signup" element={<SignupPage />} />
 
           <Route path="/blogs"       element={<><Header /><BlogsPage /><Footer /></>} />
-          <Route path="/about"       element={<><Header /><AboutPage /><Footer /></>} />
+          <Route path="/about"       element={<><AboutPage /><Footer /></>} />
           <Route path="/privacy"     element={<><Header /><PrivacyPage /><Footer /></>} />
           <Route path="/specialists" element={<><Header /><Specialists /><Footer /></>} />
           <Route path="/our-sprcs"   element={<><Header /><OurSpecialists /><Footer /></>} />
@@ -83,10 +82,9 @@ function App() {
           <Route element={<PatientLayout />}>
             <Route path="/profile"          element={<ProfileInfoPage />} />
             <Route path="/profile/chat"     element={<ProfileChatPage />} />
-            <Route path="/profile/plan"     element={<ProfilePlanPage />} />
             <Route path="/profile/progress" element={<ProfileProgressPage />} />
             <Route path="/profile/notifs"   element={<ProfileNotifsPage />} />
-            <Route path="/plans"            element={<PlansPage />} />
+            <Route path="/profile/mood"     element={<MoodPage />} />
             <Route path="/scan"             element={<MobileScan />} />
             <Route path="/payment"          element={<Payment />} />
             <Route
@@ -107,6 +105,7 @@ function App() {
             <Route path="consultations" element={<ConsultationsPage />} />
             <Route path="chat"          element={<ChatPage />} />
             <Route path="profile"       element={<NutritionProfilePage />} />
+            <Route path="notifs"        element={<ProfileNotifsPage />} />
             <Route path="posts"         element={<PostsPage />} />
           </Route>
 

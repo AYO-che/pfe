@@ -62,7 +62,6 @@ export const createPayment = async (req, res) => {
       metadata: { subscriptionId, userId, offerType: offer.type },
     };
 
-    // Stripe Connect — send to nutritionist's account
     if (["CONSULTATION", "PLAN", "PACKAGE"].includes(offer.type)) {
       const stripeAccountId = nutrition?.stripe?.stripeAccountId;
       if (!stripeAccountId)
@@ -175,13 +174,15 @@ export const createPayment = async (req, res) => {
         data:  { status: "ACTIVE", startDate: new Date() },
       });
 
-      let session  = null;
-      let sessions = [];
+      let session    = null;
+      let sessions   = [];
+      let planPdfUrl = null;
 
-      // 3️⃣ PLAN — create UserPlan
+      // 3️⃣ PLAN — create UserPlan + notification with PDF URL
       if (offer.type === "PLAN") {
         const plan = await tx.plan.findUnique({ where: { offerId: subscription.offerId } });
         if (!plan) throw new Error("Plan not found");
+
         await tx.userPlan.create({
           data: {
             userId:         subscription.patientId,
@@ -190,7 +191,21 @@ export const createPayment = async (req, res) => {
             startDate:      new Date(),
           },
         });
-      }
+
+        planPdfUrl = plan.pdfUrl ?? null;
+
+        await tx.notification.create({
+          data: {
+            userId:  subscription.patientId,
+            title:   "Your plan is ready! 🎉",
+            message: planPdfUrl
+              ? `Your plan "${offer.name}" is now active! Download your PDF below.`
+              : `Your plan "${offer.name}" is now active!`,
+            url:    planPdfUrl ?? null,
+            isRead: false,
+          },
+        });
+      }  // ✅ closes if (offer.type === "PLAN")
 
       // 4️⃣ CONSULTATION — create one session
       if (offer.type === "CONSULTATION") {
@@ -223,10 +238,23 @@ export const createPayment = async (req, res) => {
         }
       }
 
-      return { payment, session, sessions };
+      return { payment, session, sessions, planPdfUrl };
     });
 
     // ── Real-time notifications ──
+    if (offer.type === "PLAN") {
+      const patientSocketId = connectedUsers.get(subscription.patientId);
+      if (patientSocketId) {
+        io.to(patientSocketId).emit("planActivated", {
+          message: result.planPdfUrl
+            ? `🎉 Your plan "${offer.name}" is now active! Download your PDF here: ${result.planPdfUrl}`
+            : `🎉 Your plan "${offer.name}" is now active!`,
+          pdfUrl:    result.planPdfUrl,
+          offerName: offer.name,
+        });
+      }
+    }
+
     if (offer.type === "CONSULTATION" && result.session) {
       const patientSocketId   = connectedUsers.get(subscription.patientId);
       const nutritionSocketId = connectedUsers.get(subscription.nutritionId);
@@ -266,6 +294,7 @@ export const createPayment = async (req, res) => {
       message:
         offer.type === "CONSULTATION" ? "Payment successful, consultation scheduled" :
         offer.type === "PACKAGE"      ? "Payment successful, sessions scheduled" :
+        offer.type === "PLAN"         ? "Payment successful, plan activated" :
                                         "Payment successful",
       payment:  result.payment,
       session:  result.session,

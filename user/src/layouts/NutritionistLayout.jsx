@@ -84,6 +84,7 @@ const MENU = [
   { section: "MAIN", to: "consultations", icon: "📅", label: "Consultations" },
   { section: "MAIN", to: "chat", icon: "💬", label: "Messages" },
   { section: "MAIN", to: "posts", icon: "✍️", label: "Blog Posts" },
+    { section: "SETTINGS", to: "notifs",   icon: "🔔", label: "Notifications" }, 
   { section: "SETTINGS", to: "profile", icon: "👤", label: "My Profile" },
 ];
 export default function NutritionistLayout() {

@@ -418,7 +418,7 @@ export default function Payment() {
     if (!isPlan) return;
     (async () => {
       try {
-        const res  = await fetch(`/api/plans/${state.planId}`, { credentials:"include" });
+        const res  = await fetch(`/plans/${state.planId}`, { credentials:"include" });
         const data = await res.json();
         setPlanData(data.plan);
       } catch {
@@ -513,30 +513,41 @@ export default function Payment() {
   };
 
   // ── Handle payment ───────────────────────────────────────────────────────
-  const handlePay = async () => {
+ const handlePay = async () => {
   setPaying(true);
-
   try {
-    // 1. simulate processing delay
-    await new Promise((r) => setTimeout(r, 2000));
+    // 1. Create subscription first
+    const subRes = await fetch("/subscriptions", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ offerId: planData.offerId }),
+    });
+    const subData = await subRes.json();
+    if (!subRes.ok) { alert(subData.message || "Failed to create subscription"); return; }
 
-    // 2. fake success response
-    const fakeTransaction = {
-      id: "TXN_" + Math.random().toString(36).slice(2, 10).toUpperCase(),
-      method,
-      amount: getSummary().amount,
-      date: new Date().toISOString(),
-    };
+    const subscriptionId = subData.subscription.id;
 
-    console.log("Payment simulated:", fakeTransaction);
+    // 2. Create payment
+    const payRes = await fetch("/payments", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subscriptionId,
+        paymentMethodId: "pm_card_visa", // Stripe test payment method
+      }),
+    });
+    const payData = await payRes.json();
+    if (!payRes.ok) { alert(payData.message || "Payment failed"); return; }
 
-    // 3. show success UI
+    // 3. Show success
     setToast(true);
     setTimeout(() => setToast(false), 3000);
     setSuccess(true);
 
   } catch (err) {
-    alert("Payment simulation failed");
+    alert("Payment failed: " + err.message);
   } finally {
     setPaying(false);
   }

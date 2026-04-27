@@ -41,30 +41,26 @@ export const createBlogPost = async (req, res) => {
 
 // ==============================
 //  Nutritionist updates own blog post content
-// If post was APPROVED, it resets to PENDING for re-review
 // ==============================
 export const updateBlogPost = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
-
+    const { id }   = req.params;
+    const userId   = req.user.id;
     const { title, content, images, videos } = req.body;
 
     const existing = await prisma.blogPost.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ message: "Blog post not found" });
 
-    // Ownership check
     if (existing.authorId !== userId)
       return res.status(403).json({ message: "You can only edit your own posts" });
 
     const data = {
-      ...(title && { title }),
+      ...(title   && { title }),
       ...(content && { content }),
-      ...(images && { images }),
-      ...(videos && { videos }),
+      ...(images  && { images }),
+      ...(videos  && { videos }),
     };
 
-    // Reset to PENDING if already approved so admin re-reviews the changes
     if (existing.status === "APPROVED") data.status = "PENDING";
 
     const post = await prisma.blogPost.update({ where: { id }, data });
@@ -84,19 +80,46 @@ export const updateBlogPost = async (req, res) => {
 
 // ==============================
 //  Admin approves/rejects a blog post
+//  ✅ Notifies subscribed clients when APPROVED
 // ==============================
 export const updateBlogStatus = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id }     = req.params;
     const { status } = req.body;
 
     if (!["APPROVED", "REJECTED"].includes(status))
       return res.status(400).json({ message: "Invalid status. Must be APPROVED or REJECTED" });
 
-    const existing = await prisma.blogPost.findUnique({ where: { id } });
+    const existing = await prisma.blogPost.findUnique({
+      where:   { id },
+      include: { author: { select: { id: true, firstName: true, lastName: true } } },
+    });
     if (!existing) return res.status(404).json({ message: "Blog post not found" });
 
     const post = await prisma.blogPost.update({ where: { id }, data: { status } });
+
+    // ✅ Notify all clients subscribed to this nutritionist
+    if (status === "APPROVED") {
+      const subscriptions = await prisma.subscription.findMany({
+        where: {
+          nutritionId: existing.authorId,
+          status:      "ACTIVE",
+        },
+        select: { patientId: true },
+      });
+
+      if (subscriptions.length > 0) {
+        await prisma.notification.createMany({
+          data: subscriptions.map((sub) => ({
+            userId:  sub.patientId,
+            title:   "New Blog Post 📝",
+            message: `${existing.author.firstName} ${existing.author.lastName} published a new article: "${existing.title}"`,
+            url:     `${process.env.CLIENT_URL}/blog/${post.id}`,
+            isRead:  false,
+          })),
+        });
+      }
+    }
 
     res.json({ post });
   } catch (err) {
@@ -111,7 +134,7 @@ export const updateBlogStatus = async (req, res) => {
 export const getAllApprovedPosts = async (req, res) => {
   try {
     const posts = await prisma.blogPost.findMany({
-      where: { status: "APPROVED" },
+      where:   { status: "APPROVED" },
       include: { author: authorSelect },
       orderBy: { createdAt: "desc" },
     });
@@ -124,14 +147,13 @@ export const getAllApprovedPosts = async (req, res) => {
 
 // ==============================
 // Get single post by ID
-// Public if approved — author and admin can see their own pending/rejected posts
 // ==============================
 export const getPostById = async (req, res) => {
   try {
     const { id } = req.params;
 
     const post = await prisma.blogPost.findUnique({
-      where: { id },
+      where:   { id },
       include: { author: authorSelect },
     });
 
@@ -172,6 +194,7 @@ export const deleteBlogPost = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 export const getMyPosts = async (req, res) => {
   try {
     const posts = await prisma.blogPost.findMany({

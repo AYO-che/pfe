@@ -3,6 +3,8 @@ import passport from "../passport.js";
 import { authenticateToken } from "../middleware/checkauth.js";
 import { authorizeRoles } from "../middleware/checkroles.js";
 import axios from "axios";
+import upload from "../middleware/upload.js";
+import prisma from "../prismaClient.js";
 
 /* =========================
    CONTROLLERS IMPORTS
@@ -249,8 +251,13 @@ router.get("/plans/mine", authenticateToken, authorizeRoles("NUTRITION"), getMyP
 router.get("/plans/recommended", authenticateToken, authorizeRoles("CLIENT"), getRecommendedPlans);
 router.get("/plans", getAllPlans);
 router.get("/plans/:id", authenticateToken, getPlanById);
-router.post("/plans", authenticateToken, authorizeRoles("NUTRITION"), createPlan);
-router.patch("/plans/:id", authenticateToken, authorizeRoles("NUTRITION", "ADMIN"), updatePlan);
+router.post(
+  "/plans",
+  authenticateToken,
+  authorizeRoles("NUTRITION"),
+  upload.single("pdfFile"),   
+  createPlan
+);router.patch("/plans/:id", authenticateToken, authorizeRoles("NUTRITION", "ADMIN"), updatePlan);
 router.delete("/plans/:id", authenticateToken, authorizeRoles("NUTRITION", "ADMIN"), deletePlan);
 
 /* =========================
@@ -396,5 +403,6 @@ Rules:
     }
   }
 });
+
 
 export default router;

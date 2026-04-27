@@ -40,6 +40,7 @@ app.use("/", Routes);
 app.get("/stripe-test", (req, res) => {
   res.sendFile(resolve("../test.html"));
 });
+app.use("/uploads", express.static("uploads"));
 
 app.get("/success", (req, res) =>
   res.send("Stripe onboarding completed successfully!")

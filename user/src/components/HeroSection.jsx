@@ -387,6 +387,8 @@ function ToolCard({ item, delay, vis }) {
 }
 
 // ── BLOGS ─────────────────────────────────────────────────────────────────────
+
+
 const BLOGS = [
   { tag: "Nutrition", title: "10 Foods That Naturally Boost Your Metabolism", img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80" },
   { tag: "Weight Loss", title: "Why Crash Diets Always Fail — And What Works Instead", img: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&q=80" },
