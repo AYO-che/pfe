@@ -1,4 +1,3 @@
-// controllers/messageController.js
 import prisma from "../prismaClient.js";
 import { io, connectedUsers } from "../socket.js";
 
@@ -24,7 +23,7 @@ export const getOrCreateConversation = async (req, res) => {
           nutritionId,
           status: { in: ["ACTIVE", "EXPIRED", "CANCELLED"] },
           offer: {
-  type: { in: ["CONSULTATION", "PLAN"] },
+            type: { in: ["CONSULTATION", "PLAN","PACKAGE"] },
           },
         },
       });
@@ -151,7 +150,7 @@ export const sendMessage = async (req, res) => {
           nutritionId: conversation.nutritionId,
           status: { in: ["ACTIVE", "EXPIRED", "CANCELLED"] },
           offer: {
-          type: { in: ["CONSULTATION", "PLAN"] },
+            type: { in: ["CONSULTATION", "PLAN","PACKAGE"] },
           },
         },
       });
@@ -179,11 +178,14 @@ export const sendMessage = async (req, res) => {
       data: { updatedAt: new Date() },
     });
 
+    // ✅ FIX: Use message.sender.firstName instead of req.user.firstName
+    const senderName = message.sender.firstName || "Someone";
+
     const notification = await prisma.notification.create({
       data: {
         userId: receiverId,
         title: "New Message",
-        message: `${req.user.firstName} sent you a message`,
+        message: `${senderName} sent you a message`,
         link: `/conversations/${conversationId}`,
       },
     });
@@ -196,6 +198,106 @@ export const sendMessage = async (req, res) => {
 
     res.status(201).json({ message });
   } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ==============================
+// 5️⃣ Delete a single message
+// ==============================
+export const deleteMessage = async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const userId = req.user.id;
+
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+    });
+
+    if (!conversation)
+      return res.status(404).json({ message: "Conversation not found" });
+
+    if (conversation.patientId !== userId && conversation.nutritionId !== userId)
+      return res.status(403).json({ message: "Access forbidden" });
+
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+    });
+
+    if (!message)
+      return res.status(404).json({ message: "Message not found" });
+
+    if (message.conversationId !== conversationId)
+      return res.status(400).json({ message: "Message does not belong to this conversation" });
+
+    if (message.senderId !== userId)
+      return res.status(403).json({ message: "You can only delete your own messages" });
+
+    await prisma.message.delete({
+      where: { id: messageId },
+    });
+
+    const otherUserId =
+      conversation.patientId === userId
+        ? conversation.nutritionId
+        : conversation.patientId;
+
+    const otherSocketId = connectedUsers.get(otherUserId);
+    if (otherSocketId) {
+      io.to(otherSocketId).emit("message_deleted", {
+        messageId,
+        conversationId,
+      });
+    }
+
+    res.json({ message: "Message deleted successfully" });
+  } catch (err) {
+    console.error("Delete message error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ==============================
+// 6️⃣ Delete entire conversation (and all its messages)
+// ==============================
+export const deleteConversation = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user.id;
+
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+    });
+
+    if (!conversation)
+      return res.status(404).json({ message: "Conversation not found" });
+
+    if (conversation.patientId !== userId && conversation.nutritionId !== userId)
+      return res.status(403).json({ message: "Access forbidden" });
+
+    await prisma.message.deleteMany({
+      where: { conversationId },
+    });
+
+    await prisma.conversation.delete({
+      where: { id: conversationId },
+    });
+
+    const otherUserId =
+      conversation.patientId === userId
+        ? conversation.nutritionId
+        : conversation.patientId;
+
+    const otherSocketId = connectedUsers.get(otherUserId);
+    if (otherSocketId) {
+      io.to(otherSocketId).emit("conversation_deleted", {
+        conversationId,
+      });
+    }
+
+    res.json({ message: "Conversation deleted successfully" });
+  } catch (err) {
+    console.error("Delete conversation error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

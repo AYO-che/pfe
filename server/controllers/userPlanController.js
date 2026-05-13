@@ -11,15 +11,38 @@ export const getMyUserPlans = async (req, res) => {
     const userPlans = await prisma.userPlan.findMany({
       where: { userId },
       include: {
-        plan: { include: { offer: true } },
+        plan: {
+          include: {
+            offer: true,
+            nutrition: {
+              select: { id:true, firstName:true, lastName:true, image:true },
+            },
+          },
+        },
+        subscription: {
+          include: {
+            offer: true,
+            nutrition: {
+              select: { id:true, firstName:true, lastName:true, image:true },
+            },
+          },
+        },
         dailyTracking: true,
       },
       orderBy: { startDate: "desc" },
     });
 
-    res.json({ userPlans });
+    // Only tracker plans — must have content.days array
+    // PDF plans have empty content {} or no days
+    const trackerPlans = userPlans.filter(up => {
+      const days = up?.plan?.content?.days;
+      return Array.isArray(days) && days.length > 0;
+    });
+
+    res.json({ userPlans: trackerPlans });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("getMyUserPlans error:", err);
+    res.status(500).json({ message: err.message ?? "Server error" });
   }
 };
 
@@ -64,8 +87,32 @@ export const getMyCurrentPlanDay = async (req, res) => {
         subscription: { status: "ACTIVE" },
       },
       include: {
-        plan: true,
-        subscription: { include: { offer: true } },
+        plan: {
+          include: {
+            offer: true,
+            nutrition: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                image: true,
+              },
+            },
+          },
+        },
+        subscription: {
+          include: {
+            offer: true,
+            nutrition: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                image: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { startDate: "desc" },
     });
@@ -73,30 +120,37 @@ export const getMyCurrentPlanDay = async (req, res) => {
     if (!userPlan)
       return res.status(404).json({ message: "No active plan found" });
 
-    const plan = userPlan.plan;
-    const days = plan.content?.days;
+    const plan      = userPlan.plan;
+    const days      = plan.content?.days;
 
     if (!days || !Array.isArray(days) || days.length === 0)
       return res.status(400).json({ message: "Plan has no days content" });
 
-    const diffTime = new Date() - new Date(userPlan.startDate);
-    const dayNumber = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
     const totalDays = days.length;
-    const currentDayIndex = (dayNumber - 1) % totalDays;
+    const todayStr  = new Date().toISOString().split("T")[0];
+
+    let currentDayIndex = days.findIndex(d => d.date === todayStr);
+
+    if (currentDayIndex === -1) {
+      const diffTime  = new Date() - new Date(userPlan.startDate);
+      const dayNumber = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      currentDayIndex = (dayNumber - 1) % totalDays;
+    }
+
     const todayPlan = days[currentDayIndex];
 
     res.json({
-      day: currentDayIndex + 1,
+      day:       currentDayIndex + 1,
       totalDays,
       todayPlan,
       planTitle: plan.title,
-      progress: userPlan.progress,
+      progress:  userPlan.progress,
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("getMyCurrentPlanDay error:", err);
+    res.status(500).json({ message: err.message ?? "Server error" });
   }
 };
-
 // =====================
 // 4️⃣ Create or update daily tracking
 // =====================

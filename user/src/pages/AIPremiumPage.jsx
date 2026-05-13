@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/Authcontext";
+const API_URL = "http://localhost:5000";
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
@@ -64,12 +65,7 @@ function Check({ color }) {
 
 function PlanCard({ plan, index, onSelect, loadingId }) {
   const isLoading = loadingId === plan.id;
-
-  // Determine accent & featured styling
-  // Mark the first non-free plan or the one with most features as featured
   const accent = plan.featured ? "#2d7a4f" : plan.hasFreeTrial ? "#2d7a4f" : "#1a3329";
-
-  // Parse features from description or fallback
   const features = plan.features ?? (plan.description ? [plan.description] : []);
 
   return (
@@ -77,10 +73,8 @@ function PlanCard({ plan, index, onSelect, loadingId }) {
       className={`pr-card pr-fade ${plan.featured ? "featured" : ""}`}
       style={{ animationDelay: `${index * 0.1}s` }}
     >
-      {/* Top bar */}
       <div style={{ height: 5, background: plan.featured ? "linear-gradient(90deg,#1a3329,#2d7a4f)" : `${accent}25` }} />
 
-      {/* Popular ribbon */}
       {plan.featured && (
         <div style={{ background: "linear-gradient(135deg,#1a3329,#2d6b50)", padding: "7px 20px", textAlign: "center", fontSize: 11.5, fontWeight: 800, color: "#f5e642", letterSpacing: 0.5, textTransform: "uppercase" }}>
           ⭐ Most Popular
@@ -89,18 +83,15 @@ function PlanCard({ plan, index, onSelect, loadingId }) {
 
       <div style={{ padding: "26px 24px 28px", display: "flex", flexDirection: "column", flex: 1 }}>
 
-        {/* Badge */}
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: `${accent}10`, border: `1px solid ${accent}28`, borderRadius: 999, padding: "5px 12px", fontSize: 11, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 18, width: "fit-content" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: accent, display: "inline-block", animation: "pulse 2s infinite" }} />
           {plan.type ?? (plan.hasFreeTrial ? "Free Trial" : "Premium")}
         </div>
 
-        {/* Name */}
         <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 26, fontWeight: 800, color: "#1a3329", marginBottom: 4 }}>
           {plan.name}
         </div>
 
-        {/* Price */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 2 }}>
           <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 38, fontWeight: 800, color: plan.featured ? "#2d7a4f" : "#1a3329", lineHeight: 1 }}>
             {plan.price === 0 || plan.price === "0" ? "Free" : `${plan.price} DA`}
@@ -110,15 +101,12 @@ function PlanCard({ plan, index, onSelect, loadingId }) {
           {plan.durationDays} days{plan.hasFreeTrial ? " · no card needed" : ""}
         </div>
 
-        {/* Desc */}
         <p style={{ fontSize: 13.5, color: "#5a7a6e", lineHeight: 1.7, marginBottom: 20, minHeight: 44 }}>
           {plan.description}
         </p>
 
-        {/* Divider */}
         <div style={{ height: 1, background: "rgba(79,158,122,0.1)", marginBottom: 18 }} />
 
-        {/* Features */}
         {features.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, flex: 1 }}>
             {features.map((f, fi) => (
@@ -132,14 +120,12 @@ function PlanCard({ plan, index, onSelect, loadingId }) {
           </div>
         )}
 
-        {/* Free trial badge */}
         {plan.hasFreeTrial && (
           <div style={{ marginBottom: 12, fontSize: 12, color: "#2d7a4f", fontWeight: 700 }}>
             🔥 Free Trial Available
           </div>
         )}
 
-        {/* CTA */}
         <button
           className="pr-btn"
           onClick={() => onSelect(plan)}
@@ -175,14 +161,24 @@ export default function AIPremiumPage() {
   const [error, setError] = useState(null);
   const [fetching, setFetching] = useState(true);
 
-  // ── Load offers ───────────────────────────────────────────────────────────
+  // ── Load AI_CALORIES offers only ──────────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/offers", { credentials: "include" });
+const res = await fetch(`${API_URL}/offers`, { credentials: "include" });
         const data = await res.json();
-        // Mark the middle plan (index 1) as featured if not already set
-        const offers = (data.offers ?? []).map((o, i) => ({ ...o, featured: o.featured ?? i === 1 }));
+
+        // Filter only AI_CALORIES offers
+        const aiOffers = (data.offers ?? []).filter(
+          (o) => o.type === "AI_CALORIES"
+        );
+
+        // Mark the middle plan as featured if not already set
+        const offers = aiOffers.map((o, i) => ({
+          ...o,
+          featured: o.featured ?? i === 1,
+        }));
+
         setPlans(offers);
       } catch {
         setError("Failed to load offers.");
@@ -194,48 +190,76 @@ export default function AIPremiumPage() {
 
   // ── Select plan ───────────────────────────────────────────────────────────
   const handleSelect = async (plan) => {
-    if (!isLoggedIn) {
-      navigate("/login", { state: { redirect: "/premium" } });
-      return;
-    }
-    setError(null);
+  if (!isLoggedIn) {
+    navigate("/login", { state: { redirect: "/premium" } });
+    return;
+  }
+
+  // FREE TRIAL — skip payment, go directly to AI
+  if (plan.hasFreeTrial || plan.price === 0 || plan.price === "0") {
     setLoadingId(plan.id);
     try {
-      const res = await fetch("/api/subscriptions", {
+      // Create free subscription
+const res = await fetch(`${API_URL}/subscriptions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ offerId: plan.id }),
       });
       const data = await res.json();
-
+      
       if (!res.ok) {
-        if (res.status === 400 && data.message?.includes("already have")) {
+        if (data.message?.includes("already have")) {
           navigate("/calories-ai");
           return;
         }
-        throw new Error(data.message ?? "Something went wrong");
+        throw new Error(data.message);
       }
 
-      if (plan.hasFreeTrial || data.isFree) {
-        navigate("/calories-ai");
-      } else {
-        navigate("/payment", {
-          state: {
-            subscriptionId: data.subscription?.id,
-            offerId: plan.id,
-            offerLabel: plan.name,
-            price: plan.price,
-          },
-        });
-      }
+      // Go directly to AI page, no payment needed
+      navigate("/calories-ai");
+      
     } catch (err) {
       setError(err.message);
     } finally {
       setLoadingId(null);
     }
-  };
+    return;
+  }
 
+  // PAID PLAN — go to payment
+  setLoadingId(plan.id);
+  try {
+const res = await fetch(`${API_URL}/subscriptions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ offerId: plan.id }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (data.message?.includes("already have")) {
+        navigate("/calories-ai");
+        return;
+      }
+      throw new Error(data.message);
+    }
+
+    navigate("/payment", {
+      state: {
+        subscriptionId: data.subscription?.id,
+        offerId: plan.id,
+        offerLabel: plan.name,
+        price: plan.price,
+      },
+    });
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoadingId(null);
+  }
+};
   // ── Loading screen ────────────────────────────────────────────────────────
   if (fetching) {
     return (
@@ -300,6 +324,15 @@ export default function AIPremiumPage() {
             <span style={{ fontSize: 18 }}>🌿</span>
             <span>{error}</span>
             <button onClick={() => setError(null)} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#2d7a4f", fontWeight: 700, fontSize: 18 }}>×</button>
+          </div>
+        )}
+
+        {/* No offers message */}
+        {plans.length === 0 && !error && !fetching && (
+          <div style={{ textAlign: "center", padding: "60px 20px", color: "#5a7a6e" }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🤖</div>
+            <h3 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 700, color: "#1a3329", marginBottom: 8 }}>No AI plans available</h3>
+            <p style={{ fontSize: 14 }}>Check back later for new AI calorie tracking plans.</p>
           </div>
         )}
 

@@ -3,12 +3,37 @@ import { useState, useRef, useEffect } from "react";
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
 
-.cb-wrapper { position: fixed; bottom: 24px; left: 24px; z-index: 1000; font-family: 'DM Sans', sans-serif; }
-  .cb-btn { width: auto; height: 44px; border-radius: 22px; background: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px rgba(45,107,80,0.25); padding: 0 16px; gap: 8px; animation: cbFloat 3s ease-in-out infinite; }
-  .cb-btn:hover { background: #f5faf7; box-shadow: 0 4px 16px rgba(45,107,80,0.35); }
+  .cb-wrapper { position: fixed; bottom: 24px; left: 24px; z-index: 1000; font-family: 'DM Sans', sans-serif; }
+
+  .cb-btn {
+    width: auto;
+    height: 44px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 1.5px solid rgba(168, 224, 44, 0.9);
+    border-left: 1.5px solid rgba(168, 224, 44, 0.9);
+    border-bottom: 1.5px solid rgba(0, 168, 84, 0.8);
+    border-right: 1.5px solid rgba(0, 168, 84, 0.8);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 32px rgba(15, 89, 47, 0.15), inset 0 0 12px rgba(255, 255, 255, 0.6);
+    padding: 0 16px;
+    gap: 8px;
+    animation: cbFloat 3s ease-in-out infinite;
+    transition: all 0.3s ease;
+  }
+  .cb-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 10px 34px rgba(15, 89, 47, 0.20), inset 0 0 16px rgba(255, 255, 255, 0.8);
+    transform: translateY(-2px);
+  }
   @keyframes cbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
 
-  .cb-label { font-size: 13px; font-weight: 600; color: rgb(45, 107, 80); white-space: nowrap; }
+  .cb-label { font-size: 13px; font-weight: 600; color: #000000; white-space: nowrap; }
 
   .cb-btn svg { width: 26px; height: 26px; flex-shrink: 0; }
   .wl { transform-origin: 50% 52%; animation: flapL 0.8s ease-in-out infinite alternate; }
@@ -16,29 +41,182 @@ const CSS = `
   @keyframes flapL { from{transform:scaleX(1)} to{transform:scaleX(0.5)} }
   @keyframes flapR { from{transform:scaleX(1)} to{transform:scaleX(0.5)} }
 
-  .cb-popup { position: fixed; bottom: 80px; left: 24px; width: 360px; height: 520px; background: white; border-radius: 16px; border: 1px solid #e0e0e0; display: flex; flex-direction: column; overflow: hidden; z-index: 999; box-shadow: 0 8px 32px rgba(0,0,0,0.12); transform: scale(0.95); opacity: 0; pointer-events: none; transition: transform 0.2s, opacity 0.2s; transform-origin: bottom left; }
-  .cb-popup.open { transform: scale(1); opacity: 1; pointer-events: all; }
+  /* ── FULL-PAGE GLASS OVERLAY ── */
+  .cb-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(26, 51, 41, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .cb-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
 
-  .cb-header { background: rgb(45, 107, 80); color: white; padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
-  .cb-avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  .cb-header h3 { font-size: 14px; font-weight: 500; margin: 0; }
-  .cb-header p { font-size: 11px; opacity: 0.8; margin: 0; }
+  .cb-popup {
+    position: relative;
+    width: min(560px, 92vw);
+    height: min(600px, 85vh);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 1.5px solid rgba(168, 224, 44, 0.9);
+    border-left: 1.5px solid rgba(168, 224, 44, 0.9);
+    border-bottom: 1.5px solid rgba(0, 168, 84, 0.8);
+    border-right: 1.5px solid rgba(0, 168, 84, 0.8);
+    border-radius: 22px;
+    box-shadow: 0 16px 48px rgba(15, 89, 47, 0.2), inset 0 0 16px rgba(255, 255, 255, 0.6);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+  .cb-overlay.open .cb-popup {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  .cb-close-x {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(168, 224, 44, 0.4);
+    background: rgba(255, 255, 255, 0.5);
+    color: #000000;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.2s ease;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .cb-close-x:hover {
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .cb-header {
+    background: linear-gradient(135deg, #3d9b73, #2a6b4f);
+    color: #ffffff;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 22px 22px 0 0;
+  }
+  .cb-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .cb-header h3 { font-size: 15px; font-weight: 700; margin: 0; color: #ffffff; }
+  .cb-header p { font-size: 11px; opacity: 0.85; margin: 0; color: #ffffff; }
   .cb-dot { width: 7px; height: 7px; border-radius: 50%; background: #69f0ae; display: inline-block; margin-right: 4px; }
 
-  .cb-messages { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background: #f8f9fa; }
-  .cb-msg { padding: 9px 13px; border-radius: 14px; max-width: 80%; font-size: 13px; line-height: 1.5; word-wrap: break-word; }
-  .cb-msg.user { background: rgb(45, 107, 80); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-  .cb-msg.bot { background: white; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #e0e0e0; }
-  .cb-typing span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #aaa; margin: 0 2px; animation: cbBounce 1s infinite; }
+  .cb-messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(248, 249, 250, 0.3);
+  }
+  .cb-msg {
+    padding: 10px 14px;
+    border-radius: 14px;
+    max-width: 80%;
+    font-size: 13px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    color: #000000;
+  }
+  .cb-msg.user {
+    background: linear-gradient(135deg, #3d9b73, #2a6b4f);
+    color: #ffffff;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  .cb-msg.bot {
+    background: rgba(255, 255, 255, 0.6);
+    color: #000000;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    border: 1.5px solid rgba(168, 224, 44, 0.3);
+  }
+  .cb-typing span {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #000000;
+    margin: 0 2px;
+    animation: cbBounce 1s infinite;
+  }
   .cb-typing span:nth-child(2) { animation-delay: 0.15s; }
   .cb-typing span:nth-child(3) { animation-delay: 0.3s; }
   @keyframes cbBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
 
-  .cb-input-row { display: flex; align-items: center; padding: 10px 12px; gap: 8px; border-top: 1px solid #e0e0e0; background: white; }
-  .cb-input-row input { flex: 1; border: 1px solid #ddd; border-radius: 20px; padding: 8px 14px; font-size: 13px; background: #f8f9fa; color: #333; outline: none; font-family: 'DM Sans', sans-serif; }
-  .cb-input-row input:focus { border-color: rgb(45, 107, 80); }
-  .cb-send { width: 34px; height: 34px; border-radius: 50%; background: rgb(45, 107, 80); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .cb-send:hover { background: rgb(35, 87, 60); }
+  .cb-input-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 10px;
+    border-top: 1.5px solid rgba(168, 224, 44, 0.3);
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .cb-input-row input {
+    flex: 1;
+    border: 1.5px solid rgba(168, 224, 44, 0.4);
+    border-radius: 20px;
+    padding: 9px 16px;
+    font-size: 13px;
+    background: rgba(255, 255, 255, 0.5);
+    color: #000000;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+    transition: border 0.2s ease;
+  }
+  .cb-input-row input::placeholder { color: #666666; }
+  .cb-input-row input:focus { border-color: rgba(0, 168, 84, 0.8); }
+  .cb-send {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3d9b73, #2a6b4f);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(11, 102, 48, 0.3);
+    transition: all 0.2s ease;
+  }
+  .cb-send:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 18px rgba(11, 102, 48, 0.4);
+  }
 `;
 
 export default function ChatBot() {
@@ -88,40 +266,45 @@ export default function ChatBot() {
     <>
       <style>{CSS}</style>
 
-      <div className={`cb-popup ${open ? "open" : ""}`}>
-        <div className="cb-header">
-          <div className="cb-avatar">🦋</div>
-          <div>
-            <h3>Chrysalis</h3>
-            <p><span className="cb-dot"/>Online · Nutrition assistant</p>
-          </div>
-        </div>
+      {/* Full-page glass overlay */}
+      <div className={`cb-overlay ${open ? "open" : ""}`} onClick={toggle}>
+        <div className="cb-popup" onClick={e => e.stopPropagation()}>
+          <button className="cb-close-x" onClick={toggle}>✕</button>
 
-        <div className="cb-messages">
-          {messages.map((m, i) => (
-            <div key={i} className={`cb-msg ${m.role}`}>{m.text}</div>
-          ))}
-          {loading && (
-            <div className="cb-msg bot cb-typing">
-              <span/><span/><span/>
+          <div className="cb-header">
+            <div className="cb-avatar">🦋</div>
+            <div>
+              <h3>Chrysalis</h3>
+              <p><span className="cb-dot"/>Online · Nutrition assistant</p>
             </div>
-          )}
-          <div ref={bottomRef}/>
-        </div>
+          </div>
 
-        <div className="cb-input-row">
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && sendMessage()}
-            placeholder="Ask about nutrition..."
-          />
-          <button className="cb-send" onClick={sendMessage}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-          </button>
+          <div className="cb-messages">
+            {messages.map((m, i) => (
+              <div key={i} className={`cb-msg ${m.role}`}>{m.text}</div>
+            ))}
+            {loading && (
+              <div className="cb-msg bot cb-typing">
+                <span/><span/><span/>
+              </div>
+            )}
+            <div ref={bottomRef}/>
+          </div>
+
+          <div className="cb-input-row">
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && sendMessage()}
+              placeholder="Ask about nutrition..."
+            />
+            <button className="cb-send" onClick={sendMessage}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 

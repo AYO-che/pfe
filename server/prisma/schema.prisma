@@ -6,45 +6,43 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+
 model User {
-  id                     String         @id @default(uuid()) @db.Uuid
-  email                  String         @unique
-  password               String?
-  role                   Role           @default(CLIENT)
-  googleId               String?
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
-  firstName              String?
-  image                  String?
-  lastName               String?
-  deletedAt              DateTime?
-  posts                  BlogPost[]
-  plansPosted            Plan[]         @relation("NutritionPlans")
-  profile                Profile?
-  resume                 Resume?
-  reviewsReceived        Review[]       @relation("NutritionReviews")
-  reviewsGiven           Review[]       @relation("PatientReviews")
-  sessionsAsNutrition    Session[]      @relation("NutritionSessions")
-  sessionsAsPatient      Session[]      @relation("PatientSessions")
-  stripe                 Stripe?
-  nutritionSubscriptions Subscription[] @relation("NutritionSubscriptions")
-  patientSubscriptions   Subscription[] @relation("PatientSubscriptions")
+  id                       String         @id @default(uuid()) @db.Uuid
+  email                    String         @unique
+  password                 String?
+  role                     Role           @default(CLIENT)
+  googleId                 String?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  firstName                String?
+  image                    String?
+  lastName                 String?
+  deletedAt                DateTime?
+  posts                    BlogPost[]
+  plansPosted              Plan[]         @relation("NutritionPlans")
+  profile                  Profile?
+  resume                   Resume?
+  reviewsReceived          Review[]       @relation("NutritionReviews")
+  reviewsGiven             Review[]       @relation("PatientReviews")
+  sessionsAsNutrition      Session[]      @relation("NutritionSessions")
+  sessionsAsPatient        Session[]      @relation("PatientSessions")
+  stripe                   Stripe?
+  nutritionSubscriptions   Subscription[] @relation("NutritionSubscriptions")
+  patientSubscriptions     Subscription[] @relation("PatientSubscriptions")
   conversationsAsPatient   Conversation[] @relation("PatientConversations")
   conversationsAsNutrition Conversation[] @relation("NutritionConversations")
-  messages               Message[]
-  notifications          Notification[]
-  inquiries              Inquiry[]
-  needsSetup Boolean @default(true)
-  resetToken       String?
-  resetTokenExpiry DateTime?
- usedFreePlanTrial Boolean @default(false)
- userPlans UserPlan[]
- offersAsNutrition Offer[] @relation("NutritionOffers")
- assignedPlans Plan[] @relation("PatientPlans")
-
-
+  messages                 Message[]
+  notifications            Notification[]
+  inquiries                Inquiry[]
+  needsSetup               Boolean        @default(true)
+  resetToken               String?
+  resetTokenExpiry         DateTime?
+  usedFreePlanTrial        Boolean        @default(false)
+  userPlans                UserPlan[]
+  offersAsNutrition        Offer[]        @relation("NutritionOffers")
+  assignedPlans            Plan[]         @relation("PatientPlans")
 }
-
 
 model Profile {
   id                String   @id @default(uuid()) @db.Uuid
@@ -67,63 +65,63 @@ model Profile {
 }
 
 model Resume {
-  id              String   @id @default(uuid()) @db.Uuid
-  userId          String   @unique @db.Uuid
-
+  id              String      @id @default(uuid()) @db.Uuid
+  userId          String      @unique @db.Uuid
   bio             String?
   experienceYears Int?
-  specializations String[] @default([])
-certifications String[] @default([])
-  ratingAverage   Float    @default(0)
-  images          String[] @default([])
-offersTypes OfferType[] @default([])
+  specializations String[]    @default([])
+  certifications  String[]    @default([])
+  ratingAverage   Float       @default(0)
+  images          String[]    @default([])
+  offersTypes     OfferType[] @default([])
   education       String?
   workplace       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
 model Offer {
-  id               String         @id @default(uuid()) @db.Uuid
-  nutritionId      String?        @db.Uuid
-  name             String
-  description      String?
-  type             OfferType
-  price            Float
-  durationDays     Int
-  hasFreeTrial     Boolean        @default(false)
-  includesSessions Boolean        @default(false)
-  sessionsCount    Int            @default(0)      // ← add this
-  createdAt        DateTime       @default(now())
-  isActive         Boolean        @default(true)
-  plan             Plan?
-  subscriptions    Subscription[]
-  nutrition        User?          @relation("NutritionOffers", fields: [nutritionId], references: [id], onDelete: SetNull)
+  id            String         @id @default(uuid()) @db.Uuid
+  nutritionId   String?        @db.Uuid
+  name          String
+  description   String?
+  type          OfferType
+  price         Float
+  durationDays  Int
+  hasFreeTrial  Boolean        @default(false)
+  sessionsCount Int            @default(1)
+  chatDays      Int            @default(0)
+  createdAt     DateTime       @default(now())
+  isActive      Boolean        @default(true)
+  plan          Plan?
+  subscriptions Subscription[]
+  nutrition     User?          @relation("NutritionOffers", fields: [nutritionId], references: [id], onDelete: SetNull)
 }
 
 model Plan {
-  id                String   @id @default(uuid()) @db.Uuid
-  offerId           String   @unique @db.Uuid
-  nutritionId       String?  @db.Uuid
+  id                String     @id @default(uuid()) @db.Uuid
+  offerId           String     @unique @db.Uuid
+  nutritionId       String?    @db.Uuid
   title             String
   content           Json
-  images            String[] @default([])
-  videos            String[] @default([])
+  images            String[]   @default([])
+  videos            String[]   @default([])
   pdfUrl            String?
-  goals             String[] @default([])
-  activityLevels    String[] @default([])
+  goals             String[]   @default([])
+  activityLevels    String[]   @default([])
   minWeight         Float?
   maxWeight         Float?
   minHeight         Float?
   maxHeight         Float?
-  medicalConditions String[] @default([])
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-    patientId   String?  @db.Uuid     
-  isPrivate   Boolean  @default(false)
-  patient     User?    @relation("PatientPlans", fields: [patientId], references: [id], onDelete: SetNull)
-  nutrition         User?    @relation("NutritionPlans", fields: [nutritionId], references: [id], onDelete: SetNull)
-  offer             Offer    @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  medicalConditions String[]   @default([])
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  patientId         String?    @db.Uuid
+  isPrivate         Boolean    @default(false)
+  patient           User?      @relation("PatientPlans", fields: [patientId], references: [id], onDelete: SetNull)
+  nutrition         User?      @relation("NutritionPlans", fields: [nutritionId], references: [id], onDelete: SetNull)
+  offer             Offer      @relation(fields: [offerId], references: [id], onDelete: Restrict)
   userPlans         UserPlan[]
 }
 
@@ -141,7 +139,8 @@ model Subscription {
   nutrition   User?              @relation("NutritionSubscriptions", fields: [nutritionId], references: [id], onDelete: SetNull)
   offer       Offer              @relation(fields: [offerId], references: [id], onDelete: Restrict)
   patient     User               @relation("PatientSubscriptions", fields: [patientId], references: [id], onDelete: Cascade)
-  userPlans    UserPlan[]
+  userPlans   UserPlan[]
+
   @@index([patientId])
   @@index([nutritionId])
   @@index([status])
@@ -165,12 +164,14 @@ model Session {
   subscriptionId String        @db.Uuid
   patientId      String        @db.Uuid
   nutritionId    String        @db.Uuid
-  sessionDate    DateTime
+  sessionDate    DateTime?
+  sessionNumber  Int           @default(1)
   status         SessionStatus @default(SCHEDULED)
   notes          String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   zoomLink       String?
+  reminderSent   Boolean       @default(false)
   reviews        Review[]
   nutrition      User          @relation("NutritionSessions", fields: [nutritionId], references: [id], onDelete: Cascade)
   patient        User          @relation("PatientSessions", fields: [patientId], references: [id], onDelete: Cascade)
@@ -179,6 +180,8 @@ model Session {
   @@index([sessionDate])
   @@index([patientId])
   @@index([nutritionId])
+  @@index([status])
+  @@index([reminderSent])
 }
 
 model BlogPost {
@@ -264,6 +267,7 @@ model Conversation {
   nutritionId String    @db.Uuid
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  expiresAt   DateTime?
   patient     User      @relation("PatientConversations", fields: [patientId], references: [id], onDelete: Cascade)
   nutrition   User      @relation("NutritionConversations", fields: [nutritionId], references: [id], onDelete: Cascade)
   messages    Message[]
@@ -273,52 +277,39 @@ model Conversation {
   @@unique([patientId, nutritionId])
 }
 
-
-
 model UserPlan {
-  id             String   @id @default(uuid()) @db.Uuid
-
-  userId         String   @db.Uuid
-  planId         String   @db.Uuid
-  subscriptionId String   @db.Uuid
-
-  startDate      DateTime @default(now())
-
-  progress       Float    @default(0)
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan           Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
-  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-
+  id             String          @id @default(uuid()) @db.Uuid
+  userId         String          @db.Uuid
+  planId         String          @db.Uuid
+  subscriptionId String          @db.Uuid
+  startDate      DateTime        @default(now())
+  progress       Float           @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan           Plan            @relation(fields: [planId], references: [id], onDelete: Cascade)
+  subscription   Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   dailyTracking  DailyTracking[]
 
   @@index([userId])
 }
 
 model DailyTracking {
-  id          String   @id @default(uuid()) @db.Uuid
-
-  userPlanId  String   @db.Uuid
-  date        DateTime
-
-  mealsDoneIds   String[] @default([])
-  mealsMissedIds String[] @default([])
-
+  id              String   @id @default(uuid()) @db.Uuid
+  userPlanId      String   @db.Uuid
+  date            DateTime
+  mealsDoneIds    String[] @default([])
+  mealsMissedIds  String[] @default([])
   habitsDoneIds   String[] @default([])
   habitsMissedIds String[] @default([])
-
-  calories       Int?
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  userPlan       UserPlan @relation(fields: [userPlanId], references: [id], onDelete: Cascade)
+  calories        Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userPlan        UserPlan @relation(fields: [userPlanId], references: [id], onDelete: Cascade)
 
   @@unique([userPlanId, date])
 }
+
 enum Role {
   ADMIN
   CLIENT
@@ -328,8 +319,7 @@ enum Role {
 enum OfferType {
   AI_CALORIES
   PLAN
-  CONSULTATION
- 
+  PACKAGE
 }
 
 enum SubscriptionStatus {
@@ -346,6 +336,7 @@ enum PaymentStatus {
 }
 
 enum SessionStatus {
+  PENDING_SCHEDULE
   SCHEDULED
   COMPLETED
   CANCELLED

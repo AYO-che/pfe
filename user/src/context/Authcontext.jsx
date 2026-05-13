@@ -13,15 +13,10 @@ export function AuthProvider({ children }) {
         credentials: "include",
         cache: "no-store",
       });
-
-      if (!res.ok) {
-        setUser(null);
-        return;
-      }
-
+      if (!res.ok) { setUser(null); return; }
       const data = await res.json();
       setUser(data);
-    } catch (err) {
+    } catch {
       setUser(null);
     }
   };
@@ -41,10 +36,8 @@ export function AuthProvider({ children }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
     });
-
-    if (!res.ok) throw new Error("Signup failed");
-
-    // ✅ Fetch full user with profile instead of using partial signup response
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Signup failed");
     await fetchUser();
   }
 
@@ -55,11 +48,10 @@ export function AuthProvider({ children }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-
-    if (!res.ok) throw new Error("Login failed");
-
-    // ✅ Same fix for login — fetch full user with profile
-    await fetchUser();
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Login failed");
+    setUser(data.user);
+    return data.user;
   }
 
   async function logout() {
@@ -71,21 +63,16 @@ export function AuthProvider({ children }) {
   }
 
   if (loading) {
-    return <div style={{ textAlign: "center", marginTop: 50 }}>Loading...</div>;
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 36, height: 36, border: "3px solid rgba(45,122,79,0.2)", borderTop: "3px solid #2d7a4f", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
   }
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoggedIn: !!user,
-        signup,
-        login,
-        logout,
-        fetchUser,
-        updateUser,
-      }}
-    >
+    <AuthContext.Provider value={{ user, isLoggedIn: !!user, signup, login, logout, fetchUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

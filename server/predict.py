@@ -4,14 +4,11 @@ import cv2
 import numpy as np
 import base64
 
-# Load model
 model = YOLO("best.pt")
 
-# Load nutrition data
 with open("nutrition_lookup.json", "r") as f:
     nutrition_lookup = json.load(f)
 
-# Class names
 CLASS_NAMES = [
     "candy", "egg tart", "french fries", "chocolate", "biscuit",
     "popcorn", "pudding", "ice cream", "cheese butter", "cake",
@@ -36,57 +33,104 @@ CLASS_NAMES = [
     "salad", "other ingredients"
 ]
 
+# Rough weight per item (grams) when using bounding boxes instead of masks
+# These are realistic single-serving estimates per food class
+ITEM_WEIGHTS = {
+    "carrot":       40,
+    "chicken duck": 180,
+    "potato":       80,
+    "broccoli":     85,
+    "tomato":       90,
+    "green beans":  60,
+    "french fries": 100,
+    "steak":        200,
+    "rice":         180,
+    "egg":          55,
+    "banana":       120,
+    "apple":        150,
+    "pizza":        150,
+    "bread":        60,
+    "pasta":        200,
+    "noodles":      200,
+    "salad":        120,
+    "corn":         100,
+    "soup":         250,
+    "fish":         150,
+    "shrimp":       80,
+    "pork":         150,
+    "lamb":         150,
+    "sausage":      80,
+    "cake":         100,
+    "chocolate":    30,
+    "milk":         240,
+    "juice":        240,
+    "coffee":       240,
+    "tea":          240,
+}
+DEFAULT_ITEM_WEIGHT = 80  # grams fallback
+
 def predict(image_path):
-    # Run detection
-    results = model(image_path, conf=0.25)
+    results = model(image_path, conf=0.30)  # slightly higher conf to reduce false positives
     r = results[0]
 
     detections = []
-    total = {"calories": 0, "fat": 0, "carbs": 0, "protein": 0}
+    total = {"calories": 0.0, "fat": 0.0, "carbs": 0.0, "protein": 0.0}
 
-    if r.masks is not None:
-        img_area = r.orig_shape[0] * r.orig_shape[1]
+    img_h, img_w = r.orig_shape[0], r.orig_shape[1]
+    img_area = img_h * img_w
 
-        for i, (cls, conf) in enumerate(zip(r.boxes.cls, r.boxes.conf)):
-            food_name = CLASS_NAMES[int(cls)]
-            mask_area = r.masks.data[i].sum().item()
-            
-            # Estimate weight
-            ratio = mask_area / img_area
-            weight_g = ratio * 300  # assume plate = 300g
+    for i, (cls, conf) in enumerate(zip(r.boxes.cls, r.boxes.conf)):
+        food_name = CLASS_NAMES[int(cls)]
+        confidence = float(conf)
 
-            nutrition = nutrition_lookup.get(food_name, None)
+        # ── Weight estimation via bounding box area ratio ──
+        box      = r.boxes.xyxy[i]
+        box_w    = float(box[2] - box[0])
+        box_h    = float(box[3] - box[1])
+        box_area = box_w * box_h
+        area_ratio = box_area / img_area
 
-            item = {
-                "food": food_name,
-                "confidence": round(float(conf), 2),
-                "weight_g": round(weight_g, 1),
-                "calories": 0,
-                "fat_g": 0,
-                "carbs_g": 0,
-                "protein_g": 0
-            }
+        # Use known per-item weight, scaled slightly by box size ratio
+        base_weight = ITEM_WEIGHTS.get(food_name, DEFAULT_ITEM_WEIGHT)
+        # If the box covers > 30% of image it's the main dish — boost weight
+        if area_ratio > 0.30:
+            weight_g = base_weight * 1.5
+        elif area_ratio < 0.05:
+            weight_g = base_weight * 0.6
+        else:
+            weight_g = base_weight
 
-            if nutrition:
-                item["calories"] = round(weight_g * nutrition["calories_per_g"], 1)
-                item["fat_g"] = round(weight_g * nutrition["fat_per_g"], 1)
-                item["carbs_g"] = round(weight_g * nutrition["carb_per_g"], 1)
-                item["protein_g"] = round(weight_g * nutrition["protein_per_g"], 1)
+        nutrition = nutrition_lookup.get(food_name)
 
-                total["calories"] += item["calories"]
-                total["fat"] += item["fat_g"]
-                total["carbs"] += item["carbs_g"]
-                total["protein"] += item["protein_g"]
+        item = {
+            "food":       food_name,
+            "confidence": round(confidence, 2),
+            "weight_g":   round(weight_g, 1),
+            "calories":   0.0,
+            # ── Fix: use fat/carbs/protein (not fat_g etc.) to match frontend ──
+            "fat":        0.0,
+            "carbs":      0.0,
+            "protein":    0.0,
+        }
 
-            detections.append(item)
+        if nutrition:
+            item["calories"] = round(weight_g * nutrition["calories_per_g"], 1)
+            item["fat"]      = round(weight_g * nutrition["fat_per_g"],      1)
+            item["carbs"]    = round(weight_g * nutrition["carb_per_g"],     1)
+            item["protein"]  = round(weight_g * nutrition["protein_per_g"],  1)
 
-    # Get annotated image
-    annotated = r.plot()
-    _, buffer = cv2.imencode('.jpg', annotated)
-    img_base64 = base64.b64encode(buffer).decode('utf-8')
+            total["calories"] += item["calories"]
+            total["fat"]      += item["fat"]
+            total["carbs"]    += item["carbs"]
+            total["protein"]  += item["protein"]
+
+        detections.append(item)
+
+    # Round totals
+    total = {k: round(v, 1) for k, v in total.items()}
 
     return {
         "detections": detections,
-        "total": total,
-        "image": img_base64
+        "total":      total,
+        "image":      None,   # disabled — frontend uses original clean image
     }

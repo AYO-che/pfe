@@ -1,136 +1,233 @@
-// controllers/reviewController.js
 import prisma from "../prismaClient.js";
 
-const patientSelect = {
-  select: { id: true, firstName: true, lastName: true, image: true },
-};
+export const createNutritionistReview = async (req, res) => {
+  const clientId       = req.user.id;
+  const nutritionistId = req.params.nutritionistId;
+  const { rating, comment } = req.body;
 
-const nutritionSelect = {
-  select: { id: true, firstName: true, lastName: true, image: true },
-};
+  if (!rating || rating < 1 || rating > 5) {
+    return res.status(400).json({ message: "Rating must be between 1 and 5." });
+  }
 
-// ==============================
-// 1️⃣ Create a review (Client after completed session)
-// ==============================
-export const createReview = async (req, res) => {
   try {
-    const { sessionId } = req.params;
-    const { rating, comment } = req.body;
-    const clientId = req.user.id;
-
-    if (!rating)
-      return res.status(400).json({ message: "Rating is required" });
-
-    if (rating < 1 || rating > 5)
-      return res.status(400).json({ message: "Rating must be between 1 and 5" });
-
-    const session = await prisma.session.findUnique({ where: { id: sessionId } });
-    if (!session) return res.status(404).json({ message: "Session not found" });
-
-    if (session.patientId !== clientId)
-      return res.status(403).json({ message: "Access forbidden" });
-
-    if (session.status !== "COMPLETED")
-      return res.status(400).json({ message: "You can only review completed sessions" });
-
-    const existingReview = await prisma.review.findUnique({
-      where: { sessionId_patientId: { sessionId, patientId: clientId } },
-    });
-    if (existingReview)
-      return res.status(400).json({ message: "You already reviewed this session" });
-
-    const review = await prisma.review.create({
-      data: {
-        sessionId,
-        patientId: clientId,
-        nutritionId: session.nutritionId,
-        rating,
-        comment: comment ?? null,
+    // 1. Verify PACKAGE subscription — try both patientId and clientId field names
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        OR: [
+          { patientId: clientId,  nutritionistId, offer: { type: "PACKAGE" } },
+          { clientId:  clientId,  nutritionistId, offer: { type: "PACKAGE" } },
+        ],
       },
     });
 
-    // Recalculate and update nutritionist's average rating
-    const allReviews = await prisma.review.findMany({
-      where: { nutritionId: session.nutritionId },
-      select: { rating: true },
+    if (!subscription) {
+      // fallback: maybe nutritionistId is stored as nutritionId
+      const subscription2 = await prisma.subscription.findFirst({
+        where: {
+          OR: [
+            { patientId: clientId, nutritionId: nutritionistId, offer: { type: "PACKAGE" } },
+            { clientId:  clientId, nutritionId: nutritionistId, offer: { type: "PACKAGE" } },
+          ],
+        },
+      });
+      if (!subscription2) {
+        return res.status(403).json({
+          message: "You can only review nutritionists from your package subscriptions.",
+        });
+      }
+    }
+
+    // 2. Prevent duplicate reviews — try both field names
+    const existing = await prisma.review.findFirst({
+      where: {
+        OR: [
+          { clientId:  clientId, nutritionistId },
+          { patientId: clientId, nutritionistId },
+        ],
+      },
     });
 
-    const average =
-      allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
+    if (existing) {
+      return res.status(409).json({ message: "You have already reviewed this nutritionist." });
+    }
 
-    await prisma.resume.updateMany({
-      where: { userId: session.nutritionId },
-      data: { ratingAverage: Math.round(average * 10) / 10 },
+    // 3. Create review — try with patientId first, fall back to clientId
+    let review;
+    try {
+      review = await prisma.review.create({
+        data: {
+          patientId:      clientId,
+          nutritionistId,
+          subscriptionId: subscription?.id ?? null,
+          rating:         parseInt(rating),
+          comment:        comment?.trim() || null,
+        },
+      });
+    } catch {
+      // If patientId doesn't exist on Review model, use clientId
+      review = await prisma.review.create({
+        data: {
+          clientId,
+          nutritionistId,
+          subscriptionId: subscription?.id ?? null,
+          rating:         parseInt(rating),
+          comment:        comment?.trim() || null,
+        },
+      });
+    }
+
+    // 4. Recalculate average rating
+    const agg = await prisma.review.aggregate({
+      where:  { nutritionistId },
+      _avg:   { rating: true },
+      _count: { rating: true },
     });
 
-    res.status(201).json({ review });
+    await prisma.user.update({
+      where: { id: nutritionistId },
+      data: {
+        averageRating: agg._avg.rating  ?? 0,
+        reviewCount:   agg._count.rating ?? 0,
+      },
+    });
+
+    return res.status(201).json({ message: "Review submitted successfully.", review });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("createNutritionistReview error:", err);
+    return res.status(500).json({ message: err.message ?? "Server error." });
   }
 };
 
-// ==============================
-// 2️⃣ Get all reviews for logged-in nutritionist (private)
-// ==============================
+export const createReview = async (req, res) => {
+  const clientId  = req.user.id;
+  const sessionId = req.params.sessionId;
+  const { rating, comment } = req.body;
+
+  if (!rating || rating < 1 || rating > 5) {
+    return res.status(400).json({ message: "Rating must be between 1 and 5." });
+  }
+
+  try {
+    const session = await prisma.session.findFirst({
+      where: {
+        id:     sessionId,
+        OR: [
+          { clientId,  status: "COMPLETED", subscription: { offer: { type: "PACKAGE" } } },
+          { patientId: clientId, status: "COMPLETED", subscription: { offer: { type: "PACKAGE" } } },
+        ],
+      },
+      include: { subscription: { include: { offer: true } } },
+    });
+
+    if (!session) {
+      return res.status(404).json({ message: "Completed package session not found." });
+    }
+
+    const existing = await prisma.review.findFirst({ where: { sessionId } });
+    if (existing) {
+      return res.status(409).json({ message: "This session has already been reviewed." });
+    }
+
+    const nutritionistId = session.nutritionistId ?? session.nutritionId ?? session.subscription?.nutritionistId;
+
+    let review;
+    try {
+      review = await prisma.review.create({
+        data: {
+          patientId:      clientId,
+          nutritionistId,
+          sessionId,
+          subscriptionId: session.subscriptionId,
+          rating:         parseInt(rating),
+          comment:        comment?.trim() || null,
+        },
+      });
+    } catch {
+      review = await prisma.review.create({
+        data: {
+          clientId,
+          nutritionistId,
+          sessionId,
+          subscriptionId: session.subscriptionId,
+          rating:         parseInt(rating),
+          comment:        comment?.trim() || null,
+        },
+      });
+    }
+
+    if (nutritionistId) {
+      const agg = await prisma.review.aggregate({
+        where:  { nutritionistId },
+        _avg:   { rating: true },
+        _count: { rating: true },
+      });
+      await prisma.user.update({
+        where: { id: nutritionistId },
+        data: {
+          averageRating: agg._avg.rating  ?? 0,
+          reviewCount:   agg._count.rating ?? 0,
+        },
+      });
+    }
+
+    return res.status(201).json({ message: "Review submitted successfully.", review });
+  } catch (err) {
+    console.error("createReview error:", err);
+    return res.status(500).json({ message: err.message ?? "Server error." });
+  }
+};
+
 export const getNutritionReviews = async (req, res) => {
   try {
-    const nutritionId = req.user.id;
-
     const reviews = await prisma.review.findMany({
-      where: { nutritionId },
+      where: { nutritionistId: req.user.id },
       include: {
-        patient: patientSelect,
-        session: { select: { id: true, sessionDate: true } },
+        client:  { select: { id:true, firstName:true, lastName:true, image:true } },
+        patient: { select: { id:true, firstName:true, lastName:true, image:true } },
       },
       orderBy: { createdAt: "desc" },
     });
-
-    res.json({ reviews });
+    return res.json({ reviews });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("getNutritionReviews error:", err);
+    return res.status(500).json({ message: err.message ?? "Server error." });
   }
 };
 
-// ==============================
-// 3️⃣ Get public reviews for a nutritionist by ID (no auth)
-// ==============================
 export const getPublicNutritionReviews = async (req, res) => {
   try {
-    const { id: nutritionId } = req.params;
-
     const reviews = await prisma.review.findMany({
-      where: { nutritionId },
+      where: { nutritionistId: req.params.id },
       include: {
-        patient: patientSelect,
-        session: { select: { id: true, sessionDate: true } },
+        client:  { select: { id:true, firstName:true, lastName:true, image:true } },
+        patient: { select: { id:true, firstName:true, lastName:true, image:true } },
       },
       orderBy: { createdAt: "desc" },
     });
-
-    res.json({ reviews });
+    return res.json({ reviews });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("getPublicNutritionReviews error:", err);
+    return res.status(500).json({ message: err.message ?? "Server error." });
   }
 };
 
-// ==============================
-// 4️⃣ Get all reviews written by logged-in client
-// ==============================
 export const getClientReviews = async (req, res) => {
   try {
-    const clientId = req.user.id;
-
     const reviews = await prisma.review.findMany({
-      where: { patientId: clientId },
+      where: {
+        OR: [
+          { clientId:  req.user.id },
+          { patientId: req.user.id },
+        ],
+      },
       include: {
-        nutrition: nutritionSelect,
-        session: { select: { id: true, sessionDate: true } },
+        nutritionist: { select: { id:true, firstName:true, lastName:true, image:true } },
       },
       orderBy: { createdAt: "desc" },
     });
-
-    res.json({ reviews });
+    return res.json({ reviews });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("getClientReviews error:", err);
+    return res.status(500).json({ message: err.message ?? "Server error." });
   }
 };

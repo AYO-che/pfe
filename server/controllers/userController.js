@@ -34,10 +34,8 @@ export const getNutritionistsByOfferType = async (req, res) => {
         message: "Type is required (PLAN or CONSULTATION)",
       });
 
-    if (!["PLAN", "CONSULTATION"].includes(type))
-      return res.status(400).json({
-        message: "Invalid type",
-      });
+   if (!["PLAN", "CONSULTATION", "PACKAGE"].includes(type))
+  return res.status(400).json({ message: "Invalid type" });
 
     const users = await prisma.user.findMany({
       where: {

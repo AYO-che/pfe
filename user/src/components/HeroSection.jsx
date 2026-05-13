@@ -591,20 +591,52 @@ function ReviewCard({ review, flip, mob, vis, delay }) {
     </div>
   );
 }
-
 // ── CONTACT BUTTON + MODAL ────────────────────────────────────────────────────
 function ContactButton({ onClick }) {
   const [hov, setHov] = useState(false);
   return (
-    <button onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} onClick={onClick}
-      style={{ position: "fixed", right: 24, bottom: 32, zIndex: 999, background: "#d7ecfa", color: "#1a5e44", border: "none", borderRadius: 999, padding: hov ? "13px 22px" : "13px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", boxShadow: hov ? "0 10px 28px rgba(45,107,80,0.45)" : "0 4px 18px rgba(45,107,80,0.35)", transform: hov ? "translateY(-2px)" : "translateY(0)", transition: "all 0.25s ease", display: "flex", alignItems: "center", gap: 8 }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+    <button 
+      onMouseEnter={() => setHov(true)} 
+      onMouseLeave={() => setHov(false)} 
+      onClick={onClick}
+      style={{ 
+        position: "fixed", 
+        right: 24, 
+        bottom: 32, 
+        zIndex: 999, 
+        background: "rgba(255, 255, 255, 0.15)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        color: "#0b6630", 
+        borderTop: "1.5px solid rgba(168, 224, 44, 0.9)",
+        borderLeft: "1.5px solid rgba(168, 224, 44, 0.9)",
+        borderBottom: "1.5px solid rgba(0, 168, 84, 0.8)",
+        borderRight: "1.5px solid rgba(0, 168, 84, 0.8)",
+        borderRadius: 999, 
+        padding: hov ? "13px 22px" : "13px 18px", 
+        fontSize: 14, 
+        fontWeight: 700, 
+        cursor: "pointer", 
+        fontFamily: "'DM Sans',sans-serif", 
+        boxShadow: hov 
+          ? "0 10px 34px rgba(15, 89, 47, 0.20), inset 0 0 16px rgba(255, 255, 255, 0.8)" 
+          : "0 8px 32px rgba(15, 89, 47, 0.15), inset 0 0 12px rgba(255, 255, 255, 0.6)", 
+        transform: hov ? "translateY(-2px)" : "translateY(0)", 
+        transition: "all 0.3s ease", 
+        display: "flex", 
+        alignItems: "center", 
+        gap: 8 
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
       Text Us
     </button>
   );
 }
 
-function ContactModal({ onClose, mob }) {
+function ContactModal({ onClose }) {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -613,46 +645,196 @@ function ContactModal({ onClose, mob }) {
     if (!form.name || !form.email || !form.message) return;
     setSending(true);
     try {
-      await fetch("http://localhost:5000/inquiries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      await fetch("http://localhost:5000/inquiries", { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(form) 
+      });
       setSent(true);
-    } catch (err) { console.error(err); } finally { setSending(false); }
+    } catch (err) { 
+      console.error(err); 
+    } finally { 
+      setSending(false); 
+    }
   };
-  const inp = (extra = {}) => ({ width: "100%", boxSizing: "border-box", border: "1.5px solid rgba(79,158,122,0.25)", borderRadius: 8, padding: "8px 11px", fontSize: 12.5, fontFamily: "'DM Sans',sans-serif", color: "#1a3329", background: "#f7fdf9", outline: "none", transition: "border 0.2s ease", ...extra });
+
+  const inp = (extra = {}) => ({ 
+    width: "100%", 
+    boxSizing: "border-box", 
+    border: "1.5px solid rgba(168, 224, 44, 0.4)", 
+    borderRadius: 12, 
+    padding: "10px 13px", 
+    fontSize: 13, 
+    fontFamily: "'DM Sans',sans-serif", 
+    color: "#000000", 
+    background: "rgba(255, 255, 255, 0.5)", 
+    outline: "none", 
+    transition: "border 0.2s ease", 
+    ...extra 
+  });
+
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000 }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ position: "fixed", right: 24, bottom: 90, width: 250, background: "linear-gradient(135deg,#d7ecfa 0%,#d7f8da 100%)", borderRadius: 16, padding: "14px 14px", boxShadow: "0 16px 48px rgba(0,0,0,0.2)", fontFamily: "'DM Sans',sans-serif", pointerEvents: "all", zIndex: 1001 }}>
-        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, borderRadius: "50%", border: "none", background: "#f0f0f0", color: "#666", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+    <div 
+      style={{ 
+        position: "fixed", 
+        inset: 0, 
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(26, 51, 41, 0.45)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+      }} 
+      onClick={onClose}
+    >
+      <div 
+        onClick={e => e.stopPropagation()} 
+        style={{ 
+          position: "relative",
+          width: "min(560px, 92vw)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          background: "rgba(255, 255, 255, 0.15)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          borderTop: "1.5px solid rgba(168, 224, 44, 0.9)",
+          borderLeft: "1.5px solid rgba(168, 224, 44, 0.9)",
+          borderBottom: "1.5px solid rgba(0, 168, 84, 0.8)",
+          borderRight: "1.5px solid rgba(0, 168, 84, 0.8)",
+          borderRadius: 22, 
+          padding: "36px 36px", 
+          boxShadow: "0 16px 48px rgba(15, 89, 47, 0.2), inset 0 0 16px rgba(255, 255, 255, 0.6)", 
+          fontFamily: "'DM Sans',sans-serif", 
+          scrollbarWidth: "none"
+        }}
+      >
+        <button 
+          onClick={onClose} 
+          style={{ 
+            position: "absolute", 
+            top: 16, 
+            right: 16, 
+            width: 32, 
+            height: 32, 
+            borderRadius: "50%", 
+            border: "1.5px solid rgba(168, 224, 44, 0.4)", 
+            background: "rgba(255, 255, 255, 0.5)", 
+            color: "#000000", 
+            fontSize: 16, 
+            cursor: "pointer", 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center",
+            transition: "all 0.2s ease"
+          }}
+        >
+          ✕
+        </button>
+
         {sent ? (
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: 52, marginBottom: 16 }}>✅</div>
-            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: "#1a3329", marginBottom: 8 }}>Message sent!</div>
-            <div style={{ fontSize: 14, color: "#5a7a6e", lineHeight: 1.7 }}>Thanks for reaching out. Our team will get back to you shortly.</div>
-            <button onClick={onClose} style={{ marginTop: 24, background: "linear-gradient(135deg,#3d9b73,#2a6b4f)", color: "#fff", border: "none", borderRadius: 999, padding: "11px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>Close</button>
+          <div style={{ textAlign: "center", padding: "32px 0 16px" }}>
+            <div style={{ 
+              width: 64, 
+              height: 64, 
+              borderRadius: "50%", 
+              background: "linear-gradient(135deg, #3d9b73, #2a6b4f)", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center", 
+              margin: "0 auto 20px",
+              boxShadow: "0 4px 15px rgba(11, 102, 48, 0.4)"
+            }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 24, fontWeight: 800, color: "#000000", marginBottom: 10 }}>Message sent!</div>
+            <div style={{ fontSize: 14, color: "#000000", lineHeight: 1.7 }}>Thanks for reaching out. Our team will get back to you shortly.</div>
+            <button 
+              onClick={onClose} 
+              style={{ 
+                marginTop: 28, 
+                background: "linear-gradient(135deg, #3d9b73, #2a6b4f)", 
+                color: "#fff", 
+                border: "none", 
+                borderRadius: 999, 
+                padding: "11px 32px", 
+                fontSize: 14, 
+                fontWeight: 700, 
+                cursor: "pointer", 
+                fontFamily: "'DM Sans',sans-serif",
+                boxShadow: "0 4px 14px rgba(11, 102, 48, 0.3)"
+              }}
+            >
+              Close
+            </button>
           </div>
         ) : (
           <>
             <div style={{ marginBottom: 28 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg,#3d9b73,#2a6b4f)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+              <div style={{ 
+                width: 44, 
+                height: 44, 
+                borderRadius: 14, 
+                background: "linear-gradient(135deg, #3d9b73, #2a6b4f)", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                marginBottom: 14,
+                boxShadow: "0 4px 15px rgba(11, 102, 48, 0.4)"
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
               </div>
-              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 17, fontWeight: 800, color: "#1a3329", marginBottom: 4 }}>Get in touch</div>
-              <div style={{ fontSize: 11.5, color: "#5a7a6e", lineHeight: 1.5 }}>We'd love to hear from you. Send us a message and we'll respond within 24h.</div>
+              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: "#000000", marginBottom: 6 }}>Get in touch</div>
+              <div style={{ fontSize: 13, color: "#000000", lineHeight: 1.6 }}>We'd love to hear from you. Send us a message and we'll respond within 24h.</div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: "#2d6b50", display: "block", marginBottom: 3 }}>Your Name</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#000000", display: "block", marginBottom: 5, letterSpacing: "0.5px" }}>YOUR NAME</label>
                 <input value={form.name} onChange={handle("name")} placeholder="e.g. Sarah Johnson" style={inp()} />
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: "#2d6b50", display: "block", marginBottom: 3 }}>Email Address</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#000000", display: "block", marginBottom: 5, letterSpacing: "0.5px" }}>EMAIL ADDRESS</label>
                 <input value={form.email} onChange={handle("email")} type="email" placeholder="you@example.com" style={inp()} />
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: "#2d6b50", display: "block", marginBottom: 3 }}>Message</label>
-                <textarea value={form.message} onChange={handle("message")} placeholder="How can we help you?" rows={3} style={inp({ resize: "none" })} />
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#000000", display: "block", marginBottom: 5, letterSpacing: "0.5px" }}>MESSAGE</label>
+                <textarea value={form.message} onChange={handle("message")} placeholder="How can we help you?" rows={4} style={inp({ resize: "none" })} />
               </div>
-              <button onClick={submit} disabled={sending} style={{ background: sending ? "#a0c4b4" : "linear-gradient(135deg,#3d9b73,#2a6b4f)", color: "#fff", border: "none", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 700, cursor: sending ? "default" : "pointer", fontFamily: "'DM Sans',sans-serif", boxShadow: "0 4px 16px rgba(45,107,80,0.28)", transition: "all 0.22s ease", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                {sending ? "Sending..." : <>Send Message <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg></>}
+              <button 
+                onClick={submit} 
+                disabled={sending} 
+                style={{ 
+                  background: sending ? "#a0c4b4" : "linear-gradient(135deg, #3d9b73, #2a6b4f)", 
+                  color: "#fff", 
+                  border: "none", 
+                  borderRadius: 999, 
+                  padding: "12px 0", 
+                  fontSize: 14, 
+                  fontWeight: 700, 
+                  cursor: sending ? "default" : "pointer", 
+                  fontFamily: "'DM Sans',sans-serif", 
+                  boxShadow: "0 4px 16px rgba(45, 107, 80, 0.28)", 
+                  transition: "all 0.22s ease", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  gap: 8,
+                  marginTop: 4
+                }}
+              >
+                {sending ? "Sending..." : (
+                  <>
+                    Send Message 
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13" />
+                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    </svg>
+                  </>
+                )}
               </button>
             </div>
           </>

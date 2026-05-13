@@ -4,6 +4,8 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/Authcontext";
 
+const API_URL = "http://localhost:5000";
+
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
 
@@ -12,8 +14,10 @@ const CSS = `
 @keyframes spin      { to{transform:rotate(360deg)} }
 @keyframes slideDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
+@keyframes shake     { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
 
 .cp-fade { animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) both }
+.cp-shake { animation: shake 0.5s ease }
 
 .cp-input {
   width:100%; border:1.5px solid rgba(79,158,122,0.2); border-radius:12px;
@@ -48,7 +52,9 @@ const CSS = `
 .cp-modal-overlay { position:fixed; inset:0; z-index:1000; background:rgba(10,26,20,0.7); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; padding:20px; }
 .cp-modal { background:#fff; border-radius:28px; width:100%; max-width:420px; padding:40px 32px; text-align:center; box-shadow:0 40px 80px rgba(0,0,0,0.25); animation:popIn 0.4s cubic-bezier(0.34,1.4,0.64,1); }
 
-.cp-toast { position:fixed; top:24px; left:50%; transform:translateX(-50%); z-index:999; background:linear-gradient(135deg,#1a3329,#2d6b50); color:#fff; border-radius:14px; padding:14px 24px; display:flex; align-items:center; gap:10px; box-shadow:0 8px 24px rgba(26,51,41,0.3); font-weight:600; font-size:14px; animation:slideDown 0.4s cubic-bezier(0.34,1.4,0.64,1); white-space:nowrap; font-family:'DM Sans',sans-serif; }
+.cp-toast { position:fixed; top:24px; left:50%; transform:translateX(-50%); z-index:999; border-radius:14px; padding:14px 24px; display:flex; align-items:center; gap:10px; box-shadow:0 8px 24px rgba(26,51,41,0.3); font-weight:600; font-size:14px; animation:slideDown 0.4s cubic-bezier(0.34,1.4,0.64,1); white-space:nowrap; font-family:'DM Sans',sans-serif; }
+.cp-toast.success { background:linear-gradient(135deg,#1a3329,#2d6b50); color:#fff; }
+.cp-toast.error { background:linear-gradient(135deg,#c53030,#e53e3e); color:#fff; }
 
 .otp-box { width:48px; height:54px; text-align:center; font-size:20px; font-weight:800; font-family:'DM Sans',sans-serif; border:1.5px solid rgba(79,158,122,0.2); border-radius:12px; background:#f7faf8; color:#1a3329; outline:none; transition:all 0.2s; }
 .otp-box:focus { border-color:#4f9e7a; background:#fff; box-shadow:0 0 0 3px rgba(79,158,122,0.1); }
@@ -59,7 +65,6 @@ const CSS = `
 }
 `;
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 function formatDate(d) {
   return new Date(d).toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
 }
@@ -71,7 +76,6 @@ const ErrMsg = ({ msg }) => msg ? (
   </div>
 ) : null;
 
-// ── Success Modal ──────────────────────────────────────────────────────────
 function SuccessModal({ summary, onClose }) {
   return (
     <div className="cp-modal-overlay" onClick={onClose}>
@@ -83,7 +87,7 @@ function SuccessModal({ summary, onClose }) {
         <div style={{ fontSize:14, color:"#5a7a6e", lineHeight:1.75, marginBottom:20 }}>{summary.message}</div>
         <div style={{ background:"#f7faf8", borderRadius:14, padding:"14px 16px", marginBottom:20, textAlign:"left" }}>
           {summary.details.map(([icon, val]) => (
-            <div key={val} style={{ display:"flex", gap:10, fontSize:13, color:"#2a4a3e", marginBottom:6, fontWeight:500 }}>
+            <div key={icon+val} style={{ display:"flex", gap:10, fontSize:13, color:"#2a4a3e", marginBottom:6, fontWeight:500 }}>
               <span>{icon}</span><span>{val}</span>
             </div>
           ))}
@@ -96,28 +100,45 @@ function SuccessModal({ summary, onClose }) {
   );
 }
 
-// ── CIB Form ───────────────────────────────────────────────────────────────
+function ErrorModal({ message, onRetry, onBack }) {
+  return (
+    <div className="cp-modal-overlay">
+      <div className="cp-modal cp-shake" style={{ borderTop: "4px solid #e53e3e" }}>
+        <div style={{ width:76, height:76, borderRadius:"50%", background:"linear-gradient(135deg,#fff5f5,#fed7d7)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </div>
+        <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:"#1a3329", marginBottom:8 }}>Payment Failed</div>
+        <div style={{ fontSize:14, color:"#5a7a6e", lineHeight:1.75, marginBottom:24 }}>{message}</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          <button onClick={onRetry} style={{ width:"100%", background:"linear-gradient(135deg,#1a3329,#2d6b50)", color:"#f5e642", border:"none", borderRadius:14, padding:"14px 0", fontSize:15, fontWeight:700, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Try Again</button>
+          <button onClick={onBack} style={{ width:"100%", background:"transparent", color:"#5a7a6e", border:"1.5px solid rgba(79,158,122,0.3)", borderRadius:14, padding:"14px 0", fontSize:15, fontWeight:700, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Back to Plans</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CIBForm({ onPay, loading, amount }) {
-  const [form,   setForm]   = useState({ number:"", expiry:"", cvv:"", name:"" });
-  const [otp,    setOtp]    = useState(["","","","","",""]);
-  const [step,   setStep]   = useState(1);
+  const [form, setForm] = useState({ number:"", expiry:"", cvv:"", name:"" });
+  const [otp, setOtp] = useState(["","","","","",""]);
+  const [step, setStep] = useState(1);
   const [errors, setErrors] = useState({});
 
   const handle = (f) => (e) => {
     let v = e.target.value;
     if (f==="number") v = v.replace(/\D/g,"").slice(0,16).replace(/(\d{4})(?=\d)/g,"$1 ").trim();
     if (f==="expiry") v = v.replace(/\D/g,"").slice(0,4).replace(/(\d{2})(\d)/,"$1/$2");
-    if (f==="cvv")    v = v.replace(/\D/g,"").slice(0,4);
+    if (f==="cvv") v = v.replace(/\D/g,"").slice(0,4);
     setForm(p=>({...p,[f]:v}));
     setErrors(p=>({...p,[f]:""}));
   };
 
   const validateCard = () => {
     const e={};
-    if (!form.name.trim())                         e.name   = "Cardholder name required";
+    if (!form.name.trim()) e.name = "Cardholder name required";
     if (form.number.replace(/\s/g,"").length < 16) e.number = "Enter a valid 16-digit card number";
-    if (form.expiry.length < 5)                    e.expiry = "Enter expiry date (MM/YY)";
-    if (form.cvv.length < 3)                       e.cvv    = "Enter CVV (3-4 digits)";
+    if (form.expiry.length < 5) e.expiry = "Enter expiry date (MM/YY)";
+    if (form.cvv.length < 3) e.cvv = "Enter CVV (3-4 digits)";
     setErrors(e);
     return Object.keys(e).length===0;
   };
@@ -191,11 +212,10 @@ function CIBForm({ onPay, loading, amount }) {
   );
 }
 
-// ── BaridiMob Form ─────────────────────────────────────────────────────────
 function BaridiMobForm({ onPay, loading, amount }) {
-  const [rip,    setRip]    = useState("");
-  const [pin,    setPin]    = useState(["","","","",""]);
-  const [step,   setStep]   = useState(1);
+  const [rip, setRip] = useState("");
+  const [pin, setPin] = useState(["","","","",""]);
+  const [step, setStep] = useState(1);
   const [errors, setErrors] = useState({});
 
   const handlePin = (i, val) => {
@@ -259,35 +279,34 @@ function BaridiMobForm({ onPay, loading, amount }) {
   );
 }
 
-// ── International Card Form ────────────────────────────────────────────────
 function IntlCardForm({ onPay, loading, amount }) {
-  const [form,   setForm]   = useState({ name:"", number:"", expiry:"", cvv:"", billing:"" });
+  const [form, setForm] = useState({ name:"", number:"", expiry:"", cvv:"", billing:"" });
   const [errors, setErrors] = useState({});
 
   const handle = (f) => (e) => {
     let v = e.target.value;
     if (f==="number") v = v.replace(/\D/g,"").slice(0,16).replace(/(\d{4})(?=\d)/g,"$1 ").trim();
     if (f==="expiry") v = v.replace(/\D/g,"").slice(0,4).replace(/(\d{2})(\d)/,"$1/$2");
-    if (f==="cvv")    v = v.replace(/\D/g,"").slice(0,4);
+    if (f==="cvv") v = v.replace(/\D/g,"").slice(0,4);
     setForm(p=>({...p,[f]:v})); setErrors(p=>({...p,[f]:""}));
   };
 
   const validate = () => {
     const e={};
-    if (!form.name.trim())                         e.name    = "Cardholder name required";
-    if (form.number.replace(/\s/g,"").length < 16) e.number  = "Enter a valid 16-digit card number";
-    if (form.expiry.length < 5)                    e.expiry  = "Enter expiry date (MM/YY)";
-    if (form.cvv.length < 3)                       e.cvv     = "Enter CVV";
-    if (!form.billing.trim())                      e.billing = "Billing address required";
+    if (!form.name.trim()) e.name = "Cardholder name required";
+    if (form.number.replace(/\s/g,"").length < 16) e.number = "Enter a valid 16-digit card number";
+    if (form.expiry.length < 5) e.expiry = "Enter expiry date (MM/YY)";
+    if (form.cvv.length < 3) e.cvv = "Enter CVV";
+    if (!form.billing.trim()) e.billing = "Billing address required";
     setErrors(e);
     return Object.keys(e).length===0;
   };
 
   const cardType = () => {
     const n = form.number.replace(/\s/g,"");
-    if (/^4/.test(n))      return { label:"Visa",       color:"#1a1f71" };
+    if (/^4/.test(n)) return { label:"Visa", color:"#1a1f71" };
     if (/^5[1-5]/.test(n)) return { label:"Mastercard", color:"#eb001b" };
-    if (/^3[47]/.test(n))  return { label:"Amex",       color:"#007bc1" };
+    if (/^3[47]/.test(n)) return { label:"Amex", color:"#007bc1" };
     return null;
   };
   const ct = cardType();
@@ -339,17 +358,16 @@ function IntlCardForm({ onPay, loading, amount }) {
   );
 }
 
-// ── PayPal Form ────────────────────────────────────────────────────────────
 function PayPalForm({ onPay, loading, amount }) {
-  const [email,    setEmail]    = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPw,   setShowPw]   = useState(false);
-  const [errors,   setErrors]   = useState({});
+  const [showPw, setShowPw] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const validate = () => {
     const e={};
-    if (!email.trim()||!/\S+@\S+\.\S+/.test(email)) e.email    = "Enter a valid PayPal email";
-    if (!password||password.length<6)                e.password = "Enter your PayPal password";
+    if (!email.trim()||!/\S+@\S+\.\S+/.test(email)) e.email = "Enter a valid PayPal email";
+    if (!password||password.length<6) e.password = "Enter your PayPal password";
     setErrors(e);
     return Object.keys(e).length===0;
   };
@@ -380,10 +398,6 @@ function PayPalForm({ onPay, loading, amount }) {
         </div>
         <ErrMsg msg={errors.password}/>
       </div>
-      <div style={{ background:"#f0f7ff", borderRadius:12, padding:"10px 13px", fontSize:12.5, color:"#1a6fa0", display:"flex", alignItems:"center", gap:8, border:"1px solid rgba(26,111,160,0.15)" }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Amount: <strong style={{ marginLeft:4 }}>{amount}</strong> · Converted at current exchange rate
-      </div>
       <button className="cp-pay-btn" onClick={()=>{ if(validate()) onPay(); }} disabled={loading}
         style={{ background:"#003087", color:"#fff", boxShadow:"0 6px 20px rgba(0,48,135,0.35)" }}>
         {loading ? <><span style={{ width:18,height:18,border:"2.5px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .7s linear infinite",display:"inline-block" }}/>Processing…</> : `Pay with PayPal — ${amount}`}
@@ -392,82 +406,82 @@ function PayPalForm({ onPay, loading, amount }) {
   );
 }
 
-// ── Main ───────────────────────────────────────────────────────────────────
 export default function Payment() {
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate       = useNavigate();
+  const location       = useLocation();
   const { isLoggedIn } = useAuth();
 
   const state = location.state || {};
 
-  // ── Detect payment type ──────────────────────────────────────────────────
-  // type = "consultation" | "plan" | "ai"
-  const isConsultation = !!state.sp && !!state.date && !!state.slot;
-  const isAI           = !!state.subscriptionId && !!state.offerId;
-  const isPlan         = !!state.planId;
+  const isPackage = !!state.offerId && !!state.nutritionId && !!state.sessionDate;
+  const isAI      = !!state.offerId && !state.planId && !state.nutritionId;
+  const isPlan    = !!state.planId;
 
-  const [planData,    setPlanData]    = useState(null);
-  const [loadingPlan, setLoadingPlan] = useState(isPlan);
-  const [method,      setMethod]      = useState("cib");
-  const [paying,      setPaying]      = useState(false);
-  const [success,     setSuccess]     = useState(false);
-  const [toast,       setToast]       = useState(false);
+  const [planData,     setPlanData]     = useState(null);
+  const [loadingPlan,  setLoadingPlan]  = useState(isPlan);
+  const [method,       setMethod]       = useState("cib");
+  const [paying,       setPaying]       = useState(false);
+  const [success,      setSuccess]      = useState(false);
+  const [error,        setError]        = useState(null);
+  const [toast,        setToast]        = useState(null);
 
-  // ── Fetch plan data if needed ────────────────────────────────────────────
   useEffect(() => {
     if (!isPlan) return;
     (async () => {
       try {
-        const res  = await fetch(`/plans/${state.planId}`, { credentials:"include" });
+        const res  = await fetch(`${API_URL}/plans/${state.planId}`, { credentials: "include" });
         const data = await res.json();
         setPlanData(data.plan);
       } catch {
-        // ignore
+        setError("Failed to load plan details.");
       } finally {
         setLoadingPlan(false);
       }
     })();
   }, [isPlan, state.planId]);
 
-  // ── Redirect if not logged in ────────────────────────────────────────────
   useEffect(() => {
     if (!isLoggedIn) navigate("/login", { state: { redirect: "/payment" } });
   }, [isLoggedIn]);
 
-  // ── Build order summary ──────────────────────────────────────────────────
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   const getSummary = () => {
-    if (isConsultation) {
-      const { sp, date, slot } = state;
+    if (isPackage) {
       return {
-        title:    "Your Consultation",
-        subtitle: sp.title,
-        avatar:   sp.avatar,
-        name:     sp.name,
-        amount:   "200 000 DZD",
+        title:    "Package Offer",
+        subtitle: state.offerName ?? "Bundle",
+        avatar:   state.nutritionImage ?? null,
+        name:     state.nutritionName  ?? "Your Nutritionist",
+        amount:   state.price          ?? "—",
         details: [
-          ["📅", formatDate(date)],
-          ["🕐", slot.label],
-          ["⏱", "1 hour"],
-          ["📍", "Online video session"],
+          ["📦", state.offerName ?? "Bundle"],
+          ["👤", state.nutritionName ?? "Nutritionist"],
+          ["📅", `First session: ${formatDate(state.sessionDate)}`],
+          ["💬", state.chatDays ? `${state.chatDays} days chat access` : "Chat included"],
+          ["🌿", "Personalized plan included"],
         ],
-        successMsg: `Your consultation with ${sp.name} has been booked.`,
+        successMsg:     `Your package "${state.offerName}" has been activated. Session 1 is scheduled!`,
         successDetails: [
-          ["📅", formatDate(date)],
-          ["🕐", slot.label],
-          ["⏱", "1 hour"],
-          ["💰", "200 000 DZD"],
+          ["📦", state.offerName ?? "Package"],
+          ["📅", `Session 1: ${formatDate(state.sessionDate)}`],
+          ["💰", state.price ?? "—"],
         ],
         successBtn: "Go to My Profile →",
-        backTo:   "/specialists",
-        backLabel: "Back to Specialists",
+        backTo:     "/specialist-plans",
+        backLabel:  "Back to Packages",
       };
     }
+
     if (isAI) {
       return {
         title:    "AI Premium Plan",
         subtitle: state.offerLabel ?? "Pro",
         avatar:   null,
-        name:     `Chrysalis AI · ${state.offerLabel}`,
+        name:     `Chrysalis AI · ${state.offerLabel ?? "Pro"}`,
         amount:   state.price ?? "$9.99",
         details: [
           ["🤖", "AI Calorie Tracker"],
@@ -475,18 +489,18 @@ export default function Payment() {
           ["📅", "Starts immediately"],
           ["🔄", "Cancel anytime"],
         ],
-        successMsg: "Your AI subscription has been activated.",
+        successMsg:     "Your AI subscription has been activated.",
         successDetails: [
-          ["📦", `Plan: ${state.offerLabel}`],
+          ["📦", `Plan: ${state.offerLabel ?? "Pro"}`],
           ["💰", state.price ?? "$9.99"],
           ["📅", "Access starts now"],
         ],
         successBtn: "Start Using AI →",
-        backTo:   "/premium",
-        backLabel: "Back to Plans",
+        backTo:     "/ai-premium",
+        backLabel:  "Back to Plans",
       };
     }
-    // Plan
+
     const plan = planData;
     return {
       title:    "Nutrition Plan",
@@ -500,68 +514,110 @@ export default function Payment() {
         ["👨‍⚕️", plan?.nutrition ? `${plan.nutrition.firstName} ${plan.nutrition.lastName}` : "Specialist"],
         ["🔄", "Cancel anytime"],
       ],
-      successMsg: `Your plan "${plan?.title}" has been activated.`,
+      successMsg:     `Your plan "${plan?.title}" has been activated.`,
       successDetails: [
         ["📦", plan?.title ?? ""],
         ["💰", plan?.offer ? `$${Number(plan.offer.price).toFixed(2)}` : "—"],
         ["📅", "Access starts now"],
       ],
       successBtn: "Go to My Profile →",
-      backTo:   "/plans",
-      backLabel: "Back to Plans",
+      backTo:     "/plans",
+      backLabel:  "Back to Plans",
     };
   };
 
-  // ── Handle payment ───────────────────────────────────────────────────────
- const handlePay = async () => {
-  setPaying(true);
-  try {
-    // 1. Create subscription first
-    const subRes = await fetch("/subscriptions", {
-      method: "POST",
+  // ── Safe fetch helper ──────────────────────────────────────────
+  const apiFetch = async (path, options) => {
+    const res  = await fetch(`${API_URL}${path}`, {
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ offerId: planData.offerId }),
+      headers:     { "Content-Type": "application/json" },
+      ...options,
     });
-    const subData = await subRes.json();
-    if (!subRes.ok) { alert(subData.message || "Failed to create subscription"); return; }
-
-    const subscriptionId = subData.subscription.id;
-
-    // 2. Create payment
-    const payRes = await fetch("/payments", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        subscriptionId,
-        paymentMethodId: "pm_card_visa", // Stripe test payment method
-      }),
-    });
-    const payData = await payRes.json();
-    if (!payRes.ok) { alert(payData.message || "Payment failed"); return; }
-
-    // 3. Show success
-    setToast(true);
-    setTimeout(() => setToast(false), 3000);
-    setSuccess(true);
-
-  } catch (err) {
-    alert("Payment failed: " + err.message);
-  } finally {
-    setPaying(false);
-  }
-};
-  const handleSuccessClose = () => {
-    setSuccess(false);
-    const s = getSummary();
-    if (isAI)           navigate("/calories-ai");
-    else if (isPlan)    navigate("/profile");
-    else                navigate("/profile");
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : {};
+    if (!res.ok) throw new Error(data.message || `Request failed (${res.status})`);
+    return data;
   };
 
-  // ── Guard ────────────────────────────────────────────────────────────────
-  if (!isConsultation && !isAI && !isPlan) {
+  const handlePay = async () => {
+    setPaying(true);
+    setError(null);
+
+    try {
+      // ── PACKAGE ──
+      if (isPackage) {
+        const subData = await apiFetch("/subscriptions", {
+          method: "POST",
+          body: JSON.stringify({ offerId: state.offerId, nutritionId: state.nutritionId }),
+        });
+
+        await apiFetch("/payments", {
+          method: "POST",
+          body: JSON.stringify({
+            subscriptionId:  subData.subscription.id,
+            paymentMethodId: "pm_card_visa",
+            sessionDate:     state.sessionDate,
+          }),
+        });
+
+      // ── AI_CALORIES ──
+      } else if (isAI) {
+        if (!state.offerId) throw new Error("No offer found. Please go back and select a plan.");
+
+        const subData = await apiFetch("/subscriptions", {
+          method: "POST",
+          body: JSON.stringify({ offerId: state.offerId }),
+        });
+
+        await apiFetch("/payments", {
+          method: "POST",
+          body: JSON.stringify({
+            subscriptionId:  subData.subscription.id,
+            paymentMethodId: "pm_card_visa",
+          }),
+        });
+
+      // ── PLAN ──
+      } else if (isPlan && planData) {
+        const subData = await apiFetch("/subscriptions", {
+          method: "POST",
+          body: JSON.stringify({ offerId: planData.offerId }),
+        });
+
+        await apiFetch("/payments", {
+          method: "POST",
+          body: JSON.stringify({
+            subscriptionId:  subData.subscription.id,
+            paymentMethodId: "pm_card_visa",
+          }),
+        });
+
+      } else {
+        throw new Error("Invalid payment type");
+      }
+
+      showToast("Payment successful! 🎉", "success");
+      setSuccess(true);
+
+    } catch (err) {
+      setError(err.message);
+      showToast(err.message, "error");
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const handleSuccessClose = () => {
+    setSuccess(false);
+    if (isPackage) navigate("/profile");
+    else if (isAI) navigate("/calories-ai");
+    else           navigate("/profile");
+  };
+
+  const handleRetry       = () => setError(null);
+  const handleBackToPlans = () => navigate(getSummary().backTo);
+
+  if (!isPackage && !isAI && !isPlan) {
     return (
       <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'DM Sans',sans-serif" }}>
         <div style={{ textAlign:"center" }}>
@@ -585,10 +641,10 @@ export default function Payment() {
   const summary = getSummary();
 
   const METHODS = [
-    { key:"cib",       label:"CIB",       sub:"Algeria",      emoji:"🏦", color:"#2d7a4f" },
-    { key:"baridimob", label:"BaridiMob", sub:"Poste DZ",     emoji:"📱", color:"#f5a623" },
-    { key:"card",      label:"Visa / MC", sub:"International",emoji:"💳", color:"#1a3329" },
-    { key:"paypal",    label:"PayPal",    sub:"International",emoji:"🅿",  color:"#003087" },
+    { key:"cib",       label:"CIB",      sub:"Algeria",       emoji:"🏦", color:"#2d7a4f" },
+    { key:"baridimob", label:"BaridiMob", sub:"Poste DZ",      emoji:"📱", color:"#f5a623" },
+    { key:"card",      label:"Visa / MC", sub:"International", emoji:"💳", color:"#1a3329" },
+    { key:"paypal",    label:"PayPal",    sub:"International", emoji:"🅿", color:"#003087" },
   ];
 
   return (
@@ -597,25 +653,27 @@ export default function Payment() {
       <Header/>
 
       {toast && (
-        <div className="cp-toast">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5e642" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Payment successful!
+        <div className={`cp-toast ${toast.type}`}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            {toast.type === "success"
+              ? <polyline points="20 6 9 17 4 12"/>
+              : <><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>}
+          </svg>
+          {toast.message}
         </div>
       )}
 
       <div style={{ maxWidth:960, margin:"0 auto", padding:"44px 24px 80px" }}>
 
-        {/* Back button */}
-        <button onClick={()=>navigate(summary.backTo)} style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", fontSize:13.5, fontWeight:600, color:"#5a7a6e", fontFamily:"'DM Sans',sans-serif", marginBottom:28, padding:0 }}>
+        <button onClick={handleBackToPlans} style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", fontSize:13.5, fontWeight:600, color:"#5a7a6e", fontFamily:"'DM Sans',sans-serif", marginBottom:28, padding:0 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           {summary.backLabel}
         </button>
 
         <div className="cp-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:26 }}>
 
-          {/* ── LEFT — Order Summary ── */}
+          {/* LEFT — Order Summary */}
           <div className="cp-fade" style={{ display:"flex", flexDirection:"column", gap:18 }}>
-
             <div style={{ background:"linear-gradient(135deg,#1a3329,#2d6b50)", borderRadius:22, padding:24, border:"1px solid rgba(245,230,66,0.12)" }}>
               <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.45)", letterSpacing:1, textTransform:"uppercase", marginBottom:12 }}>{summary.title}</div>
 
@@ -630,7 +688,7 @@ export default function Payment() {
               ) : (
                 <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:18 }}>
                   <div style={{ width:48, height:48, borderRadius:14, background:"rgba(245,230,66,0.15)", border:"1px solid rgba(245,230,66,0.25)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>
-                    {isAI ? "🤖" : "🌿"}
+                    {isPackage ? "📦" : isAI ? "🤖" : "🌿"}
                   </div>
                   <div>
                     <div style={{ fontFamily:"'Syne',sans-serif", fontSize:17, fontWeight:800, color:"#fff" }}>{summary.name}</div>
@@ -649,7 +707,6 @@ export default function Payment() {
               ))}
             </div>
 
-            {/* Total */}
             <div style={{ background:"linear-gradient(135deg,#fefde8,#fdf6c0)", borderRadius:18, padding:"18px 20px", border:"1.5px solid rgba(245,230,66,0.4)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div>
                 <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:800, color:"#1a3329" }}>Total Amount</div>
@@ -658,9 +715,8 @@ export default function Payment() {
               <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:"#b8a200" }}>{summary.amount}</div>
             </div>
 
-            {/* Trust badges */}
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              {[["🔒","256-bit SSL encrypted payment"],["📋","Instant confirmation"],["🔄","Cancel anytime"],["📞","Support available 24/7"]].map(([icon,text])=>(
+              {[["🔒","256-bit SSL encrypted"],["📋","Instant confirmation"],["🔄","Cancel anytime"],["📞","Support 24/7"]].map(([icon,text])=>(
                 <div key={text} style={{ display:"flex", alignItems:"center", gap:10, fontSize:13, color:"#5a7a6e", fontWeight:500 }}>
                   <span style={{ fontSize:15, flexShrink:0 }}>{icon}</span>{text}
                 </div>
@@ -668,13 +724,12 @@ export default function Payment() {
             </div>
           </div>
 
-          {/* ── RIGHT — Payment Method ── */}
+          {/* RIGHT — Payment Form */}
           <div className="cp-fade" style={{ animationDelay:"0.12s" }}>
             <div style={{ background:"#fff", borderRadius:22, padding:"26px 24px", boxShadow:"0 4px 24px rgba(26,51,41,0.08)", border:"1px solid rgba(79,158,122,0.1)" }}>
               <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:"#1a3329", marginBottom:4 }}>Payment Method</div>
               <div style={{ fontSize:13, color:"#5a7a6e", marginBottom:20 }}>Choose how you'd like to pay.</div>
 
-              {/* Method selector */}
               <div className="cp-methods" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, marginBottom:24 }}>
                 {METHODS.map(m => (
                   <button key={m.key} className={`cp-method-btn ${method===m.key?"active":""}`} onClick={()=>setMethod(m.key)}>
@@ -685,10 +740,10 @@ export default function Payment() {
                 ))}
               </div>
 
-              {method==="cib"       && <CIBForm       onPay={handlePay} loading={paying} amount={summary.amount}/>}
-              {method==="baridimob" && <BaridiMobForm  onPay={handlePay} loading={paying} amount={summary.amount}/>}
-              {method==="card"      && <IntlCardForm   onPay={handlePay} loading={paying} amount={summary.amount}/>}
-              {method==="paypal"    && <PayPalForm     onPay={handlePay} loading={paying} amount={summary.amount}/>}
+              {method==="cib"       && <CIBForm      onPay={handlePay} loading={paying} amount={summary.amount}/>}
+              {method==="baridimob" && <BaridiMobForm onPay={handlePay} loading={paying} amount={summary.amount}/>}
+              {method==="card"      && <IntlCardForm  onPay={handlePay} loading={paying} amount={summary.amount}/>}
+              {method==="paypal"    && <PayPalForm    onPay={handlePay} loading={paying} amount={summary.amount}/>}
 
               <p style={{ textAlign:"center", fontSize:11.5, color:"#8a9e98", marginTop:14 }}>
                 By paying you agree to our Terms of Service and Cancellation Policy.
@@ -702,11 +757,19 @@ export default function Payment() {
       {success && (
         <SuccessModal
           summary={{
-            message: getSummary().successMsg,
-            details: getSummary().successDetails,
+            message:  getSummary().successMsg,
+            details:  getSummary().successDetails,
             btnLabel: getSummary().successBtn,
           }}
           onClose={handleSuccessClose}
+        />
+      )}
+
+      {error && (
+        <ErrorModal
+          message={error}
+          onRetry={handleRetry}
+          onBack={handleBackToPlans}
         />
       )}
 

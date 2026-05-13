@@ -10,11 +10,8 @@ export const createPayment = async (req, res) => {
     const { subscriptionId, paymentMethodId, sessionDate } = req.body;
     const userId = req.user.id;
 
-    if (!subscriptionId || !paymentMethodId) {
-      return res.status(400).json({
-        message: "subscriptionId and paymentMethodId are required",
-      });
-    }
+    if (!subscriptionId || !paymentMethodId)
+      return res.status(400).json({ message: "subscriptionId and paymentMethodId are required" });
 
     const subscription = await prisma.subscription.findUnique({
       where: { id: subscriptionId },
@@ -49,10 +46,10 @@ export const createPayment = async (req, res) => {
       return res.status(400).json({ message: "Subscription is cancelled" });
 
     const amount = Math.round(Number(offer.price) * 100);
-
     if (amount < 50)
       return res.status(400).json({ message: "Amount too small — minimum is $0.50" });
 
+    // ── Build Stripe payment intent ──
     const paymentIntentData = {
       amount,
       currency:       "usd",
@@ -62,11 +59,13 @@ export const createPayment = async (req, res) => {
       metadata: { subscriptionId, userId, offerType: offer.type },
     };
 
-    if (["CONSULTATION", "PLAN", "PACKAGE"].includes(offer.type)) {
+    // ✅ TEST MODE — only add transfer_data if nutritionist has Stripe connected
+    // In test mode nutritionists may not have real Stripe accounts — skip gracefully
+    if (["PACKAGE", "PLAN"].includes(offer.type)) {
       const stripeAccountId = nutrition?.stripe?.stripeAccountId;
-      if (!stripeAccountId)
-        return res.status(400).json({ message: "Nutritionist Stripe account not linked" });
-      paymentIntentData.transfer_data = { destination: stripeAccountId };
+      if (stripeAccountId) {
+        paymentIntentData.transfer_data = { destination: stripeAccountId };
+      }
     }
 
     const paymentIntent = await stripe.paymentIntents.create(
@@ -88,71 +87,43 @@ export const createPayment = async (req, res) => {
       });
     }
 
-    // ── Pre-transaction: prepare CONSULTATION zoom link ──
-    let consultationZoomLink  = null;
-    let consultationScheduled = null;
+    // ── Pre-transaction: prepare PACKAGE first session ──
+    let packageFirstSessionDate = null;
+    let packageFirstSessionZoom = null;
 
-    if (offer.type === "CONSULTATION") {
-      if (sessionDate && new Date(sessionDate) <= new Date())
+    if (offer.type === "PACKAGE") {
+      if (!sessionDate)
+        return res.status(400).json({ message: "sessionDate is required for your first session" });
+
+      packageFirstSessionDate = new Date(sessionDate);
+
+      if (packageFirstSessionDate <= new Date())
         return res.status(400).json({ message: "Session date must be in the future" });
-
-      consultationScheduled = sessionDate
-        ? new Date(sessionDate)
-        : new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       const conflict = await prisma.session.findFirst({
         where: {
           nutritionId: subscription.nutritionId,
-          status:      { not: "CANCELLED" },
-          sessionDate: consultationScheduled,
+          status:      { notIn: ["CANCELLED", "PENDING_SCHEDULE"] },
+          sessionDate: packageFirstSessionDate,
         },
       });
       if (conflict)
         return res.status(409).json({ message: "This time slot is already booked" });
+       console.log("🔍 ABOUT TO CALL ZOOM:");
+      console.log("  Nutritionist:", JSON.stringify(nutrition, null, 2));
+      console.log("  Patient:", JSON.stringify(patient, null, 2));
 
-      consultationZoomLink = await createZoomMeeting(
-        nutrition.email || "",
-        patient.email   || "",
-        offer.name      || ""
-      );
-    }
-
-    // ── Pre-transaction: prepare PACKAGE zoom links ──
-    let packageSessions = [];
-
-    if (offer.type === "PACKAGE") {
-      if (!sessionDate || !Array.isArray(sessionDate))
-        return res.status(400).json({
-          message: "sessionDate must be an array of dates for package offers",
-        });
-
-      const maxSessions = offer.sessionsCount || 1;
-      const dates = sessionDate.slice(0, maxSessions);
-
-      for (const date of dates) {
-        const scheduledDate = new Date(date);
-
-        if (scheduledDate <= new Date())
-          return res.status(400).json({ message: `Session date ${date} must be in the future` });
-
-        const conflict = await prisma.session.findFirst({
-          where: {
-            nutritionId: subscription.nutritionId,
-            status:      { not: "CANCELLED" },
-            sessionDate: scheduledDate,
-          },
-        });
-        if (conflict)
-          return res.status(409).json({ message: `Time slot ${date} is already booked` });
-
-        const zoomLink = await createZoomMeeting(
-          nutrition.email || "",
-          patient.email   || "",
-          offer.name      || ""
-        );
-
-        packageSessions.push({ scheduledDate, zoomLink });
-      }
+      try {
+        packageFirstSessionZoom = await createZoomMeeting(
+  nutrition?.email || "",
+  patient?.email   || "",
+  `${offer.name} - Session 1`,
+  packageFirstSessionDate  // ← pass actual session date
+);
+ } catch (zoomErr) {
+  console.warn("Zoom failed:", zoomErr.response?.data ?? zoomErr.message);
+  packageFirstSessionZoom = null;
+}
     }
 
     // ── DB Transaction ──
@@ -161,7 +132,7 @@ export const createPayment = async (req, res) => {
       const payment = await tx.payment.create({
         data: {
           subscriptionId,
-          amount:        offer.price || 0,
+          amount:        offer.price,
           status:        "SUCCESS",
           paymentMethod: "stripe",
           transactionId: paymentIntent.id,
@@ -174,11 +145,10 @@ export const createPayment = async (req, res) => {
         data:  { status: "ACTIVE", startDate: new Date() },
       });
 
-      let session    = null;
       let sessions   = [];
       let planPdfUrl = null;
 
-      // 3️⃣ PLAN — create UserPlan + notification with PDF URL
+      // 3️⃣ PLAN — activate UserPlan + notify
       if (offer.type === "PLAN") {
         const plan = await tx.plan.findUnique({ where: { offerId: subscription.offerId } });
         if (!plan) throw new Error("Plan not found");
@@ -205,40 +175,118 @@ export const createPayment = async (req, res) => {
             isRead: false,
           },
         });
-      }  // ✅ closes if (offer.type === "PLAN")
+      }
 
-      // 4️⃣ CONSULTATION — create one session
-      if (offer.type === "CONSULTATION") {
-        session = await tx.session.create({
+      // 4️⃣ AI_CALORIES — notify
+      if (offer.type === "AI_CALORIES") {
+        await tx.notification.create({
           data: {
-            subscriptionId,
-            patientId:   subscription.patientId,
-            nutritionId: subscription.nutritionId,
-            sessionDate: consultationScheduled,
-            zoomLink:    consultationZoomLink,
-            status:      "SCHEDULED",
+            userId:  subscription.patientId,
+            title:   "AI Calories Plan Activated! 🤖",
+            message: `Your "${offer.name}" plan is now active. Start tracking your calories!`,
+            isRead:  false,
           },
         });
       }
 
-      // 5️⃣ PACKAGE — create multiple sessions
+      // 5️⃣ PACKAGE — sessions + plan + chat
       if (offer.type === "PACKAGE") {
-        for (const { scheduledDate, zoomLink } of packageSessions) {
-          const s = await tx.session.create({
+        const totalSessions = offer.sessionsCount || 1;
+
+        // Session 1 — scheduled at purchase
+        const firstSession = await tx.session.create({
+          data: {
+            subscriptionId,
+            patientId:     subscription.patientId,
+            nutritionId:   subscription.nutritionId,
+            sessionDate:   packageFirstSessionDate,
+            zoomLink:      packageFirstSessionZoom,
+            sessionNumber: 1,
+            status:        "SCHEDULED",
+          },
+        });
+        sessions.push(firstSession);
+
+        // Sessions 2..N — pending schedule
+        for (let i = 2; i <= totalSessions; i++) {
+          const pending = await tx.session.create({
             data: {
               subscriptionId,
-              patientId:   subscription.patientId,
-              nutritionId: subscription.nutritionId,
-              sessionDate: scheduledDate,
-              zoomLink,
-              status:      "SCHEDULED",
+              patientId:     subscription.patientId,
+              nutritionId:   subscription.nutritionId,
+              sessionDate:   null,
+              zoomLink:      null,
+              sessionNumber: i,
+              status:        "PENDING_SCHEDULE",
             },
           });
-          sessions.push(s);
+          sessions.push(pending);
         }
+
+        // Activate plan if linked
+        const plan = await tx.plan.findUnique({ where: { offerId: subscription.offerId } });
+        if (plan) {
+          await tx.userPlan.create({
+            data: {
+              userId:         subscription.patientId,
+              planId:         plan.id,
+              subscriptionId: subscription.id,
+              startDate:      new Date(),
+            },
+          });
+          planPdfUrl = plan.pdfUrl ?? null;
+        }
+
+        // Open chat with expiry
+        const chatExpiresAt = new Date();
+        chatExpiresAt.setDate(chatExpiresAt.getDate() + (offer.chatDays || 0));
+
+        await tx.conversation.upsert({
+          where: {
+            patientId_nutritionId: {
+              patientId:   subscription.patientId,
+              nutritionId: subscription.nutritionId,
+            },
+          },
+          update: { expiresAt: chatExpiresAt },
+          create: {
+            patientId:   subscription.patientId,
+            nutritionId: subscription.nutritionId,
+            expiresAt:   chatExpiresAt,
+          },
+        });
+
+        // Notify patient
+       // Notify patient with zoom link
+await tx.notification.create({
+  data: {
+    userId:  subscription.patientId,
+    title:   "Package Activated! 🎉",
+    message: `Your package "${offer.name}" is active. Session 1 is scheduled.${
+      totalSessions > 1
+        ? ` Book your remaining ${totalSessions - 1} session(s) anytime.`
+        : ""
+    }${packageFirstSessionZoom ? " Click to join your first Zoom session." : ""}`,
+    url:    packageFirstSessionZoom ?? null,
+    isRead: false,
+  },
+});
+
+// Notify nutritionist
+await tx.notification.create({
+  data: {
+    userId:  subscription.nutritionId,
+    title:   "New Package Booked! 📅",
+    message: `${patient.firstName} ${patient.lastName} booked "${offer.name}". Session 1 is scheduled.${
+      packageFirstSessionZoom ? " Click to join the Zoom session." : ""
+    }`,
+    url:    packageFirstSessionZoom ?? null,
+    isRead: false,
+  },
+});
       }
 
-      return { payment, session, sessions, planPdfUrl };
+      return { payment, sessions, planPdfUrl };
     });
 
     // ── Real-time notifications ──
@@ -246,8 +294,8 @@ export const createPayment = async (req, res) => {
       const patientSocketId = connectedUsers.get(subscription.patientId);
       if (patientSocketId) {
         io.to(patientSocketId).emit("planActivated", {
-          message: result.planPdfUrl
-            ? `🎉 Your plan "${offer.name}" is now active! Download your PDF here: ${result.planPdfUrl}`
+          message:   result.planPdfUrl
+            ? `🎉 Your plan "${offer.name}" is now active! Download: ${result.planPdfUrl}`
             : `🎉 Your plan "${offer.name}" is now active!`,
           pdfUrl:    result.planPdfUrl,
           offerName: offer.name,
@@ -255,49 +303,46 @@ export const createPayment = async (req, res) => {
       }
     }
 
-    if (offer.type === "CONSULTATION" && result.session) {
-      const patientSocketId   = connectedUsers.get(subscription.patientId);
-      const nutritionSocketId = connectedUsers.get(subscription.nutritionId);
-
-      if (patientSocketId)
-        io.to(patientSocketId).emit("sessionBooked", {
-          session: result.session,
-          message: "Your consultation has been scheduled",
+    if (offer.type === "AI_CALORIES") {
+      const patientSocketId = connectedUsers.get(subscription.patientId);
+      if (patientSocketId) {
+        io.to(patientSocketId).emit("aiPlanActivated", {
+          message:   `🤖 Your "${offer.name}" AI plan is now active!`,
+          offerName: offer.name,
         });
-
-      if (nutritionSocketId)
-        io.to(nutritionSocketId).emit("newConsultation", {
-          session: result.session,
-          patientName: `${patient.firstName} ${patient.lastName}`,
-        });
+      }
     }
 
     if (offer.type === "PACKAGE" && result.sessions.length > 0) {
       const patientSocketId   = connectedUsers.get(subscription.patientId);
       const nutritionSocketId = connectedUsers.get(subscription.nutritionId);
+      const pendingCount      = result.sessions.length - 1;
 
       if (patientSocketId)
-        io.to(patientSocketId).emit("packageBooked", {
-          sessions: result.sessions,
-          message:  "Your package sessions have been scheduled",
+        io.to(patientSocketId).emit("packageActivated", {
+          sessions:  result.sessions,
+          offerName: offer.name,
+          message:   `Your package is active! Session 1 is scheduled.${
+            pendingCount > 0 ? ` Book your remaining ${pendingCount} session(s) when ready.` : ""
+          }`,
         });
 
       if (nutritionSocketId)
         io.to(nutritionSocketId).emit("newPackageSubscriber", {
-          sessions:    result.sessions,
-          patientName: `${patient.firstName} ${patient.lastName}`,
-          offerName:   offer.name,
+          firstSession:  result.sessions[0],
+          totalSessions: result.sessions.length,
+          patientName:   `${patient.firstName} ${patient.lastName}`,
+          offerName:     offer.name,
         });
     }
 
     return res.json({
       message:
-        offer.type === "CONSULTATION" ? "Payment successful, consultation scheduled" :
-        offer.type === "PACKAGE"      ? "Payment successful, sessions scheduled" :
-        offer.type === "PLAN"         ? "Payment successful, plan activated" :
-                                        "Payment successful",
+        offer.type === "PACKAGE"     ? "Payment successful, package activated"  :
+        offer.type === "PLAN"        ? "Payment successful, plan activated"      :
+        offer.type === "AI_CALORIES" ? "Payment successful, AI plan activated"   :
+                                       "Payment successful",
       payment:  result.payment,
-      session:  result.session,
       sessions: result.sessions,
     });
 
@@ -339,7 +384,12 @@ export const getPaymentById = async (req, res) => {
       where:   { id },
       include: {
         subscription: {
-          include: { offer: true, patient: true, nutrition: true, sessions: true },
+          include: {
+            offer:    true,
+            patient:  true,
+            nutrition: true,
+            sessions: { orderBy: { sessionNumber: "asc" } },
+          },
         },
       },
     });

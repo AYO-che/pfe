@@ -16,6 +16,8 @@ const nutritionSelect = {
 // 1️⃣ Get all plans (CLIENT + ADMIN)
 // =====================
 export const getAllPlans = async (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
   try {
     const plans = await prisma.plan.findMany({
       where: { isPrivate: false },

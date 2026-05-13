@@ -103,44 +103,57 @@ await prisma.profile.create({
 };
 
 // ------------------- LOGIN -------------------
+// ------------------- LOGIN -------------------
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
+ 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
     }
-
+ 
     const user = await prisma.user.findUnique({ where: { email } });
-
+ 
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-
+ 
     if (!user.password) {
       return res.status(400).json({ message: "Please login with Google" });
     }
-
+ 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-
+ 
+    // ✅ Check resume AND stripe via their own tables
+    const resume = await prisma.resume.findUnique({
+      where: { userId: user.id },
+    });
+ 
+    const stripe = await prisma.stripe.findUnique({
+      where: { userId: user.id },
+    });
+ 
     const token = jwt.sign(
       { id: user.id, role: user.role },
       JWT_SECRET,
       { expiresIn: "1d" }
     );
-
+ 
     res.cookie("token", token, cookieOptions);
-
+ 
     return res.status(200).json({
       user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        id:              user.id,
+        email:           user.email,
+        role:            user.role,
+        firstName:       user.firstName,
+        lastName:        user.lastName,
+        image:           user.image,
+        stripeAccountId: stripe?.stripeAccountId ?? null,  // ✅ from Stripe table
+        hasResume:       !!resume,                          // ✅ from Resume table
       },
     });
   } catch (err) {
@@ -148,7 +161,7 @@ export const login = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
+ 
 // ------------------- CHANGE PASSWORD -------------------
 export const changePassword = async (req, res) => {
   try {
@@ -270,32 +283,40 @@ export const googleCallback = async (req, res) => {
 export const getMe = async (req, res) => {
   try {
     const token = req.cookies.token;
-
+ 
     if (!token) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-
+ 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+ 
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: {
-        id: true,
-        email: true,
+        id:        true,
+        email:     true,
         firstName: true,
-        lastName: true,
-        image: true,
-        role: true,
-        profile: true,
+        lastName:  true,
+        image:     true,
+        role:      true,
+        profile:   true,
+        resume:    true,
+        stripe:    true,  // ✅ relation (not stripeAccountId field)
       },
     });
-
+ 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    res.json(user);
+ 
+    res.json({
+      ...user,
+      hasResume:       !!user.resume,                        // ✅
+      stripeAccountId: user.stripe?.stripeAccountId ?? null, // ✅
+    });
+ 
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });
   }
 };
+ 
