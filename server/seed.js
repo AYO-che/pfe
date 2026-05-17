@@ -8,6 +8,12 @@ async function main() {
 
   const nutritionists = [
     {
+      email:     "nutrition@test1.com",
+      firstName: "Sarah",
+      lastName:  "Mitchell",
+      image:     "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&q=80",
+    },
+    {
       email:     "amira.hassan@test.com",
       firstName: "Amira",
       lastName:  "Hassan",
@@ -39,27 +45,6 @@ async function main() {
     },
   ];
 
-  const nutritionist = await prisma.user.upsert({
-    where: { email: "nutrition@test1.com" },
-    update: {},
-    create: {
-      email:      "nutrition@test1.com",
-      password:   hashedPassword,
-      role:       "NUTRITION",
-      firstName:  "Sarah",
-      lastName:   "Mitchell",
-      needsSetup: false,
-    },
-  });
-
-  console.log("✅ Nutritionist created:");
-  console.log("  Email:    nutrition@test.com");
-  console.log("  Password: nutrition123");
-}
-
-main()
-  .catch((e) => { console.error("❌ Seed error:", e); process.exit(1); })
-  .finally(async () => await prisma.$disconnect());
   for (const n of nutritionists) {
     await prisma.user.upsert({
       where:  { email: n.email },
@@ -78,7 +63,7 @@ main()
   }
 
   console.log("\n🔑 Password for all accounts: nutrition1234");
-
+}
 
 main()
   .catch((e) => { console.error("❌ Seed error:", e); process.exit(1); })

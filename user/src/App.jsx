@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/Authcontext";
+import SnakeGameOverlay from "./components/SnakeGameOverlay";
 
 // --- COMPONENTS ---
 import Header from "./components/Header";
@@ -21,6 +22,7 @@ import MoodPage from "./pages/patient/MoodPage";
 import Sessionspage from "./pages/patient/Sessionspage" 
 import ProfilePlanPage from "./pages/patient/ProfilePlanPage";
 import ReviewPage from "./pages/patient/ReviewPage";
+import CommunityPostPage from "./pages/patient/Communitypostpage";
 
 // --- NUTRITIONIST PAGES ---
 import OverviewPage from "./pages/nutrition/OverviewPage";
@@ -31,6 +33,7 @@ import ChatPage from "./pages/nutrition/ChatPage";
 import NutritionProfilePage from "./pages/nutrition/ProfilePage";
 import PostsPage from "./pages/nutrition/CreatePostPage";
 import NutritionNotifsPage from "./pages/nutrition/NotifsPage";
+import NutritionReviewsPage from "./pages/nutrition/nutritionReviewsPag";
 // --- SETUP PAGES ---
 import StripeRedirect from "./pages/nutrition/StripeRedirect";
 import PatientSetup from "./pages/Patientsetup";
@@ -48,7 +51,8 @@ import OurSpecialists from "./pages/OurSpecialists";
 import AIPremiumPage from "./pages/AIPremiumPage";
 import Planspage from "./pages/Planspage";
 import SpecialistPlansPage from "./pages/SpecialistPlansPage";
-
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword  from "./pages/ResetPassword";
 // --- OTHER ---
 import MobileScan from "./pages/MobileScan";
 import CaloriesAI from "./pages/CaloriesAI";
@@ -58,6 +62,8 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+              <SnakeGameOverlay />
+
         <Routes>
 
           {/* ================= PUBLIC ================= */}
@@ -72,7 +78,8 @@ function App() {
               </>
             }
           />
-
+           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password"  element={<ResetPassword />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignupPage />} />
 
@@ -107,6 +114,7 @@ function App() {
             <Route path="/payment" element={<Payment />} />
                <Route path="/profile/plan" element={<ProfilePlanPage />} />
              <Route path="/profile/review" element={<ReviewPage />} />
+           <Route path="/profile/community" element={<CommunityPostPage />} />
 
             <Route
               path="/calories-ai"
@@ -128,6 +136,7 @@ function App() {
             <Route path="profile" element={<NutritionProfilePage />} />
             <Route path="notifs" element={<NutritionNotifsPage />} />
             <Route path="posts" element={<PostsPage />} />
+            <Route path="reviews" element={<NutritionReviewsPage />} />
           </Route>
 
         </Routes>

@@ -11,7 +11,7 @@ import prisma from "../prismaClient.js";
 ========================= */
 
 // Auth
-import { logout, signup, login, googleCallback, changePassword, forgotPassword, getMe } from "../controllers/authController.js";
+import { logout, signup, login, googleCallback, changePassword, forgotPassword, getMe,resetPassword } from "../controllers/authController.js";
 
 // Users
 import { getAllNutritionists, getAllClients, getUserById, createNutritionist, updateUser, deleteUser, getNutritionistsByOfferType } from "../controllers/userController.js";
@@ -76,7 +76,11 @@ import { getOrCreateConversation, getMyConversations, getMessages, sendMessage ,
 
 // User Plans
 import { getMyCurrentPlanDay, getMyUserPlans, createOrUpdateDailyTracking, getDailyTracking, getDailyTrackingByDate, getUserPlanById } from "../controllers/userPlanController.js";
-
+import {
+  createClientPost, getAllClientPosts, getClientPostById,
+  getMyClientPosts, getPendingClientPosts, updateClientPostStatus,
+  updateClientPost, deleteClientPost
+} from "../controllers/Clientpostcontroller.js";
 const router = express.Router();
 
 /* =========================
@@ -91,6 +95,7 @@ router.get("/me", getMe);
 router.post("/logout", logout);
 router.post("/forgot-password", forgotPassword);
 router.patch("/change-password", authenticateToken, changePassword);
+router.post("/reset-password",  resetPassword);
 
 /* =========================
    USER ROUTES
@@ -265,6 +270,14 @@ router.post("/user-plans/:userPlanId/tracking", authenticateToken, authorizeRole
 router.get("/user-plans/:userPlanId/tracking", authenticateToken, authorizeRoles("CLIENT"), getDailyTracking);
 router.get("/user-plans/:userPlanId/tracking/:date", authenticateToken, authorizeRoles("CLIENT"), getDailyTrackingByDate);
 
+router.get("/community/pending", authenticateToken, authorizeRoles("ADMIN"), getPendingClientPosts);
+router.get("/community/mine",    authenticateToken, authorizeRoles("CLIENT"), getMyClientPosts);
+router.get("/community",         getAllClientPosts);
+router.get("/community/:id",     getClientPostById);
+router.post("/community",        authenticateToken, authorizeRoles("CLIENT"), createClientPost);
+router.patch("/community/:id",         authenticateToken, authorizeRoles("CLIENT"), updateClientPost);
+router.patch("/community/:id/status",  authenticateToken, authorizeRoles("ADMIN"), updateClientPostStatus);
+router.delete("/community/:id",        authenticateToken, deleteClientPost);
 /* =========================
    CHAT ROUTE
 ========================= */

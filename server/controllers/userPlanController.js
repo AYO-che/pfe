@@ -15,7 +15,7 @@ export const getMyUserPlans = async (req, res) => {
           include: {
             offer: true,
             nutrition: {
-              select: { id:true, firstName:true, lastName:true, image:true },
+              select: { id: true, firstName: true, lastName: true, image: true },
             },
           },
         },
@@ -23,7 +23,7 @@ export const getMyUserPlans = async (req, res) => {
           include: {
             offer: true,
             nutrition: {
-              select: { id:true, firstName:true, lastName:true, image:true },
+              select: { id: true, firstName: true, lastName: true, image: true },
             },
           },
         },
@@ -34,7 +34,7 @@ export const getMyUserPlans = async (req, res) => {
 
     // Only tracker plans — must have content.days array
     // PDF plans have empty content {} or no days
-    const trackerPlans = userPlans.filter(up => {
+    const trackerPlans = userPlans.filter((up) => {
       const days = up?.plan?.content?.days;
       return Array.isArray(days) && days.length > 0;
     });
@@ -75,17 +75,16 @@ export const getUserPlanById = async (req, res) => {
 };
 
 // =====================
-// 3️⃣ Get current day plan for logged-in client
+// 3️⃣ Get current day plan for a specific userPlan (client picks which plan)
+// Route: GET /user-plans/:userPlanId/current-day
 // =====================
 export const getMyCurrentPlanDay = async (req, res) => {
   try {
     const userId = req.user.id;
+    const { userPlanId } = req.params; // ← client picks which plan to view
 
-    const userPlan = await prisma.userPlan.findFirst({
-      where: {
-        userId,
-        subscription: { status: "ACTIVE" },
-      },
+    const userPlan = await prisma.userPlan.findUnique({
+      where: { id: userPlanId },
       include: {
         plan: {
           include: {
@@ -114,25 +113,32 @@ export const getMyCurrentPlanDay = async (req, res) => {
           },
         },
       },
-      orderBy: { startDate: "desc" },
     });
 
     if (!userPlan)
-      return res.status(404).json({ message: "No active plan found" });
+      return res.status(404).json({ message: "User plan not found" });
 
-    const plan      = userPlan.plan;
-    const days      = plan.content?.days;
+    // Make sure the plan belongs to the logged-in user
+    if (userPlan.userId !== userId)
+      return res.status(403).json({ message: "Access forbidden" });
+
+    // Make sure subscription is still active
+    if (userPlan.subscription?.status !== "ACTIVE")
+      return res.status(400).json({ message: "This plan's subscription is not active" });
+
+    const plan = userPlan.plan;
+    const days = plan.content?.days;
 
     if (!days || !Array.isArray(days) || days.length === 0)
       return res.status(400).json({ message: "Plan has no days content" });
 
     const totalDays = days.length;
-    const todayStr  = new Date().toISOString().split("T")[0];
+    const todayStr = new Date().toISOString().split("T")[0];
 
-    let currentDayIndex = days.findIndex(d => d.date === todayStr);
+    let currentDayIndex = days.findIndex((d) => d.date === todayStr);
 
     if (currentDayIndex === -1) {
-      const diffTime  = new Date() - new Date(userPlan.startDate);
+      const diffTime = new Date() - new Date(userPlan.startDate);
       const dayNumber = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
       currentDayIndex = (dayNumber - 1) % totalDays;
     }
@@ -140,17 +146,21 @@ export const getMyCurrentPlanDay = async (req, res) => {
     const todayPlan = days[currentDayIndex];
 
     res.json({
-      day:       currentDayIndex + 1,
+      userPlanId: userPlan.id,
+      day: currentDayIndex + 1,
       totalDays,
       todayPlan,
       planTitle: plan.title,
-      progress:  userPlan.progress,
+      progress: userPlan.progress,
+      nutrition: plan.nutrition,
+      subscription: userPlan.subscription,
     });
   } catch (err) {
     console.error("getMyCurrentPlanDay error:", err);
     res.status(500).json({ message: err.message ?? "Server error" });
   }
 };
+
 // =====================
 // 4️⃣ Create or update daily tracking
 // =====================

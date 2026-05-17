@@ -152,14 +152,14 @@ export default function PlanPage() {
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 
-        .plan-page { min-height:100vh; background:#e8f5ef; padding:40px 20px 60px; font-family:'DM Sans',sans-serif; position:relative; overflow:hidden; }
+        .plan-page { min-height:100vh; background:#e8f5ef; padding:40px 20px 60px;   font-family: 'Inter', sans-serif; position:relative; overflow:hidden; }
         .plan-page::before { content:''; position:fixed; top:-120px; right:-120px; width:400px; height:400px; background:radial-gradient(circle,rgba(11,102,48,0.15) 0%,transparent 70%); border-radius:50%; pointer-events:none; }
         .plan-page::after  { content:''; position:fixed; bottom:-100px; left:-100px; width:350px; height:350px; background:radial-gradient(circle,rgba(26,51,41,0.1) 0%,transparent 70%); border-radius:50%; pointer-events:none; }
 
         .plan-container { max-width:700px; margin:0 auto; position:relative; z-index:1; }
         .plan-header { margin-bottom:32px; }
         .plan-eyebrow { font-size:11px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; color:rgba(26,51,41,0.45); margin-bottom:8px; }
-        .plan-h1 { font-family:'Syne',sans-serif; font-size:36px; font-weight:800; color:#1a3329; line-height:1.1; }
+        .plan-h1 {   font-family: 'Inter', sans-serif; font-size:36px; font-weight:800; color:#1a3329; line-height:1.1; }
         .plan-h1 span { color:#0b6630; }
 
         .switch-box { display:flex; gap:5px; padding:5px; border-radius:16px; margin-bottom:24px;
@@ -168,7 +168,7 @@ export default function PlanPage() {
           border-bottom:1.5px solid rgba(0,168,84,0.6); border-right:1.5px solid rgba(0,168,84,0.6);
           box-shadow:0 4px 20px rgba(15,89,47,0.1), inset 0 0 8px rgba(255,255,255,0.5);
         }
-        .switch-btn { flex:1; padding:11px 16px; border:none; border-radius:12px; background:transparent; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700; color:rgba(26,51,41,0.5); transition:all 0.22s; display:flex; align-items:center; justify-content:center; gap:8px; }
+        .switch-btn { flex:1; padding:11px 16px; border:none; border-radius:12px; background:transparent; cursor:pointer;   font-family: 'Inter', sans-serif; font-size:14px; font-weight:700; color:rgba(26,51,41,0.5); transition:all 0.22s; display:flex; align-items:center; justify-content:center; gap:8px; }
         .switch-btn:hover  { color:#1a3329; background:rgba(255,255,255,0.5); }
         .switch-btn.active { background:#0b6630; color:#a8e02c; box-shadow:0 4px 14px rgba(11,102,48,0.3); }
 
@@ -179,7 +179,7 @@ export default function PlanPage() {
           box-shadow:0 8px 32px rgba(15,89,47,0.1), inset 0 0 12px rgba(255,255,255,0.5);
           margin-bottom:20px;
         }
-        .card-title { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:#1a3329; margin-bottom:22px; display:flex; align-items:center; gap:10px; }
+        .card-title { f  font-family: 'Inter', sans-serif; font-size:20px; font-weight:800; color:#1a3329; margin-bottom:22px; display:flex; align-items:center; gap:10px; }
         .card-title::after { content:''; flex:1; height:1px; background:linear-gradient(to right,rgba(0,168,84,0.3),transparent); }
 
         /* ── Total days highlight box ── */
@@ -205,7 +205,7 @@ export default function PlanPage() {
           border: 1.5px solid rgba(0,168,84,0.25);
           border-radius: 9px;
           background: rgba(255,255,255,0.5);
-          font-family: 'DM Sans',sans-serif;
+          font-family: 'Inter', sans-serif;
           font-size: 18px; font-weight: 800; color: #0b6630;
           outline: none; transition: all 0.2s;
           max-width: 120px;
@@ -223,7 +223,7 @@ export default function PlanPage() {
           border:1.5px solid rgba(0,168,84,0.22);
           border-radius:11px;
           background:rgba(255,255,255,0.4); backdrop-filter:blur(8px);
-          font-family:'DM Sans',sans-serif; font-size:13.5px; color:#1a3329;
+            font-family: 'Inter', sans-serif; font-size:13.5px; color:#1a3329;
           outline:none; transition:all 0.2s; appearance:none;
         }
         .plan-input::placeholder, .plan-textarea::placeholder { color:rgba(26,51,41,0.3); }
@@ -259,14 +259,14 @@ export default function PlanPage() {
         .day-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
         .day-badge { display:inline-flex; align-items:center; gap:6px; background:#0b6630; color:#a8e02c; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:4px 13px; border-radius:20px; }
 
-        .btn-remove-day { background:rgba(192,57,43,0.1); border:1px solid rgba(192,57,43,0.2); border-radius:9px; padding:5px 12px; font-size:11.5px; font-weight:700; color:#c0392b; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
+        .btn-remove-day { background:rgba(192,57,43,0.1); border:1px solid rgba(192,57,43,0.2); border-radius:9px; padding:5px 12px; font-size:11.5px; font-weight:700; color:#c0392b; cursor:pointer;   font-family: 'Inter', sans-serif; transition:all 0.2s; }
         .btn-remove-day:hover { background:rgba(192,57,43,0.2); }
         .btn-remove-small { width:32px; height:32px; background:rgba(192,57,43,0.1); border:1px solid rgba(192,57,43,0.15); border-radius:8px; cursor:pointer; font-size:13px; color:#c0392b; display:flex; align-items:center; justify-content:center; transition:all 0.18s; flex-shrink:0; }
         .btn-remove-small:hover { background:rgba(192,57,43,0.2); }
 
-        .btn-add-small { padding:6px 14px; background:rgba(255,255,255,0.4); border:1.5px dashed rgba(0,168,84,0.35); border-radius:9px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:700; color:#0b6630; transition:all 0.2s; margin-top:6px; }
+        .btn-add-small { padding:6px 14px; background:rgba(255,255,255,0.4); border:1.5px dashed rgba(0,168,84,0.35); border-radius:9px; cursor:pointer;   font-family: 'Inter', sans-serif; font-size:12px; font-weight:700; color:#0b6630; transition:all 0.2s; margin-top:6px; }
         .btn-add-small:hover { background:rgba(255,255,255,0.7); border-color:rgba(168,224,44,0.6); }
-        .btn-add-day { width:100%; padding:11px; background:rgba(255,255,255,0.3); border:1.5px dashed rgba(0,168,84,0.3); border-radius:13px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; color:#0b6630; transition:all 0.2s; }
+        .btn-add-day { width:100%; padding:11px; background:rgba(255,255,255,0.3); border:1.5px dashed rgba(0,168,84,0.3); border-radius:13px; cursor:pointer;   font-family: 'Inter', sans-serif; font-size:13px; font-weight:700; color:#0b6630; transition:all 0.2s; }
         .btn-add-day:hover { background:rgba(255,255,255,0.55); border-color:rgba(168,224,44,0.6); }
 
         .meal-block { background:rgba(255,255,255,0.3); border-radius:12px; padding:12px 14px; margin-bottom:10px; border:1px solid rgba(0,168,84,0.1); }
@@ -277,11 +277,13 @@ export default function PlanPage() {
         .client-info-label { font-size:10.5px; font-weight:700; color:#5a7a6e; text-transform:uppercase; letter-spacing:1px; margin-bottom:3px; }
         .client-info-value { font-size:13.5px; font-weight:700; color:#1a3329; }
 
-        .btn-submit { width:100%; padding:15px; background:#0b6630; color:#a8e02c; border:none; border-radius:16px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:800; box-shadow:0 6px 24px rgba(11,102,48,0.3); transition:all 0.22s; }
+        .btn-submit { width:100%; padding:15px; background:#0b6630; color:#a8e02c; border:none; border-radius:16px; cursor:pointer;   font-family: 'Inter', sans-serif;
+ font-size:16px; font-weight:800; box-shadow:0 6px 24px rgba(11,102,48,0.3); transition:all 0.22s; }
         .btn-submit:hover { background:#0d7a38; transform:translateY(-2px); box-shadow:0 10px 32px rgba(11,102,48,0.4); }
         .btn-submit:active { transform:translateY(0); }
 
-        .warn-box { margin-top:8px; padding:10px 14px; background:rgba(184,162,0,0.1); border-radius:9px; border:1px solid rgba(184,162,0,0.25); font-size:12px; color:#8a7200; font-family:'DM Sans',sans-serif; }
+        .warn-box { margin-top:8px; padding:10px 14px; background:rgba(184,162,0,0.1); border-radius:9px; border:1px solid rgba(184,162,0,0.25); font-size:12px; color:#8a7200;   font-family: 'Inter', sans-serif;
+ }
       `}</style>
 
       <div className="plan-page">

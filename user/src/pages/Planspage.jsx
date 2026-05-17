@@ -3,6 +3,193 @@ import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/Authcontext";
 
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.pl-fade     { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+.pl-fade-d1  { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) 0.07s both; }
+.pl-fade-d2  { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) 0.14s both; }
+
+/* ── Page ── */
+.plans-page {
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 50% 0%, #e8f5e9 0%, #f2f7f5 50%, #eef4f1 100%);
+}
+
+/* ── Hero ── */
+.plans-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg,#1a3329 0%,#0b6630 55%,#1a5e3a 100%);
+  padding: 52px 40px 44px;
+}
+.plans-hero-dots {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle,rgba(168,224,44,0.1) 1.5px,transparent 1.5px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+.plans-hero-inner {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
+  align-items: flex-start; gap: 12px;
+}
+.plans-hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 700;
+  color: #a8e02c; text-transform: uppercase; letter-spacing: 1.8px;
+  background: rgba(168,224,44,0.12);
+  border: 1px solid rgba(168,224,44,0.35);
+  border-radius: 999px; padding: 5px 14px;
+}
+.plans-hero-badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #a8e02c; flex-shrink: 0;
+}
+.pl-hero-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 42px; font-weight: 800;
+  color: #fff; line-height: 1.1; letter-spacing: -0.5px;
+}
+.plans-hero-sub {
+  font-size: 14px; color: rgba(255,255,255,0.6);
+  max-width: 480px; line-height: 1.6;
+}
+.pl-stats {
+  display: flex; gap: 32px; margin-top: 6px;
+}
+
+/* ── Container ── */
+.plans-container { padding: 28px 40px 60px; }
+
+/* ── Error ── */
+.plans-error {
+  margin-bottom: 24px; padding: 16px 20px;
+  background: rgba(254,232,232,0.7); backdrop-filter: blur(10px);
+  border-radius: 16px; border: 1px solid rgba(192,57,43,0.2);
+  font-size: 13.5px; font-weight: 600; color: #8a3a2f;
+  display: flex; align-items: center; gap: 10px;
+}
+.plans-error-retry {
+  background: none; border: none; color: #8a3a2f;
+  font-weight: 700; cursor: pointer; text-decoration: underline;
+}
+
+/* ── Category filters ── */
+.pl-cats {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+}
+.pl-cat-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 700;
+  padding: 7px 16px; border-radius: 999px;
+  cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.3px;
+}
+.pl-cat-btn:hover { transform: translateY(-1px); }
+
+.plans-count {
+  font-size: 12.5px; font-weight: 600; color: #5a7a6e; margin-bottom: 20px;
+}
+
+/* ── Grid ── */
+.pl-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* ── Glass card ── */
+.pl-card {
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-top:    1.5px solid rgba(168,224,44,0.85);
+  border-left:   1.5px solid rgba(168,224,44,0.85);
+  border-bottom: 1.5px solid rgba(0,168,84,0.75);
+  border-right:  1.5px solid rgba(0,168,84,0.75);
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(15,89,47,0.12), inset 0 0 12px rgba(255,255,255,0.55);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.pl-card:hover {
+  background: rgba(255,255,255,0.28);
+  box-shadow: 0 10px 36px rgba(15,89,47,0.18), inset 0 0 16px rgba(255,255,255,0.75);
+  transform: translateY(-3px);
+}
+.pl-card.popular {
+  border-top:    1.5px solid rgba(245,230,66,0.9);
+  border-left:   1.5px solid rgba(245,230,66,0.9);
+  border-bottom: 1.5px solid rgba(168,224,44,0.8);
+  border-right:  1.5px solid rgba(168,224,44,0.8);
+}
+
+/* ── Card image ── */
+.pl-cover-img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.pl-card:hover .pl-cover-img { transform: scale(1.05); }
+
+/* ── Shimmer overlay on image ── */
+.pl-shimmer {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg,transparent 25%,rgba(255,255,255,0.08) 50%,transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2.2s infinite;
+}
+
+/* ── Skeleton card ── */
+.pl-skeleton {
+  background: linear-gradient(90deg,rgba(0,168,84,0.08) 25%,rgba(0,168,84,0.15) 50%,rgba(0,168,84,0.08) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 8px;
+}
+
+/* ── Buy button ── */
+.pl-buy-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13.5px; font-weight: 700;
+  padding: 12px 0; border-radius: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.22s ease; width: 100%;
+}
+.pl-buy-btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.05); }
+.pl-buy-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Spinner ── */
+.pl-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* ── Empty ── */
+.plans-empty {
+  grid-column: 1/-1; text-align: center;
+  padding: 60px 24px; color: #9ab5a5;
+}
+`;
+
 const CATEGORY_ACCENT = {
   "Weight Loss":     "#2d7a4f",
   "Muscle Gain":     "#1a6fa0",
@@ -49,7 +236,7 @@ function mapPlan(p) {
 function SkeletonCard() {
   return (
     <div className="pl-card" style={{ minHeight: 420 }}>
-      <div style={{ height: 175, background: "#e8e8e8" }} />
+      <div style={{ height: 175, background: "rgba(0,168,84,0.08)" }} />
       <div style={{ padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
         <div className="pl-skeleton" style={{ height: 14, width: "80%" }} />
         <div className="pl-skeleton" style={{ height: 14, width: "60%" }} />
@@ -69,66 +256,75 @@ function PlanCard({ plan, index, onBuy, buying }) {
       className={`pl-card pl-fade ${plan.popular ? "popular" : ""}`}
       style={{ animationDelay: `${index * 0.07}s` }}
     >
+      {/* Image */}
       <div style={{ position: "relative", height: 175, overflow: "hidden", flexShrink: 0 }}>
         <img src={plan.coverImg} alt={plan.category} className="pl-cover-img" />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom,rgba(0,0,0,0.1) 0%,rgba(0,0,0,0.65) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(26,51,41,0.72) 100%)" }} />
         <div className="pl-shimmer" />
 
         {plan.popular && (
-          <div style={{ position: "absolute", top: 12, right: 12, background: "#2d7a4f", color: "#fff", fontSize: 10.5, fontWeight: 800, padding: "4px 11px", borderRadius: 999, letterSpacing: 0.4, textTransform: "uppercase" }}>
+          <div style={{ position: "absolute", top: 12, right: 12, background: "rgba(168,224,44,0.9)", backdropFilter: "blur(8px)", color: "#1a3329", fontSize: 10.5, fontWeight: 800, padding: "4px 11px", borderRadius: 999, letterSpacing: 0.4 }}>
             ⭐ Popular
           </div>
         )}
 
         <div style={{ position: "absolute", top: 12, left: 12 }}>
-          <span style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.2)" }}>
+          <span style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999, border: "1px solid rgba(168,224,44,0.4)" }}>
             {plan.category}
           </span>
         </div>
 
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 16px" }}>
-          <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 17, fontWeight: 800, color: "#fff", marginBottom: 3, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>{plan.name}</div>
+          <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 17, fontWeight: 800, color: "#fff", marginBottom: 4, textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>{plan.name}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: "#f5e642", textShadow: "0 1px 6px rgba(0,0,0,0.4)" }}>{plan.price}</span>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.8)" }}>{plan.period}</span>
-            <span style={{ marginLeft: "auto", fontSize: 11, color: "rgba(255,255,255,0.75)", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)", borderRadius: 999, padding: "3px 9px", border: "1px solid rgba(255,255,255,0.15)" }}>{plan.duration}</span>
+            <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: "rgba(168,224,44,0.95)", textShadow: "0 1px 6px rgba(0,0,0,0.3)" }}>{plan.price}</span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.75)" }}>{plan.period}</span>
+            {plan.duration && (
+              <span style={{ marginLeft: "auto", fontSize: 11, color: "rgba(255,255,255,0.8)", background: "rgba(255,255,255,0.12)", backdropFilter: "blur(6px)", borderRadius: 999, padding: "3px 9px", border: "1px solid rgba(168,224,44,0.3)" }}>{plan.duration}</span>
+            )}
           </div>
         </div>
       </div>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 13, padding: "16px 18px 20px", background: "#fff" }}>
-        <p style={{ fontSize: 13, color: "#5a7a6e", lineHeight: 1.65, margin: 0 }}>{plan.desc}</p>
+      {/* Body */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12, padding: "16px 18px 20px", background: "rgba(255,255,255,0.6)", backdropFilter: "blur(10px)" }}>
+        {plan.desc && <p style={{ fontSize: 12.5, color: "#5a7a6e", lineHeight: 1.65, margin: 0 }}>{plan.desc}</p>}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#f7faf8", borderRadius: 12, padding: "10px 12px", border: `1px solid ${plan.accent}20` }}>
-          <img src={plan.specialistAvatar} alt={plan.specialist} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `2px solid ${plan.accent}40` }} />
+        {/* Specialist */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.5)", borderRadius: 12, padding: "10px 12px", border: "1px solid rgba(0,168,84,0.12)", backdropFilter: "blur(8px)" }}>
+          <img src={plan.specialistAvatar} alt={plan.specialist} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid rgba(168,224,44,0.5)" }} />
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: plan.accent, letterSpacing: 0.4, textTransform: "uppercase" }}>Specialist</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#0b6630", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>Specialist</div>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#1a3329" }}>{plan.specialist}</div>
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-          {plan.features.map(f => (
-            <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13 }}>
-              <div style={{ width: 17, height: 17, borderRadius: "50%", background: `${plan.accent}15`, border: `1.5px solid ${plan.accent}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={plan.accent} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+        {/* Features */}
+        {plan.features.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            {plan.features.map(f => (
+              <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "#2a4a3e", lineHeight: 1.5 }}>
+                <div style={{ width: 17, height: 17, borderRadius: "50%", background: "rgba(168,224,44,0.15)", border: "1.5px solid rgba(0,168,84,0.35)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#0b6630" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                </div>
+                {f}
               </div>
-              <span style={{ color: "#2a4a3e", lineHeight: 1.5 }}>{f}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        <div style={{ height: 1, background: "rgba(79,158,122,0.1)" }} />
+        <div style={{ height: 1, background: "rgba(0,168,84,0.1)" }} />
 
+        {/* Button */}
         <button
           className="pl-buy-btn"
           onClick={() => onBuy(plan)}
           disabled={buying === plan.id}
           style={{
-            background: plan.popular ? "linear-gradient(135deg,#1a3329,#2d6b50)" : "transparent",
-            color: plan.popular ? "#f5e642" : plan.accent,
-            border: plan.popular ? "none" : `1.5px solid ${plan.accent}`,
-            boxShadow: plan.popular ? "0 6px 18px rgba(26,51,41,0.22)" : "none",
+            background: plan.popular ? "linear-gradient(135deg,#0b6630,#2d7a4f)" : "rgba(168,224,44,0.15)",
+            color:      plan.popular ? "#fff" : "#0b6630",
+            border:     plan.popular ? "none" : "1.5px solid rgba(0,168,84,0.35)",
+            boxShadow:  plan.popular ? "0 6px 18px rgba(11,102,48,0.25)" : "none",
           }}
         >
           {buying === plan.id
@@ -173,7 +369,7 @@ export default function PlansPage() {
   }, []);
 
   const categories = ["All", ...new Set(plans.map(p => p.category))];
-  const filtered = activeCategory === "All" ? plans : plans.filter(p => p.category === activeCategory);
+  const filtered   = activeCategory === "All" ? plans : plans.filter(p => p.category === activeCategory);
 
   const handleBuy = (plan) => {
     setBuying(plan.id);
@@ -187,7 +383,9 @@ export default function PlansPage() {
 
   return (
     <div className="plans-page">
+      <style>{CSS}</style>
 
+      {/* Hero */}
       <section className="plans-hero">
         <div className="plans-hero-dots" />
         <div className="plans-hero-inner">
@@ -218,22 +416,23 @@ export default function PlansPage() {
 
         {error && (
           <div className="plans-error">
-            ⚠️ {error} —
+            <span style={{ fontSize: 18 }}>⚠️</span>
+            {error} —
             <button onClick={() => window.location.reload()} className="plans-error-retry">Retry</button>
           </div>
         )}
 
         {!loading && (
-          <div className="pl-cats">
+          <div className="pl-cats pl-fade-d1">
             {categories.map(cat => (
               <button
                 key={cat}
                 className="pl-cat-btn"
                 onClick={() => setActiveCategory(cat)}
                 style={{
-                  background: activeCategory === cat ? "linear-gradient(135deg,#1a3329,#2d6b50)" : "rgba(255,255,255,0.7)",
-                  color: activeCategory === cat ? "#f5e642" : "#2d6b50",
-                  border: `1.5px solid ${activeCategory === cat ? "transparent" : "rgba(79,158,122,0.25)"}`,
+                  background: activeCategory === cat ? "linear-gradient(135deg,#0b6630,#2d7a4f)" : "rgba(255,255,255,0.7)",
+                  color:      activeCategory === cat ? "#fff" : "#0b6630",
+                  border:     `1.5px solid ${activeCategory === cat ? "transparent" : "rgba(0,168,84,0.25)"}`,
                 }}
               >
                 {cat}
@@ -243,7 +442,7 @@ export default function PlansPage() {
         )}
 
         {!loading && (
-          <div className="plans-count">
+          <div className="plans-count pl-fade-d2">
             {filtered.length} plan{filtered.length !== 1 ? "s" : ""}
             {activeCategory !== "All" ? ` for ${activeCategory}` : " available"}
           </div>
@@ -252,22 +451,23 @@ export default function PlansPage() {
         <div className="pl-grid">
           {loading
             ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-            : filtered.map((plan, i) => (
-                <PlanCard key={plan.id} plan={plan} index={i} onBuy={handleBuy} buying={buying} />
-              ))
+            : filtered.length === 0
+              ? (
+                <div className="plans-empty">
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>🌿</div>
+                  <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: "#1a3329", marginBottom: 8 }}>No plans yet</div>
+                  <div style={{ fontSize: 14, opacity: 0.7 }}>Check back soon — new plans are on the way.</div>
+                </div>
+              )
+              : filtered.map((plan, i) => (
+                  <PlanCard key={plan.id} plan={plan} index={i} onBuy={handleBuy} buying={buying} />
+                ))
           }
         </div>
 
-        {!loading && !error && filtered.length === 0 && (
-          <div className="plans-empty">
-            <div style={{ fontSize: 48, marginBottom: 12 }}>🌿</div>
-            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, marginBottom: 8 }}>No plans yet</div>
-            <div style={{ fontSize: 14, opacity: 0.7 }}>Check back soon — new plans are on the way.</div>
-          </div>
-        )}
-
       </div>
 
+      
     </div>
   );
 }

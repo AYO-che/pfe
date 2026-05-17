@@ -4,133 +4,170 @@ import cv2
 import numpy as np
 import base64
 
+# ── Load model ────────────────────────────────────────────────
 model = YOLO("best.pt")
 
+# ── Load nutrition data ───────────────────────────────────────
 with open("nutrition_lookup.json", "r") as f:
     nutrition_lookup = json.load(f)
 
-CLASS_NAMES = [
-    "candy", "egg tart", "french fries", "chocolate", "biscuit",
-    "popcorn", "pudding", "ice cream", "cheese butter", "cake",
-    "wine", "milkshake", "coffee", "juice", "milk", "tea",
-    "almond", "red beans", "cashew", "dried cranberries", "soy",
-    "walnut", "peanut", "egg", "apple", "date", "apricot",
-    "avocado", "banana", "strawberry", "cherry", "blueberry",
-    "raspberry", "mango", "olives", "peach", "lemon", "pear",
-    "fig", "pineapple", "grape", "kiwi", "melon", "orange",
-    "watermelon", "steak", "pork", "chicken duck", "sausage",
-    "fried meat", "lamb", "sauce", "crab", "fish", "shellfish",
-    "shrimp", "soup", "bread", "corn", "hamburg", "pizza",
-    "hanamaki baozi", "wonton dumplings", "pasta", "noodles",
-    "rice", "pie", "tofu", "eggplant", "potato", "garlic",
-    "cauliflower", "tomato", "kelp", "seaweed", "spring onion",
-    "rape", "ginger", "okra", "lettuce", "pumpkin", "cucumber",
-    "white radish", "carrot", "asparagus", "bamboo shoots",
-    "broccoli", "celery stick", "cilantro mint", "snow peas",
-    "cabbage", "bean sprouts", "onion", "pepper", "green beans",
-    "French beans", "king oyster mushroom", "shiitake",
-    "enoki mushroom", "oyster mushroom", "white button mushroom",
-    "salad", "other ingredients"
-]
+# ── Use model's real class names ──────────────────────────────
+CLASS_NAMES = model.names
 
-# Rough weight per item (grams) when using bounding boxes instead of masks
-# These are realistic single-serving estimates per food class
-ITEM_WEIGHTS = {
-    "carrot":       40,
-    "chicken duck": 180,
-    "potato":       80,
-    "broccoli":     85,
-    "tomato":       90,
-    "green beans":  60,
-    "french fries": 100,
-    "steak":        200,
-    "rice":         180,
-    "egg":          55,
-    "banana":       120,
-    "apple":        150,
-    "pizza":        150,
-    "bread":        60,
-    "pasta":        200,
-    "noodles":      200,
-    "salad":        120,
-    "corn":         100,
-    "soup":         250,
-    "fish":         150,
-    "shrimp":       80,
-    "pork":         150,
-    "lamb":         150,
-    "sausage":      80,
-    "cake":         100,
-    "chocolate":    30,
-    "milk":         240,
-    "juice":        240,
-    "coffee":       240,
-    "tea":          240,
+# ── Name mapping for mismatches between YOLO and nutrition DB ─
+NAME_MAP = {
+    "French beans":   "green beans",
+    "french fries":   "potato",
+    "cilantro mint":  "lettuce",
+    "pie":            "bread",
+    "biscuit":        "bread",
+    "cake":           "bread",
+    "sauce":          "tomato",
+    "ice cream":      "milk",
+    "asparagus":      "asparagus",
+    "strawberry":     "apple",
+    "blueberry":      "apple",
+    "pork":           "pork",
+    "steak":          "steak",
+    "fish":           "fish",
+    "egg":            "egg",
+    "onion":          "onion",
+    "pepper":         "pepper",
+    "cucumber":       "cucumber",
+    "lettuce":        "lettuce",
+    "broccoli":       "broccoli",
+    "tomato":         "tomato",
+    "carrot":         "carrot",
+    "potato":         "potato",
+    "corn":           "corn",
+    "rice":           "rice",
+    "noodles":        "noodles",
+    "pasta":          "pasta",
+    "bread":          "bread",
+    "chicken duck":   "chicken duck",
 }
-DEFAULT_ITEM_WEIGHT = 80  # grams fallback
 
+# ── Realistic minimum weights per food type (grams) ───────────
+WEIGHT_MINIMUMS = {
+    "chicken duck":  120,
+    "steak":         150,
+    "pork":          130,
+    "fish":          100,
+    "egg":            60,
+    "rice":          150,
+    "pasta":         130,
+    "noodles":       130,
+    "bread":          60,
+    "pie":            80,
+    "biscuit":        30,
+    "cake":           80,
+    "pizza":         150,
+    "potato":        100,
+    "french fries":   80,
+    "corn":           80,
+    "default":        50,
+}
+
+# ── Nutrition lookup with fallback ────────────────────────────
+def get_nutrition(food_name):
+    # try exact match first
+    if food_name in nutrition_lookup:
+        return nutrition_lookup[food_name]
+    # try mapped name
+    mapped = NAME_MAP.get(food_name)
+    if mapped and mapped in nutrition_lookup:
+        return nutrition_lookup[mapped]
+    # nothing found
+    return None
+
+# ── Main predict function ─────────────────────────────────────
 def predict(image_path):
-    results = model(image_path, conf=0.30)  # slightly higher conf to reduce false positives
+    results = model(image_path, conf=0.25)
     r = results[0]
 
     detections = []
-    total = {"calories": 0.0, "fat": 0.0, "carbs": 0.0, "protein": 0.0}
+    total = {
+        "calories": 0,
+        "fat":      0,
+        "carbs":    0,
+        "protein":  0
+    }
 
-    img_h, img_w = r.orig_shape[0], r.orig_shape[1]
-    img_area = img_h * img_w
+    # group all detections by food class
+    food_groups = {}
 
-    for i, (cls, conf) in enumerate(zip(r.boxes.cls, r.boxes.conf)):
-        food_name = CLASS_NAMES[int(cls)]
-        confidence = float(conf)
+    if r.masks is not None:
+        img_area = r.orig_shape[0] * r.orig_shape[1]
 
-        # ── Weight estimation via bounding box area ratio ──
-        box      = r.boxes.xyxy[i]
-        box_w    = float(box[2] - box[0])
-        box_h    = float(box[3] - box[1])
-        box_area = box_w * box_h
-        area_ratio = box_area / img_area
+        for i in range(len(r.boxes)):
+            cls       = int(r.boxes.cls[i])
+            conf      = float(r.boxes.conf[i])
+            food_name = CLASS_NAMES[cls]
 
-        # Use known per-item weight, scaled slightly by box size ratio
-        base_weight = ITEM_WEIGHTS.get(food_name, DEFAULT_ITEM_WEIGHT)
-        # If the box covers > 30% of image it's the main dish — boost weight
-        if area_ratio > 0.30:
-            weight_g = base_weight * 1.5
-        elif area_ratio < 0.05:
-            weight_g = base_weight * 0.6
-        else:
-            weight_g = base_weight
+            mask      = r.masks.data[i]
+            mask_area = (mask > 0.5).sum().item()
 
-        nutrition = nutrition_lookup.get(food_name)
+            if food_name not in food_groups:
+                food_groups[food_name] = {
+                    "total_mask_area": 0,
+                    "confidence":      conf
+                }
+            food_groups[food_name]["total_mask_area"] += mask_area
 
-        item = {
-            "food":       food_name,
-            "confidence": round(confidence, 2),
-            "weight_g":   round(weight_g, 1),
-            "calories":   0.0,
-            # ── Fix: use fat/carbs/protein (not fat_g etc.) to match frontend ──
-            "fat":        0.0,
-            "carbs":      0.0,
-            "protein":    0.0,
-        }
+        # calculate nutrition per food group
+        for food_name, group in food_groups.items():
 
-        if nutrition:
-            item["calories"] = round(weight_g * nutrition["calories_per_g"], 1)
-            item["fat"]      = round(weight_g * nutrition["fat_per_g"],      1)
-            item["carbs"]    = round(weight_g * nutrition["carb_per_g"],     1)
-            item["protein"]  = round(weight_g * nutrition["protein_per_g"],  1)
+            ratio    = group["total_mask_area"] / img_area
+            weight_g = ratio * 800  # assume full plate = 800g
 
-            total["calories"] += item["calories"]
-            total["fat"]      += item["fat"]
-            total["carbs"]    += item["carbs"]
-            total["protein"]  += item["protein"]
+            # apply realistic minimum weight
+            min_weight = WEIGHT_MINIMUMS.get(
+                food_name,
+                WEIGHT_MINIMUMS["default"]
+            )
+            weight_g = max(weight_g, min_weight)
 
-        detections.append(item)
+            nutrition = get_nutrition(food_name)
 
-    # Round totals
-    total = {k: round(v, 1) for k, v in total.items()}
+            item = {
+                "food":      food_name,
+                "confidence": round(group["confidence"], 2),
+                "weight_g":  round(weight_g, 1),
+                "calories":  0,
+                "fat_g":     0,
+                "carbs_g":   0,
+                "protein_g": 0
+            }
+
+            if nutrition:
+                item["calories"]  = round(
+                    weight_g * nutrition["calories_per_g"], 1)
+                item["fat_g"]     = round(
+                    weight_g * nutrition["fat_per_g"], 1)
+                item["carbs_g"]   = round(
+                    weight_g * nutrition["carb_per_g"], 1)
+                item["protein_g"] = round(
+                    weight_g * nutrition["protein_per_g"], 1)
+
+                total["calories"] += item["calories"]
+                total["fat"]      += item["fat_g"]
+                total["carbs"]    += item["carbs_g"]
+                total["protein"]  += item["protein_g"]
+
+            detections.append(item)
+
+    # annotated image
+    annotated        = r.plot()
+    _, buffer        = cv2.imencode(".jpg", annotated)
+    img_base64       = base64.b64encode(buffer).decode("utf-8")
 
     return {
         "detections": detections,
-        "total":      total,
-        "image":      None,   # disabled — frontend uses original clean image
+        "total": {
+            "calories": round(total["calories"], 1),
+            "fat":      round(total["fat"],      1),
+            "carbs":    round(total["carbs"],    1),
+            "protein":  round(total["protein"],  1)
+        },
+        "image": img_base64
     }

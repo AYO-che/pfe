@@ -1,3 +1,4 @@
+// page 
 import { useEffect, useState } from "react";
 
 const CSS = `
@@ -5,10 +6,12 @@ const CSS = `
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@keyframes slideUp   { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
-@keyframes shimmer   { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
-@keyframes spin      { to { transform:rotate(360deg); } }
-@keyframes dropIn    { from { opacity:0; transform:scale(0.96) translateY(-8px); } to { opacity:1; transform:scale(1) translateY(0); } }
+@keyframes slideUp  { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeUp   { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+@keyframes shimmer  { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@keyframes spin     { to{transform:rotate(360deg)} }
+@keyframes dropIn   { from { opacity:0; transform:scale(0.96) translateY(-8px); } to { opacity:1; transform:scale(1) translateY(0); } }
+@keyframes toastIn  { from{opacity:0;transform:translateX(-50%) translateY(12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 
 .anim-up    { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) both; }
 .anim-up-d1 { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) 0.07s both; }
@@ -27,6 +30,7 @@ const CSS = `
   box-shadow: 0 8px 32px rgba(15,89,47,0.12), inset 0 0 12px rgba(255,255,255,0.55);
   overflow: hidden;
   transition: all 0.3s ease;
+  margin-bottom: 16px;
 }
 .glass-card:hover {
   background: rgba(255,255,255,0.28);
@@ -44,7 +48,7 @@ const CSS = `
 .filter-tab {
   padding: 8px 16px; border-radius: 999px; border: 1.5px solid rgba(0,168,84,0.2);
   cursor: pointer; font-family: 'DM Sans',sans-serif; font-size: 13px; font-weight: 700;
-  background: rgba(255,255,255,0.2); backdrop-filter: blur(8px);
+  background: rgba(255,255,255,0.2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   color: #1a3329; transition: all 0.18s;
 }
 .filter-tab:hover { background: rgba(255,255,255,0.45); border-color: rgba(168,224,44,0.5); }
@@ -60,6 +64,7 @@ const CSS = `
   border: 1px solid rgba(0,168,84,0.1);
   background: rgba(255,255,255,0.25);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition: all 0.2s ease;
 }
 .session-row:hover {
@@ -96,7 +101,7 @@ const CSS = `
 
 /* ── Date / slot buttons ── */
 .ss-date-btn {
-  background: rgba(255,255,255,0.3); backdrop-filter: blur(6px);
+  background: rgba(255,255,255,0.3); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   border: 1.5px solid rgba(0,168,84,0.2);
   border-radius: 12px; padding: 7px 12px;
   font-size: 12px; font-weight: 600; color: #1a3329;
@@ -107,7 +112,7 @@ const CSS = `
 .ss-date-btn.active { background: #0b6630; color: #a8e02c; border-color: transparent; box-shadow: 0 3px 10px rgba(11,102,48,0.25); }
 
 .ss-slot-btn {
-  background: rgba(255,255,255,0.3); backdrop-filter: blur(6px);
+  background: rgba(255,255,255,0.3); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   border: 1.5px solid rgba(0,168,84,0.18);
   border-radius: 12px; padding: 9px 8px;
   font-size: 12px; font-weight: 600; color: #1a3329;
@@ -123,6 +128,7 @@ const CSS = `
   position: fixed; inset: 0;
   background: rgba(10,26,20,0.55);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: flex; align-items: center; justify-content: center;
   z-index: 1000; padding: 20px;
 }
@@ -131,6 +137,7 @@ const CSS = `
   border-radius: 24px; animation: dropIn 0.25s ease;
   background: rgba(240,252,245,0.85);
   backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   border-top:    2px solid rgba(168,224,44,0.9);
   border-left:   2px solid rgba(168,224,44,0.9);
   border-bottom: 2px solid rgba(0,168,84,0.8);
@@ -139,6 +146,51 @@ const CSS = `
 }
 .ss-modal::-webkit-scrollbar { width: 3px; }
 .ss-modal::-webkit-scrollbar-thumb { background: rgba(0,168,84,0.25); border-radius: 99px; }
+
+/* ── Toast ── */
+.pp-toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  background: rgba(26,51,41,0.92); color: #a8e02c;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(168,224,44,0.35);
+  padding: 11px 26px; border-radius: 999px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+  z-index: 9999; animation: toastIn 0.25s ease;
+  box-shadow: 0 8px 28px rgba(15,89,47,0.3);
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* ── Page header ── */
+.cp-header-glass {
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-top:    1.5px solid rgba(168,224,44,0.85);
+  border-left:   1.5px solid rgba(168,224,44,0.85);
+  border-bottom: 1.5px solid rgba(0,168,84,0.75);
+  border-right:  1.5px solid rgba(0,168,84,0.75);
+  border-radius: 22px;
+  padding: 24px 28px;
+  margin-bottom: 22px;
+  box-shadow: 0 8px 32px rgba(15,89,47,0.1), inset 0 0 10px rgba(255,255,255,0.5);
+  animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.cp-header-icon {
+  width: 52px; height: 52px; border-radius: 16px;
+  background: linear-gradient(135deg, #0b6630, #2d6b50);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 16px rgba(11,102,48,0.25);
+  flex-shrink: 0;
+}
+.cp-header-text h1 {
+  font-family: 'Inter', sans-serif;
+  font-size: 22px; font-weight: 800; color: #1a3329; margin: 0 0 4px 0;
+}
+.cp-header-text p { font-size: 13px; color: rgba(11,102,48,0.55); margin: 0; }
 `;
 
 /* ── helpers ── */
@@ -240,7 +292,7 @@ function BookModal({ session, onClose, onBooked }) {
               </div>
             </div>
             <button onClick={onClose} style={{
-              width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer",
+              width: 32, height: 32, borderRadius: "50%", cursor: "pointer",
               background: "rgba(255,255,255,0.5)", backdropFilter: "blur(8px)",
               border: "1px solid rgba(0,168,84,0.2)",
               color: "#1a3329", fontSize: 14,
@@ -350,6 +402,12 @@ export default function SessionsPage() {
   const [loading,        setLoading]        = useState(true);
   const [filter,         setFilter]         = useState("ALL");
   const [bookingSession, setBookingSession] = useState(null);
+  const [toast,          setToast]          = useState('');
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  };
 
   useEffect(() => {
     fetch("http://localhost:5000/sessions/mine", { credentials: "include" })
@@ -362,6 +420,7 @@ export default function SessionsPage() {
   const handleBooked = (updated) => {
     setSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
     setBookingSession(null);
+    showToast("Session booked successfully!");
   };
 
   const filtered = filter === "ALL" ? sessions : sessions.filter(s => s.status === filter);
@@ -396,16 +455,21 @@ export default function SessionsPage() {
     <div style={{ fontFamily: "'DM Sans',sans-serif", minHeight: "100vh" }}>
       <style>{CSS}</style>
 
-      {/* Page heading */}
-      <div className="anim-up" style={{ marginBottom: 22 }}>
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: "#5a7a6e", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 5 }}>
-          Appointments
+      {/* Toast */}
+      {toast && (
+        <div className="pp-toast">
+          <div style={{ width:18, height:18, borderRadius:"50%", background:"#0b6630", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#a8e02c" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          {toast}
         </div>
-        <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 24, fontWeight: 800, color: "#1a3329", letterSpacing: -0.5 }}>
-          My Sessions
-        </div>
-        <div style={{ fontSize: 13, color: "#5a7a6e", marginTop: 5, lineHeight: 1.6 }}>
-          View your scheduled sessions and book pending ones.
+      )}
+
+      <div className="cp-header-glass">
+        <div className="cp-header-icon">📝</div>
+        <div className="cp-header-text">
+          <h1>My Sessions</h1>
+          <p>View your scheduled sessions and book pending ones.</p>
         </div>
       </div>
 
@@ -472,7 +536,7 @@ export default function SessionsPage() {
           <div style={{ fontSize: 13, color: "#5a7a6e" }}>
             {filter === "ALL"
               ? "Your sessions will appear here after you purchase a package."
-              : `No ${filter.toLowerCase().replace("_", " ")} sessions.`}
+              : `No ${filter.toLowerCase().replace("_"," ")} sessions.`}
           </div>
         </div>
       )}
@@ -551,6 +615,11 @@ export default function SessionsPage() {
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
                       Join Zoom
                     </button>
+                  )}
+                  {s.status === "COMPLETED" && s.sessionDate && (
+                    <span style={{ fontSize: 11, color: "#0b6630", fontWeight: 600 }}>
+                      Done {new Date(s.sessionDate).toLocaleDateString("en-US", { month:"short", day:"numeric" })}
+                    </span>
                   )}
                   {s.status === "PENDING_SCHEDULE" && (
                     <button className="pf-btn pf-btn-primary" onClick={() => setBookingSession(s)}>

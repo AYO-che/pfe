@@ -31,20 +31,34 @@ export const getAllSessions = async (req, res) => {
 export const getMySessions = async (req, res) => {
   try {
     const { id: userId, role } = req.user;
+    const now = new Date();
+
     const whereCondition =
       role === "CLIENT" ? { patientId: userId } : { nutritionId: userId };
+
+    // ── Auto-complete past scheduled sessions ──
+    await prisma.session.updateMany({
+      where: {
+        ...whereCondition,
+        status:      "SCHEDULED",
+        sessionDate: { lt: now },
+      },
+      data: { status: "COMPLETED" },
+    });
 
     const sessions = await prisma.session.findMany({
       where: whereCondition,
       include: {
         subscription: { select: { offer: true } },
-        patient:   userSelect,
-        nutrition: userSelect,
+        patient:      userSelect,
+        nutrition:    userSelect,
       },
       orderBy: [{ status: "asc" }, { sessionDate: "asc" }],
     });
+
     res.json({ sessions });
   } catch (err) {
+    console.error("getMySessions error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -1,0 +1,243 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@400;600;700&display=swap');
+
+/* ── ☀️ CSS Variables (Light Mode) ── */
+:root {
+  --green-primary:  #2C6E3F;
+  --green-light:    #4CAF50;
+  --green-accent:   #3D8B4F;
+
+  --bg-main:        #F5F6FA;
+  --bg-card:        #FFFFFF;
+  --bg-sidebar:     #FFFFFF;
+  --bg-hover:       #F9FAFB;
+
+  --text-primary:   #1A1A2E;
+  --text-secondary: #6B7280;
+  --text-muted:     #9CA3AF;
+
+  --border:         #E5E7EB;
+  --border-light:   #F3F4F6;
+  --input-bg:       #F5F6FA;
+  --table-head-bg:  #FAFAFA;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* ── 🌙 🆕 العصري والاحترافي Dark Mode الوضع الليلي ── */
+.dark-mode {
+  --green-primary:  #34804A; /* أخضر مريح للعين في الظلام */
+  --green-light:    #4CAF50;
+  --green-accent:   #3D8B4F;
+
+  --bg-main:        #0B0F19; /* أسود معتم فخم وعميق يقلل إجهاد العين */
+  --bg-card:        #111827; /* رمادي داكن مائل للأزرق للقطع والكرات */
+  --bg-sidebar:     #111827;
+  --bg-hover:       #1F2937; /* تأثير حوام رقيق ومميز */
+
+  --text-primary:   #F9FAFB; /* نصوص ناصعة وواضحة */
+  --text-secondary: #9CA3AF;
+  --text-muted:     #6B7280;
+
+  --border:         #1F2937; /* حدود داكنة متناسقة مع الخلفية */
+  --border-light:   #161E2E;
+  --input-bg:       #1F2937;
+  --table-head-bg:  #1F2937;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* ── Reset ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+h1,h2,h3,h4,h5 { font-family: 'Syne', sans-serif; font-weight: 700; }
+button  { cursor: pointer; font-family: inherit; }
+input, textarea, select { font-family: inherit; }
+a { text-decoration: none; color: inherit; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 3px; }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+.modal-box {
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+  width: 520px; max-width: 95vw;
+  max-height: 90vh; overflow-y: auto;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: translateY(0) } }
+
+/* ── Table ── */
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left; padding: 12px 16px;
+  font-size: 11px; font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  background: var(--table-head-bg);
+}
+td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px; color: var(--text-primary);
+}
+tr:last-child td { border-bottom: none; }
+tbody tr { transition: background 0.12s; }
+tbody tr:hover td { background: var(--bg-hover); }
+
+/* ── Form ── */
+.form-group  { margin-bottom: 16px; }
+.form-label  {
+  display: block; font-size: 11px; font-weight: 600;
+  color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 6px;
+}
+.form-input  {
+  width: 100%; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 13px; outline: none;
+  background: var(--input-bg); color: var(--text-primary);
+  transition: border-color 0.18s, background-color 0.18s, color 0.18s;
+}
+.form-input:focus  { border-color: var(--green-primary); }
+textarea.form-input { resize: vertical; }
+select.form-input   { cursor: pointer; }
+
+/* ── Buttons ── */
+.btn-primary {
+  background: var(--green-primary); color: #fff;
+  border: none; padding: 9px 18px; border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.18s; white-space: nowrap;
+}
+.btn-primary:hover  { background: var(--green-accent); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(44,110,63,0.35); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-secondary {
+  background: var(--bg-main); color: var(--text-secondary);
+  border: 1px solid var(--border); padding: 9px 18px; border-radius: 8px;
+  font-size: 13px; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.18s;
+}
+.btn-secondary:hover { background: var(--border-light); }
+
+.btn-danger {
+  background: #FEF2F2; color: #DC2626;
+  border: 1px solid #FECACA; padding: 9px 18px; border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.18s;
+}
+.btn-danger:hover { background: #FEE2E2; }
+
+/* ── Icon buttons ── */
+.icon-btn {
+  background: none; border: none;
+  color: var(--text-muted); padding: 5px; border-radius: 6px;
+  transition: all 0.15s; display: inline-flex; align-items: center; justify-content: center;
+}
+.icon-btn:hover        { background: var(--bg-main); color: var(--text-primary); }
+.icon-btn.danger:hover { background: #FEF2F2; color: #DC2626; }
+
+/* ── Badges ── */
+.badge          { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+.badge-active   { background: #DCFCE7; color: #16A34A; }
+.badge-free     { background: #DBEAFE; color: #2563EB; }
+.badge-expired  { background: #FEE2E2; color: #DC2626; }
+.badge-inactive { background: #F3F4F6; color: #6B7280; }
+.badge-replied  { background: #DBEAFE; color: #2563EB; }
+.badge-pending  { background: #FEF3C7; color: #D97706; }
+
+/* ── Filter tabs ── */
+.filter-tab {
+  padding: 6px 14px; border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent; color: var(--text-secondary);
+  font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+}
+.filter-tab.active { border-color: var(--green-primary); background: var(--green-primary); color: #fff; }
+
+/* ── Cards ── */
+.card {
+  background: var(--bg-card);
+  border-radius: 12px; border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.stat-card {
+  background: var(--bg-card);
+  border-radius: 12px; border: 1px solid var(--border);
+  padding: 20px; box-shadow: var(--shadow-sm);
+}
+
+/* ── Search box ── */
+.search-box {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--input-bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 14px;
+}
+.search-box input {
+  border: none; background: transparent; outline: none;
+  font-size: 13px; color: var(--text-primary); width: 100%;
+}
+.search-box input::placeholder { color: var(--text-muted); }
+
+/* ── Table container ── */
+.table-container {
+  background: var(--bg-card);
+  border-radius: 12px; border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.table-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-light);
+  font-size: 12px; color: var(--text-muted);
+  background: var(--bg-card);
+}
+
+/* ── Page header ── */
+.page-header            { margin-bottom: 24px; }
+.page-header h1         { font-size: 22px; margin-bottom: 4px; color: var(--text-primary); }
+.page-header p          { color: var(--text-secondary); font-size: 13px; }
+
+/* ── 🆕 Chrysalis New Logo Styles ── */
+.logo-cropped-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  background: transparent;
+}
+
+.logo-cropped-img {
+  object-fit: cover;
+  transform: scale(1.35); /* عمل زووم تلقائي لإخفاء الحواف البيضاء */
+  transition: transform 0.3s ease;
+}

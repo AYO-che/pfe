@@ -5,251 +5,446 @@ import { useAuth } from "../context/Authcontext";
 const API_URL = "http://localhost:5000";
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@keyframes slideUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
-@keyframes pulse   { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
-@keyframes popIn   { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
-@keyframes spin    { to{transform:rotate(360deg)} }
+:root {
+  --green-deep:    #1a3329;
+  --green-mid:     #2d6b50;
+  --green-bright:  #4f9e7a;
+  --accent:        #a8e02c;
+  --accent-border: rgba(168,224,44,0.35);
+  --glass-bg:      rgba(255,255,255,0.45);
+  --text-dark:     #1a3329;
+  --text-mid:      #4a6b5a;
+  --text-soft:     #8aaa96;
+  --border-light:  rgba(168,224,44,0.3);
+}
 
-.anim-up    { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) both; }
-.anim-up-d1 { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) 0.07s both; }
-
-/* ── Page ── */
 .rp-page {
   min-height: 100vh;
-  background: #f2f7f5;
-  font-family: 'DM Sans', sans-serif;
-  padding: 40px 20px 80px;
+  background: linear-gradient(135deg, #e8f5ee 0%, #d4ede0 45%, #eafaf0 100%);
+font-family: Inter, sans-serif;
+  padding: 44px 20px 80px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.rp-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(168,224,44,0.07) 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rp-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+}
+.rp-orb-1 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(45,107,80,0.16), transparent 70%);
+  top: -120px; right: -100px;
+}
+.rp-orb-2 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(168,224,44,0.11), transparent 70%);
+  bottom: 80px; left: -80px;
 }
 
 /* ── Header ── */
-.rp-header { text-align: center; margin-bottom: 44px; }
+.rp-header {
+  text-align: center;
+  margin-bottom: 38px;
+  position: relative;
+  z-index: 1;
+}
 
 .rp-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: #0b6630; color: #a8e02c;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
-  text-transform: uppercase; padding: 6px 16px; border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--green-deep);
+  color: #c8e6c9;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 6px 18px;
+  border-radius: 100px;
   margin-bottom: 18px;
+  box-shadow: 0 4px 16px rgba(26,51,41,0.22);
 }
-.rp-badge::before {
-  content: ''; width: 6px; height: 6px;
-  background: #a8e02c; border-radius: 50%;
-  animation: pulse 2s infinite;
+
+.rp-badge-dot {
+  width: 6px; height: 6px;
+  background: #a8e02c;
+  border-radius: 50%;
+  animation: blink 2s ease infinite;
 }
+@keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.45;transform:scale(1.5)} }
 
 .rp-title {
-  font-family: 'Syne', sans-serif;
-  font-size: clamp(26px, 5vw, 40px);
-  font-weight: 800; color: #1a3329;
-  line-height: 1.1; margin-bottom: 12px;
-  letter-spacing: -1px;
+font-family: Inter, sans-serif;
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1.15;
+  margin-bottom: 10px;
+  letter-spacing: -0.4px;
 }
+.rp-title span { color: var(--green-mid); }
 
 .rp-subtitle {
-  font-size: 14.5px; color: #5a7a6e;
-  max-width: 460px; margin: 0 auto; line-height: 1.6;
+  font-size: 13.5px;
+  color: var(--text-mid);
+  max-width: 400px;
+  margin: 0 auto;
+  line-height: 1.65;
 }
 
-/* ── Progress steps ── */
-.rp-progress-wrap { max-width: 640px; margin: 0 auto 36px; }
-.rp-steps { display: flex; align-items: center; }
-
+/* ── Progress ── */
+.rp-progress-wrap {
+  max-width: 540px;
+  margin: 0 auto 30px;
+  position: relative;
+  z-index: 1;
+}
+.rp-steps { display: flex; align-items: flex-start; }
 .rp-step {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; gap: 7px; position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
 }
 .rp-step:not(:last-child)::after {
-  content: ''; position: absolute; top: 16px; left: 50%;
-  width: 100%; height: 2px;
-  background: rgba(0,168,84,0.15); z-index: 0; transition: background 0.4s;
+  content: '';
+  position: absolute;
+  top: 14px; left: 54%;
+  width: 92%;
+  height: 1.5px;
+  background: rgba(168,224,44,0.2);
+  z-index: 0;
+  transition: background 0.4s;
 }
-.rp-step.done:not(:last-child)::after { background: #0b6630; }
+.rp-step.done:not(:last-child)::after { background: var(--green-mid); }
 
 .rp-step-dot {
-  width: 32px; height: 32px; border-radius: 50%;
-  border: 2px solid rgba(0,168,84,0.2);
-  background: rgba(255,255,255,0.3); backdrop-filter: blur(6px);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(168,224,44,0.3);
+  background: rgba(255,255,255,0.4);
+  backdrop-filter: blur(10px);
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; color: #5a7a6e;
-  z-index: 1; transition: all 0.3s; font-family: 'DM Sans',sans-serif;
+  font-size: 11px; font-weight: 800; color: var(--text-soft);
+  z-index: 1;
+  transition: all 0.35s cubic-bezier(0.22,1,0.36,1);
+  box-shadow: 0 2px 10px rgba(26,51,41,0.06);
 }
 .rp-step.active .rp-step-dot {
-  border-color: rgba(168,224,44,0.8); background: #0b6630;
-  color: #a8e02c; box-shadow: 0 0 0 4px rgba(11,102,48,0.15);
+  border-color: var(--green-mid);
+  background: var(--green-mid);
+  color: #fff;
+  box-shadow: 0 0 0 5px rgba(45,107,80,0.15), 0 4px 14px rgba(45,107,80,0.28);
 }
-.rp-step.done .rp-step-dot { border-color: #0b6630; background: #0b6630; color: #a8e02c; }
+.rp-step.done .rp-step-dot {
+  border-color: var(--green-mid);
+  background: var(--green-mid);
+  color: #a8e02c;
+}
+.rp-step-label {
+  font-size: 10px; font-weight: 700;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rp-step.active .rp-step-label,
+.rp-step.done  .rp-step-label { color: var(--green-mid); }
 
-.rp-step-label { font-size: 11px; font-weight: 700; color: #9ab8ae; text-align: center; font-family: 'DM Sans',sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
-.rp-step.active .rp-step-label, .rp-step.done .rp-step-label { color: #0b6630; }
-
-/* ── Glass card ── */
+/* ── Glass Card ── */
 .rp-card {
-  max-width: 640px; margin: 0 auto;
-  background: rgba(255,255,255,0.18);
-  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
-  border-top:    1.5px solid rgba(168,224,44,0.85);
-  border-left:   1.5px solid rgba(168,224,44,0.85);
-  border-bottom: 1.5px solid rgba(0,168,84,0.75);
-  border-right:  1.5px solid rgba(0,168,84,0.75);
-  border-radius: 24px; padding: 38px;
-  box-shadow: 0 8px 32px rgba(15,89,47,0.12), inset 0 0 12px rgba(255,255,255,0.55);
-  animation: slideUp 0.4s cubic-bezier(0.22,1,0.36,1) both;
+  max-width: 600px;
+  margin: 0 auto;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-radius: 24px;
+  padding: 36px 38px;
+  border-top:    1.5px solid rgba(168,224,44,0.65);
+  border-left:   1.5px solid rgba(168,224,44,0.45);
+  border-bottom: 1.5px solid rgba(45,107,80,0.28);
+  border-right:  1.5px solid rgba(45,107,80,0.28);
+  box-shadow: 0 8px 40px rgba(26,51,41,0.09), inset 0 0 24px rgba(255,255,255,0.38);
+  animation: fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+.rp-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,224,44,0.55), transparent);
+  pointer-events: none;
 }
 
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Section titles ── */
 .rp-section-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 20px; font-weight: 800; color: #1a3329; margin-bottom: 5px;
+font-family: Inter, sans-serif;
+
+
+font-size: 18px; font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+  letter-spacing: -0.3px;
 }
 .rp-section-sub {
-  font-size: 13px; color: #5a7a6e; margin-bottom: 26px; line-height: 1.6;
+  font-size: 12.5px;
+  color: var(--text-soft);
+  margin-bottom: 24px;
 }
 
 /* ── Fields ── */
-.rp-field { margin-bottom: 18px; }
+.rp-field { margin-bottom: 16px; }
 .rp-field label {
-  display: block; font-size: 10.5px; font-weight: 700; color: #5a7a6e;
-  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 7px;
-  font-family: 'DM Sans',sans-serif;
+  display: block;
+  font-size: 10.5px; font-weight: 700;
+  color: var(--text-dark);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
 }
-
-.rp-input, .rp-textarea, .rp-select {
-  width: 100%; padding: 11px 14px;
-  border: 1.5px solid rgba(0,168,84,0.22);
+.rp-input, .rp-textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border-light);
   border-radius: 12px;
-  font-family: 'DM Sans', sans-serif; font-size: 13.5px; color: #1a3329;
-  background: rgba(255,255,255,0.4); backdrop-filter: blur(8px);
-  outline: none; transition: all 0.2s; appearance: none;
+font-family: Inter, sans-serif;
+  font-size: 13.5px;
+  color: var(--text-dark);
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blu
+  r(8px);
+  outline: none;
+  transition: all 0.22s;
+  box-shadow: 0 2px 8px rgba(26,51,41,0.04);
 }
-.rp-input::placeholder, .rp-textarea::placeholder { color: rgba(26,51,41,0.3); }
-.rp-input:focus, .rp-textarea:focus, .rp-select:focus {
-  border-color: rgba(168,224,44,0.7);
-  background: rgba(255,255,255,0.65);
+.rp-input:focus, .rp-textarea:focus {
+  border-color: rgba(45,107,80,0.55);
+  background: rgba(255,255,255,0.82);
+  box-shadow: 0 0 0 3px rgba(45,107,80,0.1);
 }
-.rp-textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+.rp-input::placeholder, .rp-textarea::placeholder { color: var(--text-soft); }
+.rp-textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
 
 .rp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-@media (max-width: 540px) { .rp-row { grid-template-columns: 1fr; } }
+@media (max-width: 500px) { .rp-row { grid-template-columns: 1fr; } }
 
-/* ── Tag input ── */
+/* ── Tags ── */
 .rp-tags-wrap {
   display: flex; flex-wrap: wrap; gap: 7px;
   padding: 9px 12px;
-  border: 1.5px solid rgba(0,168,84,0.22);
+  border: 1.5px solid var(--border-light);
   border-radius: 12px;
-  background: rgba(255,255,255,0.4); backdrop-filter: blur(8px);
-  min-height: 46px; cursor: text; transition: all 0.2s;
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(8px);
+  min-height: 44px; cursor: text;
+  transition: all 0.22s;
 }
 .rp-tags-wrap:focus-within {
-  border-color: rgba(168,224,44,0.7);
-  background: rgba(255,255,255,0.65);
+  border-color: rgba(45,107,80,0.55);
+  background: rgba(255,255,255,0.82);
+  box-shadow: 0 0 0 3px rgba(45,107,80,0.1);
 }
 .rp-tag {
   display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(11,102,48,0.1); color: #0b6630;
-  border: 1px solid rgba(168,224,44,0.35);
-  font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+  background: rgba(45,107,80,0.11);
+  border: 1px solid rgba(45,107,80,0.18);
+  color: var(--green-deep);
+  font-size: 11.5px; font-weight: 600;
+  padding: 3px 10px; border-radius: 100px;
 }
 .rp-tag button {
   background: none; border: none; cursor: pointer;
-  color: #0b6630; font-size: 14px; line-height: 1; padding: 0;
-  display: flex; align-items: center;
+  color: var(--green-mid); font-size: 14px; line-height: 1;
+  padding: 0; opacity: 0.65; transition: opacity 0.15s;
 }
+.rp-tag button:hover { opacity: 1; }
 .rp-tag-input {
-  border: none; outline: none; font-family: 'DM Sans',sans-serif;
-  font-size: 13px; color: #1a3329; background: transparent;
-  min-width: 130px; flex: 1;
+  border: none; outline: none;
+font-family: Inter, sans-serif;
+  font-size: 13px; color: var(--text-dark);
+  background: transparent; min-width: 120px; flex: 1;
 }
-.rp-tag-input::placeholder { color: rgba(26,51,41,0.3); }
-.rp-tag-hint { font-size: 11px; color: #9ab8ae; margin-top: 5px; }
+.rp-tag-hint { font-size: 10.5px; color: var(--text-soft); margin-top: 5px; }
 
-/* ── Offer cards ── */
-.rp-offer-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
-}
-@media (max-width: 420px) { .rp-offer-grid { grid-template-columns: 1fr; } }
+/* ── Offer Cards ── */
+.rp-offer-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+@media (max-width: 440px) { .rp-offer-grid { grid-template-columns: 1fr; } }
 
 .rp-offer-card {
-  border: 1.5px solid rgba(0,168,84,0.18);
-  border-radius: 16px; padding: 20px 16px;
-  cursor: pointer; transition: all 0.2s; text-align: center;
-  background: rgba(255,255,255,0.25); backdrop-filter: blur(8px);
-  font-family: 'DM Sans',sans-serif;
+  border: 1.5px solid var(--border-light);
+  border-radius: 16px;
+  padding: 22px 16px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.22,1,0.36,1);
+  text-align: center;
+  background: rgba(255,255,255,0.32);
+  backdrop-filter: blur(12px);
+  position: relative; overflow: hidden;
+}
+.rp-offer-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,224,44,0.5), transparent);
+  opacity: 0; transition: opacity 0.25s;
 }
 .rp-offer-card:hover {
-  background: rgba(255,255,255,0.45);
-  border-color: rgba(168,224,44,0.5);
-  transform: translateY(-2px);
+  border-color: rgba(45,107,80,0.38);
+  background: rgba(255,255,255,0.55);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(26,51,41,0.09);
 }
+.rp-offer-card:hover::after { opacity: 1; }
 .rp-offer-card.selected {
-  background: rgba(11,102,48,0.1);
-  border-color: rgba(168,224,44,0.7);
-  box-shadow: 0 4px 14px rgba(11,102,48,0.12);
+  border-color: rgba(45,107,80,0.65);
+  background: rgba(45,107,80,0.08);
+  box-shadow: 0 0 0 3px rgba(45,107,80,0.1), 0 8px 22px rgba(26,51,41,0.09);
 }
-.rp-offer-icon  { font-size: 28px; margin-bottom: 9px; }
-.rp-offer-label { font-size: 13px; font-weight: 700; color: #1a3329; }
-.rp-offer-desc  { font-size: 11.5px; color: #5a7a6e; margin-top: 4px; }
+.rp-offer-card.selected::after { opacity: 1; }
 
-/* ── Nav buttons ── */
+.rp-offer-icon { font-size: 30px; margin-bottom: 10px; }
+.rp-offer-label { font-size: 13.5px; font-weight: 700; color: var(--text-dark); font-family: Inter, sans-serif; }
+.rp-offer-desc  { font-size: 11.5px; color: var(--text-soft); margin-top: 5px; line-height: 1.4; }
+.rp-offer-check {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10.5px; color: var(--green-mid); font-weight: 700;
+  margin-top: 10px;
+  background: rgba(45,107,80,0.1);
+  border-radius: 100px; padding: 2px 10px;
+}
+
+/* ── Divider ── */
+.rp-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+  margin: 20px 0;
+}
+
+/* ── Char hint ── */
+.rp-char-hint {
+  font-size: 10.5px; color: var(--text-soft);
+  margin-top: 5px; text-align: right;
+}
+
+/* ── Nav Buttons ── */
 .rp-nav {
-  display: flex; justify-content: space-between;
-  align-items: center; margin-top: 28px; gap: 10px;
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 26px;
 }
-
 .rp-btn-back {
-  padding: 11px 22px; border-radius: 20px;
-  border: 1.5px solid rgba(168,224,44,0.4);
-  background: rgba(255,255,255,0.3); backdrop-filter: blur(8px);
-  color: #1a3329; font-family: 'DM Sans',sans-serif;
-  font-size: 13.5px; font-weight: 700; cursor: pointer; transition: all 0.2s;
-}
-.rp-btn-back:hover { background: rgba(255,255,255,0.55); border-color: rgba(168,224,44,0.6); }
-
-.rp-btn-next {
-  flex: 1; padding: 13px 24px; border-radius: 20px; border: none;
-  background: #0b6630; color: #a8e02c;
-  font-family: 'DM Sans',sans-serif; font-size: 14px; font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-light);
+  background: rgba(255,255,255,0.38);
+  backdrop-filter: blur(8px);
+  color: var(--green-mid);
+font-family: Inter, sans-serif;
+  font-size: 13px; font-weight: 600;
   cursor: pointer; transition: all 0.2s;
-  box-shadow: 0 4px 14px rgba(11,102,48,0.3);
-  display: flex; align-items: center; justify-content: center; gap: 8px;
 }
-.rp-btn-next:hover:not(:disabled) { background: #0d7a38; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(11,102,48,0.35); }
-.rp-btn-next:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.rp-btn-back:hover {
+  background: rgba(255,255,255,0.65);
+  border-color: rgba(45,107,80,0.4);
+}
+.rp-btn-next {
+  flex: 1;
+  padding: 12px 24px;
+  border-radius: 12px; border: none;
+  background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
+  color: #a8e02c;
+font-family: Inter, sans-serif;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.25s;
+  box-shadow: 0 4px 18px rgba(26,51,41,0.22);
+}
+.rp-btn-next:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(26,51,41,0.28);
+}
+.rp-btn-next:disabled { opacity: 0.42; cursor: not-allowed; transform: none; }
 
 /* ── Error ── */
 .err-box {
-  background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.2);
-  border-radius: 11px; padding: 10px 14px;
-  font-size: 13px; color: #c0392b; margin-bottom: 16px;
-  font-family: 'DM Sans',sans-serif;
+  background: rgba(229,62,62,0.08);
+  border: 1px solid rgba(229,62,62,0.22);
+  border-radius: 10px;
+  padding: 10px 14px; font-size: 13px;
+  color: #c53030; margin-bottom: 18px;
+  backdrop-filter: blur(6px);
 }
 
 /* ── Success ── */
-.rp-success { text-align: center; padding: 16px 0; }
+.rp-success { text-align: center; padding: 14px 0; }
 .rp-success-icon {
   width: 80px; height: 80px;
-  background: linear-gradient(135deg,#1a3329,#0b6630);
-  border: 2px solid rgba(168,224,44,0.5);
+  background: linear-gradient(135deg, var(--green-deep), var(--green-mid));
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 34px; margin: 0 auto 22px;
+  font-size: 34px;
+  margin: 0 auto 22px;
+  box-shadow: 0 8px 30px rgba(26,51,41,0.28), 0 0 0 8px rgba(45,107,80,0.1);
   animation: popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both;
-  box-shadow: 0 8px 28px rgba(11,102,48,0.25);
 }
+@keyframes popIn { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+
 .rp-success h2 {
-  font-family: 'Syne',sans-serif; font-size: 26px; font-weight: 800;
-  color: #1a3329; margin-bottom: 10px;
+font-family: Inter, sans-serif;
+  font-size: 24px; font-weight: 800;
+  color: var(--text-dark); margin-bottom: 10px;
 }
-.rp-success p { font-size: 13.5px; color: #5a7a6e; line-height: 1.7; }
+.rp-success p { font-size: 13.5px; color: var(--text-mid); line-height: 1.65; }
+.rp-success-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(45,107,80,0.1);
+  border: 1px solid rgba(45,107,80,0.2);
+  color: var(--green-mid);
+  font-size: 12px; font-weight: 700;
+  padding: 5px 14px; border-radius: 100px; margin-top: 16px;
+}
+
+/* ── Spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.rp-spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(168,224,44,0.25);
+  border-top-color: #a8e02c;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.65s linear infinite;
+}
 `;
 
 const STEPS = ["Identity", "Experience", "Offers"];
 
 const OFFER_OPTIONS = [
-  { value:"PLAN",         icon:"📋", label:"Meal Plan",    desc:"Custom nutrition plans" },
-  { value:"CONSULTATION", icon:"💬", label:"Consultation", desc:"1-on-1 sessions" },
+  { value: "PLAN",    icon: "📋", label: "Meal Plan", desc: "Custom PDF nutrition plans for clients" },
+  { value: "PACKAGE", icon: "📦", label: "Package",   desc: "Sessions + personalised plan + chat" },
 ];
 
 function TagInput({ value, onChange, placeholder }) {
@@ -279,7 +474,7 @@ function TagInput({ value, onChange, placeholder }) {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => {
             if (e.key === "Enter" || e.key === ",") { e.preventDefault(); add(); }
-            if (e.key === "Backspace" && !input && value.length) onChange(value.slice(0,-1));
+            if (e.key === "Backspace" && !input && value.length) onChange(value.slice(0, -1));
           }}
           onBlur={add}
         />
@@ -290,8 +485,8 @@ function TagInput({ value, onChange, placeholder }) {
 }
 
 export default function CreateResumePage() {
-  const { user } = useAuth();
-  const navigate  = useNavigate();
+  const { fetchUser } = useAuth();
+  const navigate = useNavigate();
 
   const [step,    setStep]    = useState(0);
   const [loading, setLoading] = useState(false);
@@ -299,19 +494,23 @@ export default function CreateResumePage() {
   const [done,    setDone]    = useState(false);
 
   const [form, setForm] = useState({
-    bio:"", education:"", workplace:"", experienceYears:"",
-    specializations:[], certifications:[], offersTypes:[],
+    bio:             "",
+    education:       "",
+    workplace:       "",
+    experienceYears: "",
+    specializations: [],
+    certifications:  [],
+    offersTypes:     [],
   });
 
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
 
-  const toggleOffer = (val) => {
+  const toggleOffer = (val) =>
     set("offersTypes",
       form.offersTypes.includes(val)
         ? form.offersTypes.filter(v => v !== val)
         : [...form.offersTypes, val]
     );
-  };
 
   const stepValid = () => {
     if (step === 0) return form.bio.trim().length >= 20;
@@ -321,38 +520,58 @@ export default function CreateResumePage() {
   };
 
   const submit = async () => {
-    setLoading(true); setError("");
+    setLoading(true);
+    setError("");
     try {
       const res = await fetch(`${API_URL}/resume`, {
-        method:"POST", credentials:"include",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ ...form, experienceYears: parseInt(form.experienceYears, 10) }),
+        method:      "POST",
+        credentials: "include",
+        headers:     { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bio:             form.bio,
+          education:       form.education,
+          workplace:       form.workplace,
+          experienceYears: parseInt(form.experienceYears, 10),
+          specializations: form.specializations,
+          certifications:  form.certifications,
+          offersTypes:     form.offersTypes,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to save resume");
+      await fetchUser();
       setDone(true);
       setTimeout(() => navigate("/resume"), 2500);
-    } catch (err) { setError(err.message); }
-    finally { setLoading(false); }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const stepClass = (i) => i < step ? "rp-step done" : i === step ? "rp-step active" : "rp-step";
+  const stepClass = (i) =>
+    i < step ? "rp-step done" : i === step ? "rp-step active" : "rp-step";
 
   return (
     <>
       <style>{CSS}</style>
       <div className="rp-page">
+        <div className="rp-orb rp-orb-1" />
+        <div className="rp-orb rp-orb-2" />
 
-        {/* Header */}
-        <div className="rp-header anim-up">
-          <div className="rp-badge">Profile Setup</div>
-          <h1 className="rp-title">Build your professional resume</h1>
-          <p className="rp-subtitle">This is what clients will see when browsing nutritionists. Make it count.</p>
+        {/* ── Header ── */}
+        <div className="rp-header">
+          <div className="rp-badge">
+            <span className="rp-badge-dot" />
+            Profile Setup
+          </div>
+          <h1 className="rp-title">Build your <span>professional</span> resume</h1>
+          <p className="rp-subtitle">This is what clients see when browsing nutritionists on the platform.</p>
         </div>
 
-        {/* Progress */}
+        {/* ── Progress ── */}
         {!done && (
-          <div className="rp-progress-wrap anim-up-d1">
+          <div className="rp-progress-wrap">
             <div className="rp-steps">
               {STEPS.map((label, i) => (
                 <div key={label} className={stepClass(i)}>
@@ -364,18 +583,22 @@ export default function CreateResumePage() {
           </div>
         )}
 
-        {/* Card */}
+        {/* ── Glass Card ── */}
         <div className="rp-card" key={done ? "done" : step}>
 
-          {/* ── Success ── */}
+          {/* SUCCESS */}
           {done ? (
             <div className="rp-success">
               <div className="rp-success-icon">✓</div>
               <h2>Resume created!</h2>
-              <p>Your professional profile is live.<br />Redirecting you to your dashboard…</p>
+              <p>Your professional profile is now live on the platform.<br />Redirecting you to your dashboard…</p>
+              <div className="rp-success-badge">
+                <span style={{ width: 6, height: 6, background: "#a8e02c", borderRadius: "50%", display: "inline-block" }} />
+                Profile is live
+              </div>
             </div>
 
-          /* ── Step 0: Identity ── */
+          /* STEP 0 */
           ) : step === 0 ? (
             <>
               <div className="rp-section-title">About you</div>
@@ -386,21 +609,27 @@ export default function CreateResumePage() {
                 <label>Bio *</label>
                 <textarea
                   className="rp-textarea"
-                  placeholder="Describe your approach to nutrition, your philosophy, and what makes you unique as a practitioner…"
+                  placeholder="Describe your approach to nutrition, your philosophy and what sets you apart…"
                   value={form.bio}
                   onChange={e => set("bio", e.target.value)}
                 />
-                <div className="rp-tag-hint">{form.bio.length} chars — minimum 20</div>
+                <div className="rp-char-hint" style={{ color: form.bio.length >= 20 ? "#2d6b50" : undefined }}>
+                  {form.bio.length} / 20 min chars
+                </div>
               </div>
+
+              <div className="rp-divider" />
 
               <div className="rp-row">
                 <div className="rp-field">
                   <label>Education</label>
-                  <input className="rp-input" placeholder="e.g. MSc Nutritional Science" value={form.education} onChange={e => set("education", e.target.value)} />
+                  <input className="rp-input" placeholder="e.g. MSc Nutritional Science"
+                    value={form.education} onChange={e => set("education", e.target.value)} />
                 </div>
                 <div className="rp-field">
                   <label>Workplace</label>
-                  <input className="rp-input" placeholder="e.g. Wellness Clinic" value={form.workplace} onChange={e => set("workplace", e.target.value)} />
+                  <input className="rp-input" placeholder="e.g. Wellness Clinic"
+                    value={form.workplace} onChange={e => set("workplace", e.target.value)} />
                 </div>
               </div>
 
@@ -411,35 +640,43 @@ export default function CreateResumePage() {
               </div>
             </>
 
-          /* ── Step 1: Experience ── */
+          /* STEP 1 */
           ) : step === 1 ? (
             <>
-              <div className="rp-section-title">Experience &amp; skills</div>
-              <div className="rp-section-sub">Add your years of experience, specializations and certifications.</div>
+              <div className="rp-section-title">Experience & skills</div>
+              <div className="rp-section-sub">Your years of experience, specializations and certifications.</div>
               {error && <div className="err-box">⚠️ {error}</div>}
 
               <div className="rp-field">
                 <label>Years of experience *</label>
-                <input className="rp-input" type="number" min="0" max="50" placeholder="e.g. 5" value={form.experienceYears} onChange={e => set("experienceYears", e.target.value)} />
+                <input className="rp-input" type="number" min="0" max="50" placeholder="e.g. 5"
+                  value={form.experienceYears} onChange={e => set("experienceYears", e.target.value)}
+                  style={{ maxWidth: 150 }} />
               </div>
+
+              <div className="rp-divider" />
 
               <div className="rp-field">
                 <label>Specializations *</label>
-                <TagInput value={form.specializations} onChange={v => set("specializations", v)} placeholder="e.g. Weight Loss, Diabetes…" />
+                <TagInput value={form.specializations} onChange={v => set("specializations", v)}
+                  placeholder="e.g. Weight Loss, Diabetes…" />
               </div>
 
               <div className="rp-field">
                 <label>Certifications</label>
-                <TagInput value={form.certifications} onChange={v => set("certifications", v)} placeholder="e.g. Registered Dietitian…" />
+                <TagInput value={form.certifications} onChange={v => set("certifications", v)}
+                  placeholder="e.g. Registered Dietitian…" />
               </div>
 
               <div className="rp-nav">
                 <button className="rp-btn-back" onClick={() => setStep(0)}>← Back</button>
-                <button className="rp-btn-next" disabled={!stepValid()} onClick={() => setStep(2)}>Continue →</button>
+                <button className="rp-btn-next" disabled={!stepValid()} onClick={() => setStep(2)}>
+                  Continue →
+                </button>
               </div>
             </>
 
-          /* ── Step 2: Offers ── */
+          /* STEP 2 */
           ) : (
             <>
               <div className="rp-section-title">What will you offer?</div>
@@ -456,6 +693,9 @@ export default function CreateResumePage() {
                     <div className="rp-offer-icon">{o.icon}</div>
                     <div className="rp-offer-label">{o.label}</div>
                     <div className="rp-offer-desc">{o.desc}</div>
+                    {form.offersTypes.includes(o.value) && (
+                      <div className="rp-offer-check">✓ Selected</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -464,7 +704,9 @@ export default function CreateResumePage() {
                 <button className="rp-btn-back" onClick={() => setStep(1)}>← Back</button>
                 <button className="rp-btn-next" disabled={!stepValid() || loading} onClick={submit}>
                   {loading
-                    ? <><span style={{ width:13, height:13, border:"2px solid rgba(168,224,44,0.3)", borderTopColor:"#a8e02c", borderRadius:"50%", animation:"spin .7s linear infinite", display:"inline-block" }} /> Saving…</>
+                    ? <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                        <span className="rp-spinner" /> Saving…
+                      </span>
                     : "Launch my profile ✦"
                   }
                 </button>

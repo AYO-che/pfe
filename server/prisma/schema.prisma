@@ -42,6 +42,7 @@ model User {
   userPlans                UserPlan[]
   offersAsNutrition        Offer[]        @relation("NutritionOffers")
   assignedPlans            Plan[]         @relation("PatientPlans")
+   clientPosts ClientPost[]
 }
 
 model Profile {
@@ -346,4 +347,23 @@ enum PostStatus {
   PENDING
   APPROVED
   REJECTED
+}
+model ClientPost {
+  id        String          @id @default(uuid()) @db.Uuid
+  authorId  String          @db.Uuid
+  type      ClientPostType  @default(EXPERIENCE)
+  title     String
+  content   String
+  images    String[]        @default([])
+  likes     Int             @default(0)
+  status    PostStatus      @default(PENDING)  
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  author    User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+enum ClientPostType {
+  RECIPE
+  EXPERIENCE
+  BEFORE_AFTER
 }

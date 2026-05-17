@@ -3,7 +3,7 @@ import { useAuth } from "../../context/Authcontext";
 import { CSS as LAYOUT_CSS, MOCK_PLAN, Field, SectionTitle } from "./Shared";
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -48,7 +48,7 @@ const CSS = `
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -84,7 +84,7 @@ const CSS = `
   border: 1.5px solid rgba(0,168,84,0.25);
   background: rgba(255,255,255,0.4);
   font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   color: #1a3329;
   outline: none;
   width: 100%;
@@ -104,6 +104,34 @@ const CSS = `
   border-bottom: 1px solid rgba(0,168,84,0.07);
 }
 .info-row:last-child { border-bottom: none; }
+
+.cp-header-glass{
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-top: 1.5px solid rgba(168,224,44,0.85);
+  border-left: 1.5px solid rgba(168,224,44,0.85);
+  border-bottom: 1.5px solid rgba(0,168,84,0.75);
+  border-right: 1.5px solid rgba(0,168,84,0.75);
+  border-radius: 22px;
+  padding: 24px 28px;
+  margin-bottom: 22px;
+  box-shadow: 0 8px 32px rgba(15,89,47,0.1),inset 0 0 10px rgba(255,255,255,0.5);
+  animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.cp-header-icon{
+  width:52px;height:52px;border-radius:16px;
+  background: linear-gradient(135deg,#0b6630,#2d6b50);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;
+  box-shadow: 0 4px 16px rgba(11,102,48,0.25);
+  flex-shrink:0;
+}
+.cp-header-text h1{font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:#1a3329;margin:0 0 4px 0;}
+.cp-header-text p{font-size:13px;color:rgba(11,102,48,0.55);margin:0;}
 `;
 
 export default function ProfileInfoPage() {
@@ -290,58 +318,19 @@ export default function ProfileInfoPage() {
 
   /* ═══════════════ RENDER ═══════════════ */
   return (
-    <div style={{ fontFamily: "'DM Sans',sans-serif", minHeight: "100vh", position: "relative" }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", minHeight: "100vh", position: "relative" }}>
       <style>{CSS}</style>
 
-      {/* ── Floating action buttons (top-right) ── */}
-      <div style={{
-        position: "fixed", top: 18, right: 28, zIndex: 100,
-        display: "flex", gap: 10, alignItems: "center",
-      }}>
-        {editing ? (
-          <>
-            {!isFirstTime && (
-              <button className="pf-btn pf-btn-secondary" onClick={() => setEditing(false)}>
-                Cancel
-              </button>
-            )}
-            <button
-              className="pf-btn pf-btn-primary"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <span style={{
-                    width: 13, height: 13,
-                    border: "2px solid rgba(255,255,255,0.3)",
-                    borderTopColor: "#fff",
-                    borderRadius: "50%",
-                    display: "inline-block",
-                    animation: "spin 0.6s linear infinite",
-                  }} />
-                  Saving…
-                </>
-              ) : (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                  Save
-                </>
-              )}
-            </button>
-          </>
-        ) : (
-          <button className="pf-btn pf-btn-primary" onClick={() => setEditing(true)}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            Edit
-          </button>
-        )}
-      </div>
-
       <div style={{ padding: "28px 28px 40px" }}>
+
+        
+        <div className="cp-header-glass">
+        <div className="cp-header-icon">👤</div>
+        <div className="cp-header-text">
+          <h1>your profile</h1>
+          <p>anage your personal information and health details</p>
+        </div>
+      </div>
 
         {/* ── Success banner ── */}
         {saved && (
@@ -424,7 +413,7 @@ export default function ProfileInfoPage() {
                   }}>
                     {avatar
                       ? <img src={avatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 26, fontWeight: 800, color: "#1a3329" }}>
+                      : <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, fontWeight: 800, color: "#1a3329" }}>
                           {form.firstName?.[0] || "?"}
                         </span>
                     }
@@ -448,7 +437,7 @@ export default function ProfileInfoPage() {
 
                 {/* Name + email */}
                 <div style={{ textAlign: "center", marginTop: 10 }}>
-                  <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 17, fontWeight: 800, color: "#1a3329" }}>
+                  <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 800, color: "#1a3329" }}>
                     {fullName || <span style={{ color: "#9ab5a5", fontStyle: "italic" }}>Your Name</span>}
                   </div>
                   <div style={{ fontSize: 12, color: "#5a7a6e", marginTop: 3 }}>
@@ -519,7 +508,54 @@ export default function ProfileInfoPage() {
               </div>
             </div>
 
-            {/* Security Card */}
+            {/* Edit Profile Card */}
+            <div className="glass-card" style={{ padding: "18px 22px" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#5a7a6e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 11 }}>Edit Profile</div>
+              {editing ? (
+                <div style={{ display: "flex", gap: 7 }}>
+                  {!isFirstTime && (
+                    <button className="pf-btn pf-btn-secondary" onClick={() => setEditing(false)} style={{ flex: 1, justifyContent: "center" }}>
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    className="pf-btn pf-btn-primary"
+                    onClick={handleSave}
+                    disabled={saving}
+                    style={{ flex: 1, justifyContent: "center" }}
+                  >
+                    {saving ? (
+                      <>
+                        <span style={{
+                          width: 13, height: 13,
+                          border: "2px solid rgba(255,255,255,0.3)",
+                          borderTopColor: "#fff",
+                          borderRadius: "50%",
+                          display: "inline-block",
+                          animation: "spin 0.6s linear infinite",
+                        }} />
+                        Saving…
+                      </>
+                    ) : (
+                      <>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                        Save
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <button className="pf-btn pf-btn-primary" onClick={() => setEditing(true)} style={{ width: "100%", justifyContent: "center" }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  Edit Profile
+                </button>
+              )}
+            </div>
+
+            {/* Change Password Card */}
             <div className="glass-card" style={{ padding: "18px 22px" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "#5a7a6e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 11 }}>Security</div>
               {!showPwd ? (

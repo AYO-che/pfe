@@ -22,8 +22,8 @@ const MOOD_META = {
 };
 
 const STORAGE_KEY = "chrysalis_mood_logs";
-const loadLogs = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; } };
-const saveLogs = (l) => localStorage.setItem(STORAGE_KEY, JSON.stringify(l));
+const loadLogs  = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; } };
+const saveLogs  = (l) => localStorage.setItem(STORAGE_KEY, JSON.stringify(l));
 const formatDate = (iso) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
 const CSS = `
@@ -32,6 +32,10 @@ const CSS = `
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes toastIn  { from { opacity:0; transform:translate(-50%,20px); } to { opacity:1; transform:translate(-50%,0); } }
@@ -43,6 +47,42 @@ const CSS = `
 .anim-up-d3 { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) 0.21s both; }
 .toast-in   { animation: toastIn  0.3s ease both; }
 .toast-out  { animation: toastOut 0.3s ease both; }
+
+/* ── cp-style page header ── */
+.cp-header-glass {
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-top:    1.5px solid rgba(168,224,44,0.85);
+  border-left:   1.5px solid rgba(168,224,44,0.85);
+  border-bottom: 1.5px solid rgba(0,168,84,0.75);
+  border-right:  1.5px solid rgba(0,168,84,0.75);
+  border-radius: 22px;
+  padding: 22px 26px;
+  margin-bottom: 22px;
+  box-shadow: 0 8px 32px rgba(15,89,47,0.1), inset 0 0 10px rgba(255,255,255,0.5);
+  animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.cp-header-icon {
+  width: 52px; height: 52px; border-radius: 16px;
+  background: linear-gradient(135deg,#0b6630,#2d6b50);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 16px rgba(11,102,48,0.25);
+  flex-shrink: 0;
+}
+.cp-header-text h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 21px; font-weight: 800; color: #1a3329;
+  margin: 0 0 4px 0; letter-spacing: -0.4px;
+}
+.cp-header-text p {
+  font-size: 12.5px; color: rgba(11,102,48,0.55); margin: 0;
+  font-family: 'DM Sans', sans-serif; line-height: 1.5;
+}
 
 /* ── Glass card ── */
 .glass-card {
@@ -244,16 +284,12 @@ export default function MoodPage() {
     <div style={{ fontFamily: "'DM Sans',sans-serif", minHeight: "100vh" }}>
       <style>{CSS}</style>
 
-      {/* ── Page heading ── */}
-      <div className="anim-up" style={{ marginBottom: 22 }}>
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: "#5a7a6e", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 5 }}>
-          Daily Check-in
-        </div>
-        <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 24, fontWeight: 800, color: "#1a3329", letterSpacing: -0.5 }}>
-          Mood & Symptoms
-        </div>
-        <div style={{ fontSize: 13, color: "#5a7a6e", marginTop: 5, lineHeight: 1.6 }}>
-          Log how you feel each day to help your nutritionist adjust your plan.
+      {/* ── Page header (matches profile / progress style) ── */}
+      <div className="cp-header-glass">
+        <div className="cp-header-icon">😊</div>
+        <div className="cp-header-text">
+          <h1>Mood &amp; Symptoms</h1>
+          <p>Log how you feel each day to help your nutritionist adjust your plan.</p>
         </div>
       </div>
 

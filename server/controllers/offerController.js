@@ -144,7 +144,13 @@ export const getPackageOffers = async (req, res) => {
 export const getPlanOffers = async (req, res) => {
   try {
     const offers = await prisma.offer.findMany({
-      where: { type: "PLAN", isActive: true },
+      where: {
+        type: "PLAN",
+        isActive: true,
+        plan: {
+          isPrivate: false,  // 👈 exclude private plans
+        },
+      },
       include: {
         plan: true,
         nutrition: {
@@ -167,7 +173,18 @@ export const getPlanOffers = async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
 
-    res.json({ offers });
+    // Group by nutritionist — one entry per specialist with all their offers
+    const map = new Map();
+    offers.forEach(offer => {
+      const sp = offer.nutrition;
+      if (!sp) return;
+      if (!map.has(sp.id)) {
+        map.set(sp.id, { ...sp, offersAsNutrition: [] });
+      }
+      map.get(sp.id).offersAsNutrition.push(offer);
+    });
+
+    res.json({ nutritionists: [...map.values()] });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }

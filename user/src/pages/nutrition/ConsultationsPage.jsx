@@ -2,97 +2,408 @@ import { useEffect, useState } from "react";
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(24px) }
-  to   { opacity:1; transform:translateY(0) }
+@keyframes slideUp  { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+@keyframes shimmer  { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@keyframes spin     { to{transform:rotate(360deg)} }
+@keyframes dropIn   { from{opacity:0;transform:scale(0.96) translateY(-8px)} to{opacity:1;transform:scale(1) translateY(0)} }
+@keyframes toastIn  { from{opacity:0;transform:translateX(-50%) translateY(12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+.anim-up    { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-up-d1 { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) 0.07s both; }
+.anim-up-d2 { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) 0.14s both; }
+
+.glass-card {
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-top:    1.5px solid rgba(168,224,44,0.85);
+  border-left:   1.5px solid rgba(168,224,44,0.85);
+  border-bottom: 1.5px solid rgba(0,168,84,0.75);
+  border-right:  1.5px solid rgba(0,168,84,0.75);
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(15,89,47,0.12), inset 0 0 12px rgba(255,255,255,0.55);
+  overflow: hidden; transition: all 0.3s ease; margin-bottom: 16px;
 }
-@keyframes shimmer {
-  0%   { background-position: 200% 0 }
-  100% { background-position: -200% 0 }
+.glass-card:hover {
+  background: rgba(255,255,255,0.28);
+  box-shadow: 0 10px 36px rgba(15,89,47,0.18), inset 0 0 16px rgba(255,255,255,0.75);
 }
 
-.cs-card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(26,51,41,0.06);
-  border: 1px solid rgba(79,158,122,0.1);
-  animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both;
-  margin-bottom: 12px;
+.ss-skeleton {
+  height: 110px; border-radius: 20px; margin-bottom: 12px;
+  background: linear-gradient(90deg,rgba(255,255,255,0.15) 25%,rgba(255,255,255,0.4) 50%,rgba(255,255,255,0.15) 75%);
+  background-size: 200% 100%; animation: shimmer 1.4s infinite;
 }
 
-.cs-skeleton {
-  height: 100px;
-  border-radius: 16px;
-  background: linear-gradient(90deg,#f0f7f3 25%,#e0ede8 50%,#f0f7f3 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
-  margin-bottom: 12px;
+.filter-tab {
+  padding: 8px 16px; border-radius: 999px;
+  border: 1.5px solid rgba(0,168,84,0.2);
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 700;
+  background: rgba(255,255,255,0.2); backdrop-filter: blur(8px);
+  color: #1a3329; transition: all 0.18s;
+}
+.filter-tab:hover { background: rgba(255,255,255,0.45); border-color: rgba(168,224,44,0.5); }
+.filter-tab.active {
+  background: #0b6630; color: #a8e02c; border-color: transparent;
+  box-shadow: 0 4px 14px rgba(11,102,48,0.3);
 }
 
-.cs-badge {
-  display: inline-flex;
+.session-row {
+  display: flex; align-items: center; gap: 13px;
+  border-radius: 16px; padding: 13px 15px;
+  border: 1px solid rgba(0,168,84,0.1);
+  background: rgba(255,255,255,0.25); backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+.session-row:hover {
+  background: rgba(255,255,255,0.45); border-color: rgba(168,224,44,0.4);
+  transform: translateY(-1px); box-shadow: 0 4px 16px rgba(15,89,47,0.1);
+}
+
+.pf-btn {
+  border-radius: 20px; padding: 8px 15px; font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; transition: all 0.2s ease;
+}
+.pf-btn-primary { background: #0b6630; color: #a8e02c; box-shadow: 0 3px 12px rgba(11,102,48,0.28); }
+.pf-btn-primary:hover { background: #0d7a38; }
+.pf-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ss-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 700;
+}
+
+.ss-date-btn {
+  background: rgba(255,255,255,0.3); backdrop-filter: blur(6px);
+  border: 1.5px solid rgba(0,168,84,0.2); border-radius: 12px; padding: 7px 12px;
+  font-size: 12px; font-weight: 600; color: #1a3329;
+  cursor: pointer; white-space: nowrap;
+  font-family: 'Inter', sans-serif; transition: all 0.18s; flex-shrink: 0;
+}
+.ss-date-btn:hover { background: rgba(255,255,255,0.55); border-color: rgba(168,224,44,0.5); }
+.ss-date-btn.active { background: #0b6630; color: #a8e02c; border-color: transparent; box-shadow: 0 3px 10px rgba(11,102,48,0.25); }
+
+.ss-slot-btn {
+  background: rgba(255,255,255,0.3); backdrop-filter: blur(6px);
+  border: 1.5px solid rgba(0,168,84,0.18); border-radius: 12px; padding: 9px 8px;
+  font-size: 12px; font-weight: 600; color: #1a3329;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: all 0.18s; text-align: center;
+}
+.ss-slot-btn:hover:not(.booked):not(.active) { background: rgba(255,255,255,0.55); border-color: rgba(168,224,44,0.5); }
+.ss-slot-btn.active { background: #0b6630; color: #a8e02c; border-color: transparent; box-shadow: 0 3px 10px rgba(11,102,48,0.25); }
+.ss-slot-btn.booked { background: rgba(0,0,0,0.05); color: rgba(26,51,41,0.3); cursor: not-allowed; text-decoration: line-through; border-color: transparent; }
+
+.ss-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,26,20,0.55); backdrop-filter: blur(10px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 20px;
+}
+.ss-modal {
+  width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto;
+  border-radius: 24px; animation: dropIn 0.25s ease;
+  background: rgba(240,252,245,0.9); backdrop-filter: blur(28px);
+  border-top:    2px solid rgba(168,224,44,0.9);
+  border-left:   2px solid rgba(168,224,44,0.9);
+  border-bottom: 2px solid rgba(0,168,84,0.8);
+  border-right:  2px solid rgba(0,168,84,0.8);
+  box-shadow: 0 24px 60px rgba(15,89,47,0.25), inset 0 0 20px rgba(255,255,255,0.6);
+}
+.ss-modal::-webkit-scrollbar { width: 3px; }
+.ss-modal::-webkit-scrollbar-thumb { background: rgba(0,168,84,0.25); border-radius: 99px; }
+
+.pp-toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  background: rgba(26,51,41,0.92); color: #a8e02c;
+  backdrop-filter: blur(16px); border: 1px solid rgba(168,224,44,0.35);
+  padding: 11px 26px; border-radius: 999px;
+  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700;
+  z-index: 9999; animation: toastIn 0.25s ease;
+  box-shadow: 0 8px 28px rgba(15,89,47,0.3);
+  display: flex; align-items: center; gap: 8px;
+}
+            
+/* ═══════════════════════════════════════════
+   HEADER — Glassy
+   ═══════════════════════════════════════════ */
+.cp-header-glass{
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-top: 1.5px solid rgba(168, 224, 44, 0.85);
+  border-left: 1.5px solid rgba(168, 224, 44, 0.85);
+  border-bottom: 1.5px solid rgba(0, 168, 84, 0.75);
+  border-right: 1.5px solid rgba(0, 168, 84, 0.75);
+  border-radius: 22px;
+  padding: 24px 28px;
+  margin-bottom: 22px;
+  box-shadow: 0 8px 32px rgba(15, 89, 47, 0.1), inset 0 0 10px rgba(255, 255, 255, 0.5);
+  animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;
+  display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  gap: 18px;
 }
+.cp-header-icon{
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0b6630, #2d6b50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 16px rgba(11, 102, 48, 0.25);
+  flex-shrink: 0;
+}
+.cp-header-text h1{
+font-family: 'Inter', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a3329;
+  margin: 0 0 4px 0;
+}
+.cp-header-text p{
+  font-size: 13px;
+  color: rgba(11, 102, 48, 0.55);
+  margin: 0;
+}
+
 `;
 
-const statusColor = (status) => {
-  switch (status) {
-    case "COMPLETED":        return { bg: "#e8f5e9", color: "#2d6b50" };
-    case "SCHEDULED":        return { bg: "#e3f2fd", color: "#1565c0" };
-    case "CANCELLED":        return { bg: "#fdecea", color: "#c62828" };
-    case "PENDING_SCHEDULE": return { bg: "#fff8e1", color: "#f57f17" };
-    default:                 return { bg: "#f5f5f5", color: "#666"    };
-  }
+const statusMap = {
+  SCHEDULED:        { bg: "rgba(26,111,160,0.12)",  color: "#1a6fa0", label: "📅 Scheduled"   },
+  PENDING_SCHEDULE: { bg: "rgba(184,162,0,0.12)",   color: "#8a7200", label: "⏳ Book a Date"  },
+  COMPLETED:        { bg: "rgba(11,102,48,0.12)",   color: "#0b6630", label: "✅ Completed"    },
+  CANCELLED:        { bg: "rgba(192,57,43,0.12)",   color: "#c0392b", label: "❌ Cancelled"    },
 };
 
-const statusLabel = (status) => {
-  switch (status) {
-    case "PENDING_SCHEDULE": return "⏳ Awaiting Date";
-    case "SCHEDULED":        return "📅 Scheduled";
-    case "COMPLETED":        return "✅ Completed";
-    case "CANCELLED":        return "❌ Cancelled";
-    default:                 return status;
-  }
+const SESSION_NUM_BG = {
+  SCHEDULED:        "#0b6630",
+  PENDING_SCHEDULE: "linear-gradient(135deg,#f5a623,#e08a00)",
+  COMPLETED:        "linear-gradient(135deg,#1a6fa0,#2d8cff)",
+  CANCELLED:        "linear-gradient(135deg,#c0392b,#e53e3e)",
 };
 
-function groupByPatient(sessions) {
-  const map = {};
-  for (const s of sessions) {
-    const pid = s.patient?.id ?? "unknown";
-    if (!map[pid]) map[pid] = { patient: s.patient, offer: s.subscription?.offer, sessions: [] };
-    map[pid].sessions.push(s);
-  }
-  for (const pid of Object.keys(map)) {
-    map[pid].sessions.sort((a, b) => (a.sessionNumber ?? 0) - (b.sessionNumber ?? 0));
-  }
-  return Object.values(map);
+function StatusBadge({ status }) {
+  const s = statusMap[status] ?? { bg: "rgba(0,0,0,0.06)", color: "#666", label: status };
+  return (
+    <span className="ss-badge" style={{ background: s.bg, color: s.color, border: `1px solid ${s.color}25` }}>
+      {s.label}
+    </span>
+  );
 }
 
-export default function ConsultationsPage() {
-  const [sessions, setSessions] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [filter,   setFilter]   = useState("ALL");
+function getAvailableDates() {
+  const dates = []; let d = new Date(); d.setDate(d.getDate() + 1);
+  while (dates.length < 14) {
+    if (d.getDay() !== 5) dates.push(new Date(d).toISOString().split("T")[0]);
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
+}
+
+function generateSlots(dateStr, bookedKeys = []) {
+  if (new Date(dateStr).getDay() === 5) return [];
+  const slots = [];
+  for (let h = 8; h < 18; h++) {
+    const label = `${String(h).padStart(2,"0")}:00 – ${String(h+1).padStart(2,"00")}:00`;
+    const key   = `${dateStr}_${h}`;
+    slots.push({ label, key, booked: bookedKeys.includes(key) });
+  }
+  return slots;
+}
+
+const fmtDate  = (iso) => !iso ? "—" : new Date(iso).toLocaleString("en-US", { weekday:"short", month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" });
+const fmtShort = (d)   => new Date(d).toLocaleDateString("en-GB", { weekday:"short", day:"numeric", month:"short" });
+
+function BookModal({ session, onClose, onBooked }) {
+  const DATES = getAvailableDates();
+  const [selDate,      setSelDate]      = useState(DATES[0]);
+  const [selSlot,      setSelSlot]      = useState(null);
+  const [bookedKeys,   setBookedKeys]   = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [submitting,   setSubmitting]   = useState(false);
+
+  useEffect(() => {
+    if (!session?.nutritionId) return;
+    setLoadingSlots(true);
+    fetch(`http://localhost:5000/sessions/occupied/${session.nutritionId}?date=${selDate}`, { credentials: "include" })
+      .then(r => r.json())
+      .then(data => setBookedKeys(
+        (data.occupiedSlots ?? []).map(s => {
+          const d = new Date(s);
+          return `${selDate}_${d.getHours()}`;
+        })
+      ))
+      .catch(() => {})
+      .finally(() => setLoadingSlots(false));
+  }, [session?.nutritionId, selDate]);
+
+  const slots = generateSlots(selDate, bookedKeys);
+
+  const handleBook = async () => {
+    if (!selSlot) return;
+    setSubmitting(true);
+    const slotHour    = parseInt(selSlot.key.split("_")[1], 10);
+    const sessionDate = new Date(`${selDate}T${String(slotHour).padStart(2,"00")}:00:00`).toISOString();
+    try {
+      const res  = await fetch(`http://localhost:5000/sessions/${session.id}/schedule`, {
+        method: "PATCH", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionDate }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to schedule");
+      onBooked(data.session);
+    } catch (err) { alert(err.message); }
+    finally { setSubmitting(false); }
+  };
+
+  return (
+    <div className="ss-overlay" onClick={onClose}>
+      <div className="ss-modal" onClick={e => e.stopPropagation()}>
+        <div style={{ padding: "22px 22px 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div>
+              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, color: "#1a3329" }}>
+                Book Session {session.sessionNumber}
+              </div>
+              <div style={{ fontSize: 12, color: "#5a7a6e", marginTop: 3 }}>
+                {session.subscription?.offer?.name ?? "Package"}
+              </div>
+            </div>
+            <button onClick={onClose} style={{
+              width: 32, height: 32, borderRadius: "50%", cursor: "pointer",
+              background: "rgba(255,255,255,0.5)", backdropFilter: "blur(8px)",
+              border: "1px solid rgba(0,168,84,0.2)",
+              color: "#1a3329", fontSize: 14,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>✕</button>
+          </div>
+          <div style={{
+            background: "rgba(255,255,255,0.4)", backdropFilter: "blur(8px)",
+            border: "1px solid rgba(0,168,84,0.15)",
+            borderRadius: 12, padding: "10px 14px", marginBottom: 18,
+            fontSize: 13, color: "#1a3329", fontWeight: 500,
+          }}>
+            👨‍⚕️ With: <strong>{session.nutrition?.firstName} {session.nutrition?.lastName}</strong>
+          </div>
+        </div>
+
+        <div style={{ padding: "0 22px 22px" }}>
+          {/* Date picker */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: "#1a3329", marginBottom: 10 }}>
+              Select Date
+            </div>
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
+              {DATES.map(d => (
+                <button key={d} className={`ss-date-btn ${selDate === d ? "active" : ""}`}
+                  onClick={() => { setSelDate(d); setSelSlot(null); }}>
+                  {fmtShort(d)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Time slots */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, alignItems: "center" }}>
+              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: "#1a3329" }}>Select Time</div>
+              <div style={{ fontSize: 11, color: "#5a7a6e" }}>08:00 – 18:00 · No Fridays</div>
+            </div>
+            {loadingSlots ? (
+              <div style={{ textAlign: "center", padding: "16px 0", color: "#5a7a6e", fontSize: 13 }}>
+                Loading availability…
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 7 }}>
+                {slots.map(slot => (
+                  <button key={slot.key}
+                    className={`ss-slot-btn ${slot.booked ? "booked" : ""} ${selSlot?.key === slot.key ? "active" : ""}`}
+                    onClick={() => !slot.booked && setSelSlot(slot)}>
+                    {slot.label}
+                    {slot.booked && <span style={{ display: "block", fontSize: 10, marginTop: 2 }}>Booked</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Selected summary */}
+          {selSlot && (
+            <div style={{
+              background: "rgba(11,102,48,0.1)", backdropFilter: "blur(6px)",
+              border: "1px solid rgba(0,168,84,0.25)",
+              borderRadius: 12, padding: "11px 14px", marginBottom: 16,
+              display: "flex", gap: 10, alignItems: "center",
+            }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0b6630" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#1a3329" }}>
+                {fmtShort(selDate)} · {selSlot.label}
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={onClose} style={{
+              flex: 1, padding: "11px 0",
+              border: "1.5px solid rgba(0,168,84,0.25)", borderRadius: 14,
+              background: "rgba(255,255,255,0.35)", backdropFilter: "blur(8px)",
+              fontSize: 13, fontWeight: 600, color: "#1a3329",
+              cursor: "pointer", fontFamily: "'DM Sans',sans-serif",
+            }}>
+              Cancel
+            </button>
+            <button
+              className="pf-btn pf-btn-primary"
+              onClick={handleBook}
+              disabled={!selSlot || submitting}
+              style={{ flex: 2, padding: "11px 0", justifyContent: "center", borderRadius: 14, fontSize: 13.5 }}
+            >
+              {submitting
+                ? <><span style={{ width:13, height:13, border:"2px solid rgba(168,224,44,0.3)", borderTopColor:"#a8e02c", borderRadius:"50%", animation:"spin .7s linear infinite", display:"inline-block" }} /> Booking…</>
+                : "Confirm Session →"
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function SessionsPage() {
+  const [sessions,       setSessions]       = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [filter,         setFilter]         = useState("ALL");
+  const [bookingSession, setBookingSession] = useState(null);
+  const [toast,          setToast]          = useState("");
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
   useEffect(() => {
     fetch("http://localhost:5000/sessions/mine", { credentials: "include" })
-      .then(res => res.json())
+      .then(r => r.json())
       .then(data => setSessions(data.sessions ?? []))
-      .catch(err => { console.error("❌ Consultations error:", err); setSessions([]); })
+      .catch(() => setSessions([]))
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = filter === "ALL"
-    ? sessions
-    : sessions.filter(s => s.status === filter);
+  const handleBooked = (updated) => {
+    setSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
+    setBookingSession(null);
+    showToast("Session booked successfully!");
+  };
 
-  const grouped = groupByPatient(filtered);
+  const filtered = filter === "ALL" ? sessions : sessions.filter(s => s.status === filter);
 
   const counts = {
     ALL:              sessions.length,
@@ -101,167 +412,215 @@ export default function ConsultationsPage() {
     COMPLETED:        sessions.filter(s => s.status === "COMPLETED").length,
   };
 
+  const grouped = (() => {
+    const map = {};
+    for (const s of filtered) {
+      const key = s.subscriptionId ?? "unknown";
+      if (!map[key]) map[key] = { offer: s.subscription?.offer, nutrition: s.nutrition, sessions: [] };
+      map[key].sessions.push(s);
+    }
+    for (const k of Object.keys(map))
+      map[k].sessions.sort((a, b) => (a.sessionNumber ?? 0) - (b.sessionNumber ?? 0));
+    return Object.values(map);
+  })();
+
   return (
-    <>
+    <div style={{ fontFamily: "'DM Sans',sans-serif", minHeight: "100vh" }}>
       <style>{CSS}</style>
 
-      {/* Header */}
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontFamily: "Syne,sans-serif", fontSize: 22, fontWeight: 800, color: "#1a3329" }}>
-          Consultations
+      {/* Toast */}
+      {toast && (
+        <div className="pp-toast">
+          <div style={{ width:18, height:18, borderRadius:"50%", background:"#0b6630", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#a8e02c" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          {toast}
         </div>
-        <div style={{ fontSize: 13, color: "#9ab8ae", marginTop: 4 }}>
-          Your scheduled and past sessions
+      )}
+        <div className="cp-header-glass">
+        <div className="cp-header-icon">📝</div>
+        <div className="cp-header-text">
+          <h1>  My Sessions</h1>
+          <p>"          View your scheduled sessions and book pending ones."</p>
         </div>
       </div>
 
+     
+
       {/* Filter tabs */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+      <div className="anim-up-d1" style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         {[
-          { key: "ALL",              label: "All"           },
-          { key: "SCHEDULED",        label: "Scheduled"     },
-          { key: "PENDING_SCHEDULE", label: "Awaiting Date" },
-          { key: "COMPLETED",        label: "Completed"     },
+          { key: "ALL",              label: "All"       },
+          { key: "SCHEDULED",        label: "Scheduled" },
+          { key: "PENDING_SCHEDULE", label: "To Book"   },
+          { key: "COMPLETED",        label: "Completed" },
         ].map(tab => (
-          <button key={tab.key} onClick={() => setFilter(tab.key)} style={{
-            padding: "7px 14px", borderRadius: 999, border: "none", cursor: "pointer",
-            fontFamily: "'DM Sans',sans-serif", fontSize: 12.5, fontWeight: 700,
-            background: filter === tab.key ? "linear-gradient(135deg,#1a3329,#2d6b50)" : "#f0f7f3",
-            color: filter === tab.key ? "#f5e642" : "#5a7a6e",
-            transition: "all 0.18s",
-          }}>
+          <button
+            key={tab.key}
+            className={`filter-tab ${filter === tab.key ? "active" : ""}`}
+            onClick={() => setFilter(tab.key)}
+          >
             {tab.label}
             <span style={{
               marginLeft: 6,
-              background: filter === tab.key ? "rgba(245,230,66,0.25)" : "#e0ede8",
-              color: filter === tab.key ? "#f5e642" : "#5a7a6e",
+              background: filter === tab.key ? "rgba(168,224,44,0.2)" : "rgba(255,255,255,0.4)",
+              color: filter === tab.key ? "#a8e02c" : "#5a7a6e",
               borderRadius: 999, padding: "1px 7px", fontSize: 11,
-            }}>
-              {counts[tab.key]}
-            </span>
+            }}>{counts[tab.key]}</span>
           </button>
         ))}
       </div>
 
-      {/* Loading */}
-      {loading && [1, 2, 3].map(i => (
-        <div key={i} className="cs-skeleton" style={{ animationDelay: `${i * 0.1}s` }} />
-      ))}
-
-      {/* Empty */}
-      {!loading && grouped.length === 0 && (
-        <div className="cs-card">
-          <div style={{ textAlign: "center", padding: "40px 0" }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
-            <div style={{ fontFamily: "Syne,sans-serif", fontSize: 16, fontWeight: 800, color: "#1a3329", marginBottom: 6 }}>
-              No consultations yet
+      {/* Pending banner */}
+      {counts.PENDING_SCHEDULE > 0 && (
+        <div className="anim-up-d1" style={{
+          background: "rgba(184,162,0,0.1)", backdropFilter: "blur(10px)",
+          border: "1px solid rgba(184,162,0,0.25)",
+          borderRadius: 18, padding: "15px 20px",
+          display: "flex", alignItems: "center", gap: 14, marginBottom: 20,
+        }}>
+          <div style={{
+            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+            background: "rgba(245,230,66,0.3)", border: "1px solid rgba(184,162,0,0.3)",
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+          }}>⏳</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#8a7200" }}>
+              {counts.PENDING_SCHEDULE} session{counts.PENDING_SCHEDULE > 1 ? "s" : ""} waiting to be scheduled
             </div>
-            <div style={{ fontSize: 13, color: "#9ab8ae" }}>
-              Your sessions will appear here once patients book a package.
+            <div style={{ fontSize: 12, color: "#b8a200", marginTop: 2 }}>
+              Click "Book Now" on any pending session to pick a date and time.
             </div>
           </div>
         </div>
       )}
 
-      {/* Patient groups */}
-      {!loading && grouped.map(({ patient, offer, sessions: patSessions }, gi) => (
-        <div key={patient?.id ?? gi} className="cs-card" style={{ animationDelay: `${gi * 0.07}s` }}>
+      {/* Skeletons */}
+      {loading && [1,2,3].map(i => (
+        <div key={i} className="ss-skeleton" style={{ animationDelay: `${i*0.1}s` }} />
+      ))}
 
-          {/* Patient header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{
-                width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
-                background: "linear-gradient(135deg,#1a3329,#2d6b50)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "Syne,sans-serif", fontSize: 13, fontWeight: 800,
-                color: "rgba(245,230,66,0.8)",
-              }}>
-                {`${patient?.firstName?.[0] ?? ""}${patient?.lastName?.[0] ?? ""}`.toUpperCase() || "?"}
+      {/* Empty state */}
+      {!loading && grouped.length === 0 && (
+        <div className="glass-card" style={{ textAlign: "center", padding: "50px 24px" }}>
+          <div style={{ fontSize: 38, marginBottom: 12 }}>📅</div>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 800, color: "#1a3329", marginBottom: 6 }}>
+            No sessions found
+          </div>
+          <div style={{ fontSize: 13, color: "#5a7a6e" }}>
+            {filter === "ALL"
+              ? "Your sessions will appear here after you purchase a package."
+              : `No ${filter.toLowerCase().replace("_"," ")} sessions.`}
+          </div>
+        </div>
+      )}
+
+      {/* Session groups */}
+      {!loading && grouped.map(({ offer, nutrition, sessions: grpSessions }, gi) => (
+        <div key={gi} className="glass-card anim-up-d2" style={{ animationDelay: `${gi*0.08}s` }}>
+
+          {/* Package header */}
+          <div style={{
+            padding: "18px 22px 14px",
+            borderBottom: "1px solid rgba(0,168,84,0.1)",
+            background: "rgba(255,255,255,0.15)",
+            display: "flex", alignItems: "center", gap: 12,
+          }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 11, flexShrink: 0,
+              background: "linear-gradient(135deg,#1a3329,#0b6630)",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+            }}>📦</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 700, color: "#1a3329" }}>
+                {offer?.name ?? "Package"}
               </div>
-              <div>
-                <div style={{ fontFamily: "Syne,sans-serif", fontSize: 15, fontWeight: 800, color: "#1a3329" }}>
-                  {patient?.firstName} {patient?.lastName}
-                </div>
-                <div style={{ fontSize: 12, color: "#5a7a6e", marginTop: 1 }}>
-                  {patient?.email}
-                </div>
+              <div style={{ fontSize: 11.5, color: "#5a7a6e", marginTop: 2 }}>
+                with {nutrition?.firstName} {nutrition?.lastName}
               </div>
             </div>
-            {offer && (
-              <div style={{ background: "#e8f5ef", borderRadius: 10, padding: "6px 12px", textAlign: "right" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#2d6b50" }}>{offer.name}</div>
-                <div style={{ fontSize: 10.5, color: "#5a7a6e", marginTop: 1 }}>
-                  {offer.sessionsCount} session{offer.sessionsCount > 1 ? "s" : ""}
-                </div>
-              </div>
-            )}
+            <span style={{
+              fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999,
+              background: "rgba(11,102,48,0.1)", color: "#0b6630",
+              border: "1px solid rgba(0,168,84,0.2)",
+            }}>
+              {grpSessions.length} session{grpSessions.length > 1 ? "s" : ""}
+            </span>
           </div>
 
-          <div style={{ height: 1, background: "rgba(79,158,122,0.1)", marginBottom: 14 }} />
+          {/* Session rows */}
+          <div style={{ padding: "10px 18px 18px", display: "flex", flexDirection: "column", gap: 9 }}>
+            {grpSessions.map(s => (
+              <div key={s.id} className="session-row">
 
-          {/* Sessions */}
-          {patSessions.map(s => {
-            const { bg, color } = statusColor(s.status);
-            return (
-              <div key={s.id} style={{
-                display: "flex", alignItems: "center", gap: 12,
-                background: s.status === "PENDING_SCHEDULE" ? "#fffbeb" : "#f7fdf9",
-                borderRadius: 12, padding: "12px 14px", marginBottom: 8,
-                border: `1px solid ${s.status === "PENDING_SCHEDULE" ? "rgba(245,166,35,0.2)" : "rgba(79,158,122,0.1)"}`,
-              }}>
-                {/* Number bubble */}
+                {/* Session number bubble */}
                 <div style={{
-                  width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-                  background: s.status === "PENDING_SCHEDULE"
-                    ? "linear-gradient(135deg,#f5a623,#e08a00)"
-                    : "linear-gradient(135deg,#1a3329,#2d6b50)",
+                  width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+                  background: SESSION_NUM_BG[s.status] || "#0b6630",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "Syne,sans-serif", fontSize: 12, fontWeight: 800, color: "#fff",
+                  fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: "#fff",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                 }}>
                   {s.sessionNumber ?? 1}
                 </div>
 
                 {/* Info */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1a3329", marginBottom: 2 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "#1a3329", marginBottom: 3 }}>
                     Session {s.sessionNumber ?? 1}
                   </div>
-                  <div style={{ fontSize: 12, color: "#5a7a6e" }}>
-                    {s.sessionDate
-                      ? new Date(s.sessionDate).toLocaleString("en-US", {
-                          weekday: "short", month: "short", day: "numeric",
-                          hour: "2-digit", minute: "2-digit",
-                        })
-                      : "⏳ Patient hasn't picked a date yet"
-                    }
+                  <div style={{ fontSize: 12, color: "#5a7a6e", display: "flex", alignItems: "center", gap: 5 }}>
+                    {s.sessionDate ? (
+                      <>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        {fmtDate(s.sessionDate)}
+                      </>
+                    ) : (
+                      <span style={{ fontStyle: "italic", color: "#8a9a8e" }}>No date picked yet — click Book Now</span>
+                    )}
                   </div>
                 </div>
 
-                {/* Status + Zoom */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <span className="cs-badge" style={{ background: bg, color }}>
-                    {statusLabel(s.status)}
-                  </span>
-                  {s.zoomLink && s.status === "SCHEDULED" && (
-                    <a href={s.zoomLink} target="_blank" rel="noopener noreferrer" style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      padding: "6px 12px",
-                      background: "linear-gradient(135deg,#2d8cff,#0e71eb)",
-                      color: "#fff", borderRadius: 10,
-                      fontSize: 12, fontWeight: 700,
-                      textDecoration: "none",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                    }}>
-                      🎥 Join Zoom
-                    </a>
+                {/* Actions */}
+                <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  <StatusBadge status={s.status} />
+                  {s.status === "SCHEDULED" && s.zoomLink && (
+                    <button
+                      className="pf-btn"
+                      onClick={() => window.open(s.zoomLink, "_blank")}
+                      style={{ background:"linear-gradient(135deg,#2d8cff,#0e71eb)", color:"#fff", boxShadow:"0 3px 12px rgba(45,140,255,0.25)" }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                      Join Zoom
+                    </button>
+                  )}
+                  {/* ── COMPLETED: show done date ── */}
+                  {s.status === "COMPLETED" && s.sessionDate && (
+                    <span style={{ fontSize: 11, color: "#0b6630", fontWeight: 600 }}>
+                      Done {new Date(s.sessionDate).toLocaleDateString("en-US", { month:"short", day:"numeric" })}
+                    </span>
+                  )}
+                  {s.status === "PENDING_SCHEDULE" && (
+                    <button className="pf-btn pf-btn-primary" onClick={() => setBookingSession(s)}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      Book Now
+                    </button>
                   )}
                 </div>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       ))}
-    </>
+
+      {/* Booking modal */}
+      {bookingSession && (
+        <BookModal
+          session={bookingSession}
+          onClose={() => setBookingSession(null)}
+          onBooked={handleBooked}
+        />
+      )}
+    </div>
   );
 }

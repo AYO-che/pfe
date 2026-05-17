@@ -364,7 +364,11 @@ background: radial-gradient(ellipse at 50% 0%, #e8f5e9 0%, #f2f7f5 50%, #eef4f1 
               )}
             </button>
           </form>
-
+           <div style={{textAlign:"right", marginTop:"-8px", marginBottom:"12px"}}>
+          <Link to="/forgot-password" style={{fontSize:"12.5px", color:"#0b6630", fontWeight:700, textDecoration:"none"}}>
+           Forgot password?
+          </Link>
+             </div>
           <div className="login-divider">or</div>
 
           <button className="google-btn" onClick={handleGoogleLogin}>

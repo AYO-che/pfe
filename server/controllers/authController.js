@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../prismaClient.js";
+import crypto from "crypto";
+import { sendResetPasswordEmail } from "../utils/mailer.js";
 
 if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not defined");
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -213,7 +215,7 @@ export const forgotPassword = async (req, res) => {
       return res.status(200).json({ message: "If this email exists a reset link has been sent" });
 
     if (!user.password)
-      return res.status(400).json({ message: "This account uses Google login, please sign in with Google" });
+      return res.status(400).json({ message: "This account uses Google login" });
 
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpiry = new Date(Date.now() + 1000 * 60 * 60);
@@ -223,13 +225,13 @@ export const forgotPassword = async (req, res) => {
       data: { resetToken, resetTokenExpiry },
     });
 
-    await sendResetPasswordEmail({
-      to: email,
-      firstName: user.firstName,
-      resetToken,
+    // ⬇️ Skip email, just return the link directly
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+    res.status(200).json({ 
+      message: "Reset link generated",
+      resetUrl  // ← return it directly
     });
 
-    res.status(200).json({ message: "If this email exists a reset link has been sent" });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
@@ -319,4 +321,41 @@ export const getMe = async (req, res) => {
     return res.status(401).json({ message: "Invalid token" });
   }
 };
- 
+ // ------------------- RESET PASSWORD -------------------
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword)
+      return res.status(400).json({ message: "Token and new password are required" });
+
+    if (newPassword.length < 8)
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        resetTokenExpiry: { gt: new Date() },   // not expired
+      },
+    });
+
+    if (!user)
+      return res.status(400).json({ message: "Invalid or expired reset token" });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,           // clear token
+        resetTokenExpiry: null,
+      },
+    });
+
+    res.json({ message: "Password reset successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};

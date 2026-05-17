@@ -4,10 +4,12 @@ import Footer from "../components/Footer";
 
 export default function AboutPage() {
     return (
-        <div style={{ minHeight: "100vh", background: "linear-gradient(135deg,#e3f2fd 0%,#e8f5e9 100%)", fontFamily: "'DM Sans',sans-serif" }}>
+        <div style={{ minHeight: "100vh", background: "linear-gradient(135deg,#e3f2fd 0%,#e8f5e9 100%)", fontFamily: "'Inter',sans-serif" }}>
 
-            <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
-            *{box-sizing:border-box;margin:0;padding:0;}`}</style>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
+                *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            `}</style>
 
             <Header />
 
@@ -15,14 +17,26 @@ export default function AboutPage() {
 
                 {/* Badge */}
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.9)", border: "1px solid rgba(79,158,122,0.25)", borderRadius: 999, padding: "5px 16px 5px 8px", fontSize: 12.5, fontWeight: 600, color: "#2d6b50", boxShadow: "0 2px 10px rgba(45,107,80,0.08)" }}>
+                    <span style={{
+                        display: "inline-flex", alignItems: "center", gap: 7,
+                        background: "rgba(255,255,255,0.9)",
+                        border: "1px solid rgba(79,158,122,0.25)", borderRadius: 999,
+                        padding: "5px 16px 5px 8px", fontSize: 12.5, fontWeight: 600,
+                        color: "#2d6b50", boxShadow: "0 2px 10px rgba(45,107,80,0.08)",
+                        fontFamily: "'Inter',sans-serif",
+                    }}>
                         <span style={{ width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg,#4f9e7a,#2a6b4f)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 11 }}>✦</span>
                         About Us
                     </span>
                 </div>
 
                 {/* Title */}
-                <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(32px,5vw,54px)", fontWeight: 800, color: "#1a3329", textAlign: "center", letterSpacing: -2, lineHeight: 1.1, marginBottom: 48 }}>
+                <h1 style={{
+                    fontFamily: "'Space Grotesk',sans-serif",
+                    fontSize: "clamp(32px,5vw,54px)", fontWeight: 800,
+                    color: "#1a3329", textAlign: "center",
+                    letterSpacing: -2, lineHeight: 1.1, marginBottom: 48,
+                }}>
                     We believe health is a{" "}
                     <span style={{ position: "relative", display: "inline-block" }}>
                         <span style={{ background: "linear-gradient(135deg,#2d9e7a,#1a6fa0)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>transformation</span>
@@ -42,7 +56,11 @@ export default function AboutPage() {
 
                 {/* Quote */}
                 <div style={{ textAlign: "center", margin: "0 auto 56px", maxWidth: 600 }}>
-                    <p style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(17px,2.5vw,22px)", fontWeight: 700, color: "#1a5e3a", lineHeight: 1.65, fontStyle: "italic" }}>
+                    <p style={{
+                        fontFamily: "'Space Grotesk',sans-serif",
+                        fontSize: "clamp(17px,2.5vw,22px)", fontWeight: 700,
+                        color: "#1a5e3a", lineHeight: 1.65, fontStyle: "italic",
+                    }}>
                         "Just like a caterpillar surrenders to transformation inside its chrysalis — emerging as something entirely new — we help you become the{" "}
                         <span style={{ color: "#f5e642" }}>healthiest version</span>
                         {" "}of yourself."
@@ -51,7 +69,6 @@ export default function AboutPage() {
 
                 {/* Story */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-
                     <StoryBlock title="Where it all started">
                         Chrisalis was founded by a team of nutritionists, doctors, and technologists united by the same frustration: most health apps treat everyone the same. Generic calorie targets. One-size-fits-all meal plans. No real human guidance behind the screen.
                         {"\n\n"}
@@ -69,13 +86,9 @@ export default function AboutPage() {
                         {"\n\n"}
                         No crash diets. No generic advice. No empty promises. Just honest, evidence-based guidance built around who you are — and who you are becoming. Because the most powerful transformation begins not in the gym or the kitchen, but in the decision to finally put your health first.
                     </StoryBlock>
-
                 </div>
 
             </div>
-
-
-      
 
         </div>
     );
@@ -86,14 +99,18 @@ function StoryBlock({ title, children }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: "linear-gradient(135deg,#3d9b73,#1a6fa0)" }} />
-                <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: "#1a3329", borderBottom: "2px solid rgba(245,230,66,0.5)", paddingBottom: 2 }}>
+                <h2 style={{
+                    fontFamily: "'Space Grotesk',sans-serif",
+                    fontSize: 20, fontWeight: 800, color: "#1a3329",
+                    borderBottom: "2px solid rgba(245,230,66,0.5)", paddingBottom: 2,
+                }}>
                     {title}
                 </h2>
             </div>
 
             <div style={{ paddingLeft: 18, borderLeft: "2px solid rgba(79,158,122,0.2)" }}>
                 {String(children).split("\n\n").map((p, i) => (
-                    <p key={i} style={{ fontSize: 15, color: "#4a6a5e", lineHeight: 1.9 }}>
+                    <p key={i} style={{ fontSize: 15, color: "#4a6a5e", lineHeight: 1.9, fontFamily: "'Inter',sans-serif" }}>
                         {p}
                     </p>
                 ))}

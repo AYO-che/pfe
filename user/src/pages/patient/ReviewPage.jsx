@@ -4,7 +4,8 @@ import { useAuth } from "../../context/Authcontext";
 const API_URL = "http://localhost:5000";
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
+
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 
 @keyframes slideUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
@@ -74,7 +75,7 @@ const CSS = `
 /* ── Textarea ── */
 .rv-textarea {
   width: 100%; border: 1.5px solid rgba(0,168,84,0.22); border-radius: 14px;
-  padding: 13px 15px; font-size: 13.5px; font-family:'DM Sans',sans-serif;
+  padding: 13px 15px; font-size: 13.5px; font-family:'Inter',sans-serif;
   color: #1a3329; background: rgba(255,255,255,0.35); backdrop-filter:blur(6px);
   outline: none; resize: vertical; min-height: 110px; transition: all 0.2s; line-height:1.6;
 }
@@ -122,6 +123,7 @@ function StarRating({ value, onChange, size = 40 }) {
           fontSize:13, fontWeight:700, color:"#8a7200",
           background:"rgba(245,166,35,0.12)", border:"1px solid rgba(245,166,35,0.3)",
           borderRadius:999, padding:"4px 16px",
+          fontFamily:"'Inter',sans-serif",
         }}>
           {labels[hover || value]}
         </div>
@@ -139,7 +141,7 @@ function Avatar({ user, size = 44, radius = 12 }) {
       background:"linear-gradient(135deg,#1a3329,#0b6630)",
       border:"1.5px solid rgba(168,224,44,0.4)",
       display:"flex", alignItems:"center", justifyContent:"center",
-      fontFamily:"'Syne',sans-serif", fontSize:size*0.32, fontWeight:800, color:"#a8e02c",
+      fontFamily:"'Space Grotesk',sans-serif", fontSize:size*0.32, fontWeight:800, color:"#a8e02c",
     }}>{initials}</div>
   );
   return (
@@ -178,53 +180,35 @@ export default function ReviewPage() {
   const [error,         setError]         = useState("");
   const [successMsg,    setSuccessMsg]    = useState("");
 
- useEffect(() => {
-  fetch(`${API_URL}/subscriptions/mine`, { credentials: "include" })
-    .then(r => r.json())
-    .then(data => {
-      const subs = data.subscriptions ?? [];
-
-      const pkgSubs = subs.filter(s =>
-        s.offer?.type === "PACKAGE" ||
-        s.offer?.type === "package" ||
-        s.offer?.type === "Package"
-      );
-
-      const map = new Map();
-      pkgSubs.forEach(sub => {
-        const nutritionist =
-          sub.nutritionist ??
-          sub.nutrition ??
-          sub.offer?.nutritionist ??
-          sub.offer?.nutrition ??
-          null;
-
-        const nId =
-          sub.nutritionistId ??
-          sub.nutritionId ??
-          sub.nutrition?.id ??
-          nutritionist?.id ??
-          null;
-
-        if (!nId || !nutritionist) return;
-
-        if (!map.has(nId)) {
-          map.set(nId, {
-            nutritionist,
-            subscriptions: [],
-            sessionCount: 0,
-          });
-        }
-        const entry = map.get(nId);
-        entry.subscriptions.push(sub);
-        entry.sessionCount += sub.offer?.sessionCount ?? sub.offer?.sessions ?? 0;
-      });
-
-      setNutritionists([...map.values()]);
-    })
-    .catch(() => setNutritionists([]))
-    .finally(() => setLoading(false));
-}, []);
+  useEffect(() => {
+    fetch(`${API_URL}/subscriptions/mine`, { credentials: "include" })
+      .then(r => r.json())
+      .then(data => {
+        const subs = data.subscriptions ?? [];
+        const pkgSubs = subs.filter(s =>
+          s.offer?.type === "PACKAGE" ||
+          s.offer?.type === "package" ||
+          s.offer?.type === "Package"
+        );
+        const map = new Map();
+        pkgSubs.forEach(sub => {
+          const nutritionist =
+            sub.nutritionist ?? sub.nutrition ??
+            sub.offer?.nutritionist ?? sub.offer?.nutrition ?? null;
+          const nId =
+            sub.nutritionistId ?? sub.nutritionId ??
+            sub.nutrition?.id ?? nutritionist?.id ?? null;
+          if (!nId || !nutritionist) return;
+          if (!map.has(nId)) map.set(nId, { nutritionist, subscriptions: [], sessionCount: 0 });
+          const entry = map.get(nId);
+          entry.subscriptions.push(sub);
+          entry.sessionCount += sub.offer?.sessionCount ?? sub.offer?.sessions ?? 0;
+        });
+        setNutritionists([...map.values()]);
+      })
+      .catch(() => setNutritionists([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleSelect = (entry) => {
     if (submitted[entry.nutritionist.id]) return;
@@ -252,7 +236,7 @@ export default function ReviewPage() {
   };
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", minHeight:"100vh" }}>
+    <div style={{ fontFamily:"'Inter',sans-serif", minHeight:"100vh" }}>
       <style>{CSS}</style>
 
       {/* Page heading */}
@@ -260,7 +244,7 @@ export default function ReviewPage() {
         <div style={{ fontSize:10.5, fontWeight:700, color:"#5a7a6e", textTransform:"uppercase", letterSpacing:1.2, marginBottom:5 }}>
           Feedback
         </div>
-        <div style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:"#1a3329", letterSpacing:-0.5 }}>
+        <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:24, fontWeight:800, color:"#1a3329", letterSpacing:-0.5 }}>
           Rate Your Nutritionist
         </div>
         <div style={{ fontSize:13, color:"#5a7a6e", marginTop:5, lineHeight:1.6 }}>
@@ -275,6 +259,7 @@ export default function ReviewPage() {
           border:"1px solid rgba(168,224,44,0.35)",
           borderRadius:16, padding:"13px 18px", fontSize:13.5, fontWeight:600, color:"#0b6630",
           display:"flex", alignItems:"center", gap:10, marginBottom:20,
+          fontFamily:"'Inter',sans-serif",
         }}>
           <div style={{ width:24, height:24, borderRadius:"50%", background:"#0b6630", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a8e02c" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -290,31 +275,28 @@ export default function ReviewPage() {
           <div className="sec-header">
             <div style={{ width:7, height:7, borderRadius:"50%", background:"#0b6630", flexShrink:0 }} />
             <div>
-              <div style={{ fontSize:13.5, fontWeight:700, color:"#1a3329" }}>Your Package Nutritionists</div>
-              <div style={{ fontSize:11, color:"#5a7a6e", marginTop:2 }}>Select a nutritionist to rate</div>
+              <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13.5, fontWeight:800, color:"#1a3329" }}>Your Package Nutritionists</div>
+              <div style={{ fontSize:11, color:"#5a7a6e", marginTop:2, fontFamily:"'Inter',sans-serif" }}>Select a nutritionist to rate</div>
             </div>
           </div>
 
           <div style={{ padding:"14px 16px", display:"flex", flexDirection:"column", gap:9 }}>
-            {/* Skeletons */}
             {loading && [1,2,3].map(i => (
               <div key={i} className="rv-skeleton" style={{ height:72, animationDelay:`${i*0.1}s` }} />
             ))}
 
-            {/* Empty */}
             {!loading && nutritionists.length === 0 && (
               <div style={{ textAlign:"center", padding:"44px 20px" }}>
                 <div style={{ fontSize:36, marginBottom:10 }}>🥗</div>
-                <div style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:800, color:"#1a3329", marginBottom:5 }}>
+                <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:14, fontWeight:800, color:"#1a3329", marginBottom:5 }}>
                   No package subscriptions yet
                 </div>
-                <div style={{ fontSize:12.5, color:"#5a7a6e", lineHeight:1.6 }}>
+                <div style={{ fontSize:12.5, color:"#5a7a6e", lineHeight:1.6, fontFamily:"'Inter',sans-serif" }}>
                   Once you subscribe to a package, you can rate your nutritionist here.
                 </div>
               </div>
             )}
 
-            {/* List */}
             {!loading && nutritionists.map(entry => {
               const { nutritionist, subscriptions, sessionCount } = entry;
               const isSelected = selected?.nutritionist?.id === nutritionist.id;
@@ -329,21 +311,21 @@ export default function ReviewPage() {
                 >
                   <Avatar user={nutritionist} size={42} radius={10} />
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontFamily:"'Syne',sans-serif", fontSize:13.5, fontWeight:800, color:"#1a3329", marginBottom:3 }}>
+                    <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13.5, fontWeight:800, color:"#1a3329", marginBottom:3 }}>
                       {nutritionist?.firstName} {nutritionist?.lastName}
                     </div>
-                    <div style={{ fontSize:11.5, color:"#5a7a6e" }}>
+                    <div style={{ fontSize:11.5, color:"#5a7a6e", fontFamily:"'Inter',sans-serif" }}>
                       {offerNames || "Package"}
                       {sessionCount > 0 && ` · ${sessionCount} sessions`}
                     </div>
                   </div>
 
-                  {/* Right indicator */}
                   {isReviewed ? (
                     <span style={{
                       background:"rgba(11,102,48,0.1)", color:"#0b6630",
                       border:"1px solid rgba(168,224,44,0.35)",
                       borderRadius:999, padding:"2px 9px", fontSize:10.5, fontWeight:700, flexShrink:0,
+                      fontFamily:"'Inter',sans-serif",
                     }}>✓ Reviewed</span>
                   ) : isSelected ? (
                     <div style={{ width:20, height:20, borderRadius:"50%", background:"#0b6630", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -362,7 +344,6 @@ export default function ReviewPage() {
         {selected && (
           <div className="anim-up-d1" style={{ display:"flex", flexDirection:"column", gap:14 }}>
 
-            {/* Nutritionist header card */}
             <div className="glass-card">
               {/* Dark hero strip */}
               <div style={{
@@ -374,10 +355,10 @@ export default function ReviewPage() {
                 <div style={{ position:"relative", display:"flex", alignItems:"center", gap:14 }}>
                   <Avatar user={selected.nutritionist} size={52} radius={14} />
                   <div>
-                    <div style={{ fontFamily:"'Syne',sans-serif", fontSize:16, fontWeight:800, color:"#fff", marginBottom:3 }}>
+                    <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:16, fontWeight:800, color:"#fff", marginBottom:3 }}>
                       {selected.nutritionist?.firstName} {selected.nutritionist?.lastName}
                     </div>
-                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.55)" }}>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.55)", fontFamily:"'Inter',sans-serif" }}>
                       {[...new Set(selected.subscriptions.map(s => s.offer?.name).filter(Boolean))].join(", ") || "Package"}
                     </div>
                   </div>
@@ -387,7 +368,7 @@ export default function ReviewPage() {
               <div style={{ padding:"22px" }}>
                 {/* Stars */}
                 <div style={{ textAlign:"center", marginBottom:20 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:"#5a7a6e", textTransform:"uppercase", letterSpacing:0.8, marginBottom:14 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:"#5a7a6e", textTransform:"uppercase", letterSpacing:0.8, marginBottom:14, fontFamily:"'Inter',sans-serif" }}>
                     How was your experience?
                   </div>
                   <StarRating value={rating} onChange={setRating} size={42} />
@@ -402,21 +383,21 @@ export default function ReviewPage() {
                     borderRadius:14, padding:"11px 15px", marginBottom:18,
                     display:"flex", alignItems:"center", gap:12,
                   }}>
-                    <div style={{ fontFamily:"'Syne',sans-serif", fontSize:26, fontWeight:800, color:RATING_META[rating].color }}>
+                    <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:26, fontWeight:800, color:RATING_META[rating].color }}>
                       {rating}/5
                     </div>
                     <div>
-                      <div style={{ fontFamily:"'Syne',sans-serif", fontSize:14, fontWeight:800, color:RATING_META[rating].color }}>
+                      <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:14, fontWeight:800, color:RATING_META[rating].color }}>
                         {RATING_META[rating].label}
                       </div>
-                      <div style={{ fontSize:11.5, color:"#5a7a6e", marginTop:2 }}>{RATING_DESC[rating]}</div>
+                      <div style={{ fontSize:11.5, color:"#5a7a6e", marginTop:2, fontFamily:"'Inter',sans-serif" }}>{RATING_DESC[rating]}</div>
                     </div>
                   </div>
                 )}
 
                 {/* Comment */}
                 <div style={{ marginBottom:16 }}>
-                  <label style={{ fontSize:10.5, fontWeight:700, color:"#5a7a6e", letterSpacing:0.7, textTransform:"uppercase", display:"block", marginBottom:8 }}>
+                  <label style={{ fontSize:10.5, fontWeight:700, color:"#5a7a6e", letterSpacing:0.7, textTransform:"uppercase", display:"block", marginBottom:8, fontFamily:"'Inter',sans-serif" }}>
                     Your Review <span style={{ color:"#8a9a8e", fontWeight:500, textTransform:"none" }}>(optional)</span>
                   </label>
                   <textarea
@@ -426,7 +407,7 @@ export default function ReviewPage() {
                     onChange={e => setComment(e.target.value)}
                     maxLength={500}
                   />
-                  <div style={{ fontSize:11, color:"#5a7a6e", textAlign:"right", marginTop:4 }}>
+                  <div style={{ fontSize:11, color:"#5a7a6e", textAlign:"right", marginTop:4, fontFamily:"'Inter',sans-serif" }}>
                     {comment.length}/500
                   </div>
                 </div>
@@ -436,7 +417,7 @@ export default function ReviewPage() {
                   <div className="anim-fade" style={{
                     background:"rgba(192,57,43,0.08)", border:"1px solid rgba(192,57,43,0.2)",
                     borderRadius:12, padding:"10px 14px", fontSize:13, color:"#c0392b",
-                    fontWeight:600, marginBottom:14,
+                    fontWeight:600, marginBottom:14, fontFamily:"'Inter',sans-serif",
                   }}>
                     ⚠️ {error}
                   </div>
@@ -453,7 +434,7 @@ export default function ReviewPage() {
                     border: rating ? "none" : "1.5px solid rgba(0,168,84,0.2)",
                     borderRadius:20, fontSize:13.5, fontWeight:700,
                     cursor: rating && !submitting ? "pointer" : "not-allowed",
-                    fontFamily:"'DM Sans',sans-serif",
+                    fontFamily:"'Inter',sans-serif",
                     display:"flex", alignItems:"center", justifyContent:"center", gap:8,
                     transition:"all 0.2s",
                     boxShadow: rating ? "0 4px 14px rgba(11,102,48,0.3)" : "none",
@@ -481,7 +462,7 @@ export default function ReviewPage() {
                     background:"rgba(255,255,255,0.25)", backdropFilter:"blur(6px)",
                     color:"#5a7a6e", border:"1.5px solid rgba(0,168,84,0.15)",
                     borderRadius:20, fontSize:13, fontWeight:600,
-                    cursor:"pointer", fontFamily:"'DM Sans',sans-serif", marginTop:8,
+                    cursor:"pointer", fontFamily:"'Inter',sans-serif", marginTop:8,
                     transition:"all 0.2s",
                   }}
                 >
@@ -500,7 +481,7 @@ export default function ReviewPage() {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0b6630" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginTop:2 }}>
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               </svg>
-              <div style={{ fontSize:11.5, color:"#5a7a6e", lineHeight:1.6 }}>
+              <div style={{ fontSize:11.5, color:"#5a7a6e", lineHeight:1.6, fontFamily:"'Inter',sans-serif" }}>
                 Your review will be visible to other patients and your nutritionist. Please keep it honest and respectful.
               </div>
             </div>

@@ -650,7 +650,7 @@ export default function Payment() {
   return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(135deg,#e8f5ee 0%,#eafaf0 100%)", fontFamily:"'DM Sans',sans-serif" }}>
       <style>{CSS}</style>
-      <Header/>
+      
 
       {toast && (
         <div className={`cp-toast ${toast.type}`}>
@@ -773,7 +773,6 @@ export default function Payment() {
         />
       )}
 
-      <Footer/>
     </div>
   );
 }

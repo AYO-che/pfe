@@ -16,8 +16,8 @@ const nutritionSelect = {
 // 1️⃣ Get all plans (CLIENT + ADMIN)
 // =====================
 export const getAllPlans = async (req, res) => {
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-    res.setHeader("Pragma", "no-cache");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
   try {
     const plans = await prisma.plan.findMany({
       where: { isPrivate: false },
@@ -87,7 +87,7 @@ export const getMyPlans = async (req, res) => {
 
 // =====================
 // 4️⃣ Create a PUBLIC plan (PDF based — no tracking)
-/// =====================
+// =====================
 export const createPlan = async (req, res) => {
   try {
     const nutritionId = req.user.id;
@@ -115,11 +115,10 @@ export const createPlan = async (req, res) => {
         message: "offerName, offerPrice, offerDurationDays and title are required",
       });
 
-    // Get the uploaded file path from multer instead of a URL string
     if (!req.file)
       return res.status(400).json({ message: "A PDF file is required for public plans" });
 
-const pdfUrl = `${process.env.SERVER_URL || "http://localhost:5000"}/uploads/${req.file.filename}`;
+    const pdfUrl = `${process.env.SERVER_URL || "http://localhost:5000"}/uploads/${req.file.filename}`;
 
     const result = await prisma.$transaction(async (tx) => {
       const offer = await tx.offer.create({
@@ -128,10 +127,9 @@ const pdfUrl = `${process.env.SERVER_URL || "http://localhost:5000"}/uploads/${r
           name: offerName,
           description: offerDescription ?? null,
           type: "PLAN",
-          price: parseFloat(offerPrice),           // body fields from FormData are strings
+          price: parseFloat(offerPrice),
           durationDays: parseInt(offerDurationDays),
           hasFreeTrial: hasFreeTrial === "true",
-          includesSessions: false,
           isActive: true,
         },
       });
@@ -333,7 +331,7 @@ export const getRecommendedPlans = async (req, res) => {
 
 // =====================
 // 8️⃣ Assign a PRIVATE plan to a patient (NUTRITION only)
-// This is the plan with daily tracking — assigned after consultation
+// Supports multiple plans per patient — one plan per call
 // =====================
 export const assignPlanToPatient = async (req, res) => {
   try {
@@ -375,6 +373,7 @@ export const assignPlanToPatient = async (req, res) => {
       });
 
     const result = await prisma.$transaction(async (tx) => {
+      // Each assigned plan gets its own offer (no @unique on offerId now)
       const offer = await tx.offer.create({
         data: {
           nutritionId,
@@ -393,7 +392,7 @@ export const assignPlanToPatient = async (req, res) => {
           patientId,
           isPrivate: true,
           title,
-          content,           // ← has content.days for tracking
+          content,
           goals: goals ?? [],
           activityLevels: activityLevels ?? [],
           medicalConditions: medicalConditions ?? [],
@@ -404,6 +403,7 @@ export const assignPlanToPatient = async (req, res) => {
       });
 
       // Auto-create UserPlan for daily tracking
+      // A client can have multiple UserPlans (one per assigned plan)
       const userPlan = await tx.userPlan.create({
         data: {
           userId: patientId,
@@ -426,7 +426,8 @@ export const assignPlanToPatient = async (req, res) => {
 
     res.status(201).json(result);
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("assignPlanToPatient error:", err);
+    res.status(500).json({ message: "Server error", detail: err.message });
   }
 };
 
