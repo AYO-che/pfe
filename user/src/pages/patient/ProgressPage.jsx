@@ -1,3 +1,4 @@
+import { authFetch } from "../../../context/Authcontext";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/Authcontext";
 
@@ -1032,3 +1033,4 @@ export default function ProfileProgressPage() {
     </div>
   );
 }
+

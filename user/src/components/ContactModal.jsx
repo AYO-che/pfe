@@ -1,3 +1,4 @@
+import { authFetch } from "../../context/Authcontext";
 import { useState, useRef, useEffect } from "react";
 
 const BASE_URL = "https://chrysalise-server.onrender.com";
@@ -192,3 +193,4 @@ export function ContactModal({ onClose, currentUser }) {
     </div>
   );
 }
+

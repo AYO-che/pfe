@@ -1,3 +1,4 @@
+import { authFetch } from "../../../context/Authcontext";
 // StripeRedirect.jsx
 import { useEffect } from "react";
 
@@ -51,3 +52,4 @@ export default function StripeRedirect() {
     </div>
   );
 }
+

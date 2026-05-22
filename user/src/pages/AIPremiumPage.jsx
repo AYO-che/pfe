@@ -1,3 +1,4 @@
+import { authFetch } from "../../context/Authcontext";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/Authcontext";
@@ -564,3 +565,4 @@ export default function AIPremiumPage() {
     </div>
   );
 }
+

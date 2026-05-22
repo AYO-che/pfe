@@ -1,3 +1,4 @@
+import { authFetch } from "../../../context/Authcontext";
 import { useEffect, useState } from "react";
 
 const CSS = `
@@ -625,3 +626,4 @@ export default function SessionsPage() {
     </div>
   );
 }
+

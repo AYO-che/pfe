@@ -1,3 +1,4 @@
+import { authFetch } from "../../../context/Authcontext";
 import { useState, useEffect, useRef } from "react";
 
 const API_URL    = "https://chrysalise-server.onrender.com";
@@ -506,3 +507,4 @@ export default function PlanPage() {
     </>
   );
 }
+

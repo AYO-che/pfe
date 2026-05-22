@@ -1,3 +1,4 @@
+import { authFetch } from "../../../context/Authcontext";
 import React, { useState, useEffect, useCallback } from "react";
 
 const API_URL = "https://chrysalise-server.onrender.com";
@@ -406,3 +407,4 @@ export default function NutritionNotifsPage() {
     </div>
   );
 }
+

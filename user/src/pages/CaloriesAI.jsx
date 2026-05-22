@@ -1,3 +1,4 @@
+import { authFetch } from "../../context/Authcontext";
 import { useState, useRef, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { initializeApp, getApps } from "firebase/app";
@@ -880,3 +881,4 @@ export default function CaloriesAI() {
     </div>
   );
 }
+

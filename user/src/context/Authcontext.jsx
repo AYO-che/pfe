@@ -1,3 +1,4 @@
+import { authFetch } from "../../context/Authcontext";
 import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext(null);
@@ -88,3 +89,4 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   return useContext(AuthContext);
 }
+
