@@ -1,3 +1,4 @@
+import { authFetch } from "../context/Authcontext";
 import { useState, useRef, useEffect } from "react";
 
 const CSS = `
@@ -372,3 +373,4 @@ export default function ChatBot() {
     </>
   );
 }
+
