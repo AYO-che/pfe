@@ -11,7 +11,10 @@ import { resolve } from "path";
 dotenv.config();
 
 const app = express();
-
+// At the very top of your server entry file (index.js / app.js)
+process.on("unhandledRejection", (err) => {
+  console.error("UNHANDLED REJECTION:", err);
+});
 /* ========================
    CORS (FRONTEND ONLY)
 ======================== */
@@ -25,10 +28,9 @@ app.use(
 /* ========================
    CORE MIDDLEWARE
 ======================== */
-app.use(express.json());
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 app.use(cookieParser());
-app.use(passport.initialize());
-
 /* ========================
    STATIC FILES
 ======================== */

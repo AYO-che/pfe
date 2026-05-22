@@ -4,7 +4,7 @@ import logoImg from '../../assets/logo.jpg'
 
 import {
   LayoutDashboard, Users, UserCheck, MessageSquare,
-  FileText, CreditCard, Settings, LogOut
+  FileText, CreditCard, Settings, LogOut,Users2,Tag
 } from 'lucide-react'
 
 const NAV = [
@@ -14,7 +14,10 @@ const NAV = [
   { id: 'inquiries',     label: 'Inquiries',      icon: MessageSquare, badge: true },
   { id: 'content',       label: 'Content',        icon: FileText        },
   { id: 'subscriptions', label: 'Subscriptions',  icon: CreditCard      },
+  { id: 'comminity',      label: 'Comminity',       icon: Users2       },
+{ id: 'offermanagement', label: 'Offer', icon: Tag },
   { id: 'settings',      label: 'Settings',       icon: Settings        },
+ 
 ]
 
 const Sidebar = ({ activePage, onNavigate, onLogout, inquiryBadge }) => (

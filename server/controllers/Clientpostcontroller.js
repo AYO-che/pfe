@@ -243,3 +243,14 @@ export const deleteClientPost = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+export const getAllClientPostsAdmin = async (req, res) => {
+  try {
+    const posts = await prisma.clientPost.findMany({
+      include: { author: { select: { id: true, firstName: true, lastName: true, image: true } } },
+      orderBy: { createdAt: 'desc' },
+    })
+    res.json({ posts })
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' })
+  }
+}

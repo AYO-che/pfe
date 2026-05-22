@@ -1,3 +1,4 @@
+//admin
 import React, { createContext, useContext, useState, useEffect } from 'react'
 
 const AuthContext = createContext(null)
@@ -7,29 +8,29 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   // On mount — verify session is still valid with the backend
-  useEffect(() => {
-    const stored = localStorage.getItem('fitwise_user')
-    if (!stored) { setLoading(false); return }
+useEffect(() => {
+  const stored = localStorage.getItem('fitwise_user')
+  if (!stored) { setLoading(false); return }
 
-    // Re-verify with backend to make sure the session/cookie is still valid
-    fetch('http://localhost:5000/me', { credentials: 'include' })
-      .then(r => r.json())
-      .then(data => {
-        if (data?.id && data?.role === 'ADMIN') {
-          setUser(data)
-        } else {
-          // Session expired or not admin — clear storage
-          localStorage.removeItem('fitwise_user')
-          localStorage.removeItem('fitwise_token')
-          setUser(null)
-        }
-      })
-      .catch(() => {
-        // Backend unreachable — fall back to stored user
-        try { setUser(JSON.parse(stored)) } catch { setUser(null) }
-      })
-      .finally(() => setLoading(false))
-  }, [])
+  fetch('http://localhost:5000/me', { credentials: 'include' })
+    .then(r => r.json())
+    .then(data => {
+      if (data?.id && data?.role === 'ADMIN') {
+        setUser(data)
+      } else {
+        localStorage.removeItem('fitwise_user')
+        localStorage.removeItem('fitwise_token')
+        setUser(null)
+      }
+    })
+    .catch(() => {
+      // ✅ Don't fall back to localStorage — just clear everything
+      localStorage.removeItem('fitwise_user')
+      localStorage.removeItem('fitwise_token')
+      setUser(null)
+    })
+    .finally(() => setLoading(false))
+}, [])
 
   const login = (userData, token) => {
     localStorage.setItem('fitwise_user', JSON.stringify(userData))

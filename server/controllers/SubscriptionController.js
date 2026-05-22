@@ -87,11 +87,27 @@ export const createSubscription = async (req, res) => {
     // ── AI_CALORIES ──
     // Free only if price is 0 (the free tier offer)
     // Paid AI plans must go through payment
-    if (offer.type === "AI_CALORIES") {
-      if (Number(offer.price) === 0) {
-        isFree = true;
-      }
+ 
+if (offer.type === "AI_CALORIES") {
+  if (Number(offer.price) === 0) {
+    // ✅ Check if this user has EVER had a free AI trial (any status)
+    const previousTrial = await prisma.subscription.findFirst({
+      where: {
+        patientId: userId,
+        offer: { type: "AI_CALORIES", price: 0 },
+      },
+    });
+
+    if (previousTrial) {
+      return res.status(403).json({
+        message: "Free trial already used. Please upgrade to a paid plan.",
+        code: "TRIAL_ALREADY_USED",
+      });
     }
+
+    isFree = true;
+  }
+}
 
     const startDate = new Date();
     const endDate   = new Date();
@@ -265,3 +281,47 @@ export const cancelSubscription = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+// ==============================
+// 6️⃣ Get subscriptions by patient (ADMIN)
+// ==============================
+export const getSubscriptionsByPatient = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const subscriptions = await prisma.subscription.findMany({
+      where:   { patientId },
+      include: { offer: true, nutrition: userSelect },
+      orderBy: { startDate: "desc" },
+    });
+
+    res.json({ subscriptions });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+// ==============================
+// 7️⃣ Get ALL subscriptions (ADMIN)
+// ==============================
+export const getAllSubscriptions = async (req, res) => {
+  try {
+    const { status } = req.query
+
+    const where = status ? { status } : {}
+
+    const subscriptions = await prisma.subscription.findMany({
+      where,
+      include: {
+        offer:     true,
+        patient:   { select: { id: true, firstName: true, lastName: true, email: true } },
+        nutrition: { select: { id: true, firstName: true, lastName: true } },
+        payments:  true,
+      },
+      orderBy: { startDate: 'desc' },
+    })
+
+    res.json({ subscriptions })
+  } catch (err) {
+    console.error('Get All Subs Error:', err)
+    res.status(500).json({ message: 'Server error' })
+  }
+}

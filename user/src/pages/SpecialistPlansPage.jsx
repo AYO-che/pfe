@@ -8,9 +8,9 @@ const CSS = `
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@keyframes fadeUp { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: translateY(0) } }
-@keyframes pulse  { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }
-@keyframes spin   { to { transform: rotate(360deg) } }
+@keyframes fadeUp  { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes pulse   { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }
+@keyframes spin    { to { transform: rotate(360deg) } }
 
 .pr-fade    { animation: fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both }
 .pr-fade-d1 { animation: fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) 0.07s both }
@@ -50,6 +50,7 @@ const CSS = `
   font-family: 'Inter', sans-serif;
   transition: all 0.25s ease;
   display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: none;
 }
 .pr-btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.05); }
 .pr-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -59,7 +60,36 @@ const CSS = `
 }
 `;
 
-const FEATURED_INDEX = 1;
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Enrich specialist offers sorted by sessionsCount asc.
+ * Positional badge rules:
+ *  • 1 offer  → "Featured"
+ *  • 2 offers → "Starter" / "Best Value" (featured)
+ *  • 3+ offers→ first = "Starter", middle = "Most Popular" (featured), last = "Best Value"
+ */
+function enrichOffers(offers) {
+  const total = offers.length;
+  if (total === 0) return [];
+  const midIndex = Math.floor((total - 1) / 2);
+
+  return offers.map((offer, i) => {
+    const isFeatured = total === 1 ? true : i === midIndex;
+
+    let badge;
+    if (total === 1)         badge = "Featured";
+    else if (total === 2)    badge = i === 0 ? "Starter" : "Best Value";
+    else if (i === 0)        badge = "Starter";
+    else if (isFeatured)     badge = "Most Popular";
+    else if (i === total-1)  badge = "Best Value";
+    else                     badge = "Popular";
+
+    return { ...offer, featured: isFeatured, badge };
+  });
+}
+
+// ─── Icons ───────────────────────────────────────────────────────────────────
 
 function Check() {
   return (
@@ -80,9 +110,12 @@ function ArrowRight() {
   );
 }
 
-function PlanCard({ offer, index, onSelect }) {
-  const featured = index === FEATURED_INDEX;
+// ─── PlanCard ────────────────────────────────────────────────────────────────
 
+function PlanCard({ offer, index, onSelect }) {
+  const { featured, badge } = offer;
+
+  // Build feature list purely from offer fields — no hardcoded text dependency
   const features = [
     `${offer.sessionsCount} session${offer.sessionsCount > 1 ? "s" : ""} with your nutritionist`,
     "Personalized nutrition plan included",
@@ -91,11 +124,6 @@ function PlanCard({ offer, index, onSelect }) {
     "Zoom video sessions",
     "Cancel anytime",
   ].filter(Boolean);
-
-  const badge =
-    offer.sessionsCount === 1 ? "Starter" :
-    offer.sessionsCount === 2 ? "Most Popular" :
-                                "Best Value";
 
   return (
     <div
@@ -140,7 +168,11 @@ function PlanCard({ offer, index, onSelect }) {
           textTransform: "uppercase", letterSpacing: 0.4,
           marginBottom: 16, width: "fit-content",
         }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#0b6630", display: "inline-block", animation: "pulse 2s infinite" }} />
+          <span style={{
+            width: 6, height: 6, borderRadius: "50%",
+            background: "#0b6630", display: "inline-block",
+            animation: "pulse 2s infinite",
+          }} />
           {badge}
         </div>
 
@@ -152,7 +184,7 @@ function PlanCard({ offer, index, onSelect }) {
           {offer.name}
         </div>
 
-        {/* Sessions pill */}
+        {/* Sessions + chat pill */}
         <div style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           background: "rgba(168,224,44,0.1)",
@@ -203,7 +235,7 @@ function PlanCard({ offer, index, onSelect }) {
           className="pr-btn"
           onClick={() => onSelect(offer)}
           style={featured
-            ? { background: "linear-gradient(135deg,#0b6630,#2d7a4f)", color: "#fff", border: "none", boxShadow: "0 6px 18px rgba(11,102,48,0.25)" }
+            ? { background: "linear-gradient(135deg,#0b6630,#2d7a4f)", color: "#fff", boxShadow: "0 6px 18px rgba(11,102,48,0.25)" }
             : { background: "rgba(168,224,44,0.15)", color: "#0b6630", border: "1.5px solid rgba(0,168,84,0.3)" }
           }
         >
@@ -215,8 +247,10 @@ function PlanCard({ offer, index, onSelect }) {
   );
 }
 
+// ─── Page ────────────────────────────────────────────────────────────────────
+
 export default function SpecialistPlansPage() {
-  const navigate = useNavigate();
+  const navigate          = useNavigate();
   const [offers,  setOffers]  = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
@@ -227,7 +261,12 @@ export default function SpecialistPlansPage() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then(data => setOffers(data.offers ?? []))
+      .then(data => {
+        // Sort by sessionsCount ascending, then enrich with positional styling
+        const sorted   = (data.offers ?? []).sort((a, b) => a.sessionsCount - b.sessionsCount);
+        const enriched = enrichOffers(sorted);
+        setOffers(enriched);
+      })
       .catch(() => setError("Failed to load plans"))
       .finally(() => setLoading(false));
   }, []);
@@ -252,22 +291,16 @@ export default function SpecialistPlansPage() {
       <style>{CSS}</style>
       <Header />
 
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      {/* Hero */}
       <section style={{
-        position: "relative",
-        background: "#1a5c35",
-        padding: "60px 24px 64px",
-        textAlign: "center",
-        overflow: "hidden",
+        position: "relative", background: "#1a5c35",
+        padding: "60px 24px 64px", textAlign: "center", overflow: "hidden",
       }}>
-        {/* Dot pattern */}
         <div style={{
           position: "absolute", inset: 0,
           backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.07) 1.5px, transparent 1.5px)",
-          backgroundSize: "24px 24px",
-          pointerEvents: "none",
+          backgroundSize: "24px 24px", pointerEvents: "none",
         }} />
-        {/* Radial glow */}
         <div style={{
           position: "absolute", top: -120, left: "50%", transform: "translateX(-50%)",
           width: 600, height: 400,
@@ -277,58 +310,44 @@ export default function SpecialistPlansPage() {
 
         <div style={{ position: "relative", zIndex: 1, maxWidth: 640, margin: "0 auto" }}>
 
-          {/* Pill badge */}
           <div className="pr-fade" style={{
             display: "inline-flex", alignItems: "center", gap: 7,
             border: "1px solid rgba(245,230,66,0.45)",
             borderRadius: 999, padding: "7px 16px",
             fontSize: 11, fontWeight: 700, color: "#f5e642",
-            letterSpacing: "1.8px", textTransform: "uppercase",
-            marginBottom: 24,
+            letterSpacing: "1.8px", textTransform: "uppercase", marginBottom: 24,
           }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f5e642" }} />
             Specialist Nutrition Packages
           </div>
 
-          {/* Headline */}
           <h1 className="pr-fade pr-fade-d1" style={{
             fontFamily: "'Space Grotesk', sans-serif",
             fontSize: "clamp(32px, 5vw, 52px)",
             fontWeight: 800, color: "#fff",
-            lineHeight: 1.07, letterSpacing: -1.5,
-            marginBottom: 16,
+            lineHeight: 1.07, letterSpacing: -1.5, marginBottom: 16,
           }}>
             Real guidance from<br />
             <span style={{ color: "#f5e642" }}>certified experts.</span>
           </h1>
 
-          {/* Subheading */}
           <p className="pr-fade pr-fade-d2" style={{
             fontSize: 15, color: "rgba(255,255,255,0.62)",
-            lineHeight: 1.8, maxWidth: 460,
-            margin: "0 auto 40px",
+            lineHeight: 1.8, maxWidth: 460, margin: "0 auto 40px",
           }}>
             Work 1-on-1 with a certified nutritionist via{" "}
             <strong style={{ color: "rgba(255,255,255,0.88)", fontWeight: 600 }}>video sessions</strong>,
             get a personalised plan, and chat access — all in one package.
           </p>
 
-          {/* Stats */}
           <div className="pr-fade pr-fade-d3" style={{
             display: "flex", justifyContent: "center",
             alignItems: "flex-start", gap: 48, flexWrap: "wrap",
           }}>
-            {[["500+", "Patients helped"], ["4.85★", "Avg. rating"], ["6", "Specialists"]].map(([num, label]) => (
+            {[["500+","Patients helped"],["4.85★","Avg. rating"],["6","Specialists"]].map(([num, label]) => (
               <div key={label} style={{ textAlign: "center" }}>
-                <div style={{
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: 38, fontWeight: 800, color: "#f5e642", lineHeight: 1,
-                }}>
-                  {num}
-                </div>
-                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 6 }}>
-                  {label}
-                </div>
+                <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 38, fontWeight: 800, color: "#f5e642", lineHeight: 1 }}>{num}</div>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 6 }}>{label}</div>
               </div>
             ))}
           </div>
@@ -336,7 +355,7 @@ export default function SpecialistPlansPage() {
         </div>
       </section>
 
-      {/* ── Plans ────────────────────────────────────────────────────────── */}
+      {/* Plans */}
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "44px 20px 80px" }}>
 
         <div style={{ textAlign: "center", marginBottom: 36 }}>
@@ -352,13 +371,14 @@ export default function SpecialistPlansPage() {
           </p>
         </div>
 
-        {/* States */}
+        {/* Loading */}
         {loading && (
           <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
             <div style={{ width: 40, height: 40, border: "3px solid rgba(0,168,84,0.2)", borderTop: "3px solid #0b6630", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
           </div>
         )}
 
+        {/* Error */}
         {error && (
           <div style={{
             background: "rgba(255,255,255,0.7)", backdropFilter: "blur(8px)",
@@ -372,20 +392,21 @@ export default function SpecialistPlansPage() {
           </div>
         )}
 
+        {/* Empty */}
         {!loading && !error && offers.length === 0 && (
           <div style={{ textAlign: "center", padding: 60, color: "#5a7a6e", fontSize: 15 }}>
             No packages available yet.
           </div>
         )}
 
+        {/* Cards — grid adapts to number of offers (max 3 columns) */}
         {!loading && !error && offers.length > 0 && (
           <div
             className="pr-grid"
             style={{
               display: "grid",
               gridTemplateColumns: `repeat(${Math.min(offers.length, 3)}, 1fr)`,
-              gap: 22,
-              alignItems: "start",
+              gap: 22, alignItems: "start",
             }}
           >
             {offers.map((offer, i) => (

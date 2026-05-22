@@ -48,7 +48,7 @@ const CSS = `
   border-radius: 14px;
   padding: 12px 16px;
   font-size: 14px;
-  font-family: 'Inter', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   color: #1a3329;
   background: rgba(255, 255, 255, 0.4);
   outline: none;
@@ -68,7 +68,7 @@ const CSS = `
   border-radius: 14px;
   padding: 12px 16px;
   font-size: 14px;
-  font-family: 'Inter', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   color: #1a3329;
   background: rgba(255, 255, 255, 0.4);
   outline: none;
@@ -96,7 +96,7 @@ const CSS = `
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   transition: all 0.22s;
   display: inline-flex;
   align-items: center;
@@ -122,7 +122,7 @@ const CSS = `
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   transition: all 0.22s;
 }
 .cp-ghost-btn:hover{
@@ -169,7 +169,7 @@ const CSS = `
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   transition: all 0.2s;
   white-space: nowrap;
 }
@@ -235,7 +235,7 @@ const CSS = `
   font-weight: 700;
   color: #c53030;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   transition: all 0.15s;
 }
@@ -277,7 +277,7 @@ const CSS = `
   flex-shrink: 0;
 }
 .cp-header-text h1{
-  font-family: 'Inter', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 22px;
   font-weight: 800;
   color: #1a3329;
@@ -313,7 +313,7 @@ const CSS = `
   padding: 10px 20px;
   border-radius: 14px;
   border: none;
-  font-family: 'Inter', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -389,7 +389,7 @@ const CSS = `
   margin-bottom: 12px;
 }
 .cp-empty-glass h3{
-  font-family: 'Inter', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 15px;
   font-weight: 800;
   color: #1a3329;
@@ -456,17 +456,22 @@ export default function CreatePostPage() {
     if (tab === "posts") fetchMyPosts();
   }, [tab]);
 
-  const submit = async () => {
-    if (!form.title.trim())   { setError("Title is required");   return; }
-    if (!form.content.trim()) { setError("Content is required"); return; }
+const submit = async () => {
+  if (!form.title.trim())   { setError("Title is required");   return; }
+  if (!form.content.trim()) { setError("Content is required"); return; }
 
-    setSaving(true);
-    setError("");
-    setSuccess("");
+  setSaving(true);
+  setError("");
+  setSuccess("");
 
-    try {
-      const payload = { title: form.title, content: form.content };
-      if (form.image) payload.image = form.image;
+  try {
+    const payload = {
+      title:   form.title,
+      content: form.content,
+      images:  form.image ? [form.image] : [],  // ← change this line only
+    };
+
+
 
       const res  = await fetch(`${API_URL}/blog`, {
         method:      "POST",
@@ -540,7 +545,7 @@ export default function CreatePostPage() {
           )}
 
           <div className="cp-card" style={{ animationDelay: "0.08s" }}>
-            <div style={{ fontFamily: "Syne,sans-serif", fontSize: 15, fontWeight: 800, color: "#1a3329", marginBottom: 20 }}>
+            <div style={{ fontFamily: "Space Grotesk,sans-serif", fontSize: 15, fontWeight: 800, color: "#1a3329", marginBottom: 20 }}>
               New Article
             </div>
 
@@ -617,7 +622,7 @@ export default function CreatePostPage() {
       {/* ── MY POSTS TAB ── */}
       {tab === "posts" && (
         <div className="cp-card" style={{ animationDelay: "0.08s" }}>
-          <div style={{ fontFamily: "Syne,sans-serif", fontSize: 15, fontWeight: 800, color: "#1a3329", marginBottom: 20 }}>
+          <div style={{ fontFamily: "Space Grotesk,sans-serif", fontSize: 15, fontWeight: 800, color: "#1a3329", marginBottom: 20 }}>
             My Posts
           </div>
 
@@ -636,7 +641,7 @@ export default function CreatePostPage() {
             posts.map(p => (
               <div key={p.id} className="cp-post-row">
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: "Syne,sans-serif", fontSize: 14, fontWeight: 800, color: "#1a3329", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div style={{ fontFamily: "Space Grotesk,sans-serif", fontSize: 14, fontWeight: 800, color: "#1a3329", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {p.title}
                   </div>
                   <div style={{ fontSize: 12, color: "rgba(11,102,48,0.45)", marginBottom: 8 }}>

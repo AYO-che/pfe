@@ -45,7 +45,7 @@ const CSS = `
   backdrop-filter: blur(16px);
   border: 1px solid rgba(168,224,44,0.35);
   padding: 11px 26px; border-radius: 999px;
-  font-family: 'DM Sans',sans-serif; font-size: 13px; font-weight: 700;
+  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700;
   z-index: 9999; animation: toastIn 0.25s ease;
   box-shadow: 0 8px 28px rgba(15,89,47,0.3);
   display: flex; align-items: center; gap: 8px;
@@ -54,7 +54,7 @@ const CSS = `
 .pr-section-label {
   font-size: 10px; font-weight: 700; color: #5a7a6e;
   text-transform: uppercase; letter-spacing: 1px;
-  margin: 20px 0 10px 4px; font-family: 'DM Sans',sans-serif;
+  margin: 20px 0 10px 4px; font-family: 'Inter', sans-serif;
 }
 
 .pr-hero {
@@ -87,7 +87,7 @@ const CSS = `
   background: rgba(255,255,255,0.1); backdrop-filter: blur(6px);
   border: 1px solid rgba(168,224,44,0.2); border-radius: 20px;
   padding: 5px 13px; font-size: 12px; color: rgba(255,255,255,0.8);
-  font-family: 'DM Sans',sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 .pr-macro-pill strong { color: #a8e02c; }
 
@@ -113,13 +113,13 @@ const CSS = `
   border: 1px solid rgba(0,168,84,0.12);
   border-left: 3px solid #0b6630;
   border-radius: 14px; padding: 14px 16px;
-  font-family: 'DM Sans',sans-serif; transition: all 0.2s;
+  font-family: 'Inter', sans-serif; transition: all 0.2s;
 }
 .pr-note-card:hover { background:rgba(255,255,255,0.85); border-color:rgba(168,224,44,0.4); }
 
 .pr-note-textarea {
   width: 100%; min-height: 90px; resize: vertical;
-  font-family: 'DM Sans',sans-serif; font-size: 13.5px; font-weight: 500;
+  font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500;
   color: #1a3329; background: rgba(255,255,255,0.7);
   border: 1.5px solid rgba(0,168,84,0.2); border-radius: 14px;
   padding: 14px 16px; outline: none; line-height: 1.6;
@@ -136,7 +136,7 @@ const CSS = `
   background: #0b6630; color: #a8e02c; border: none;
   padding: 11px 20px; border-radius: 18px;
   font-size: 13px; font-weight: 700; cursor: pointer;
-  font-family: 'DM Sans',sans-serif;
+  font-family: 'Inter', sans-serif;
   transition: all 0.2s; box-shadow: 0 4px 14px rgba(11,102,48,0.3);
   display: inline-flex; align-items: center; gap: 7px;
 }
@@ -148,7 +148,7 @@ const CSS = `
   color: #1a3329; border: 1.5px solid rgba(168,224,44,0.4);
   padding: 11px 18px; border-radius: 18px;
   font-size: 13px; font-weight: 700; cursor: pointer;
-  font-family: 'DM Sans',sans-serif; transition: all 0.2s;
+  font-family: 'Inter', sans-serif; transition: all 0.2s;
   display: inline-flex; align-items: center; gap: 7px;
 }
 .pr-btn-glass:hover { background:rgba(255,255,255,0.5); border-color:rgba(168,224,44,0.7); }
@@ -160,7 +160,7 @@ const CSS = `
   background:rgba(255,255,255,0.2); backdrop-filter:blur(6px);
   display:flex; align-items:center; justify-content:center;
   font-size:11px; font-weight:700; color:#5a7a6e;
-  transition:all 0.25s; font-family:'DM Sans',sans-serif;
+  transition:all 0.25s; font-family:'Inter', sans-serif;
 }
 .pr-day-circle.done    { background:#0b6630; color:#a8e02c; border-color:transparent; box-shadow:0 3px 10px rgba(11,102,48,0.3); }
 .pr-day-circle.partial { background:rgba(168,224,44,0.25); color:#0b6630; border-color:rgba(168,224,44,0.5); }
@@ -204,13 +204,13 @@ const CSS = `
   flex-shrink: 0;
 }
 .cp-header-text h1 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 21px; font-weight: 800; color: #1a3329;
   margin: 0 0 4px 0; letter-spacing: -0.4px;
 }
 .cp-header-text p {
   font-size: 12.5px; color: rgba(11,102,48,0.55); margin: 0;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 `;
 
@@ -258,7 +258,7 @@ function Ring({ pct, size = 90, stroke = 8, color = "#a8e02c", bg = "rgba(0,168,
             style={{ transition:"stroke-dashoffset 1s cubic-bezier(0.22,1,0.36,1)" }} />
         </svg>
         <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <span style={{ fontFamily:"'Syne',sans-serif", fontSize:size*0.22, fontWeight:800, color:"#1a3329", lineHeight:1 }}>
+          <span style={{ fontFamily:"'Inter', sans-serif", fontSize:size*0.22, fontWeight:800, color:"#1a3329", lineHeight:1 }}>
             {pct}%
           </span>
         </div>
@@ -275,7 +275,7 @@ function SectionTitle({ icon, title, bg = "#e8f5e9" }) {
       <div style={{ width:30, height:30, borderRadius:9, background:bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>
         {icon}
       </div>
-      <span style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:800, color:"#1a3329" }}>{title}</span>
+      <span style={{ fontFamily:"'Inter', sans-serif", fontSize:15, fontWeight:800, color:"#1a3329" }}>{title}</span>
     </div>
   );
 }
@@ -385,7 +385,7 @@ function PlanLineGraph({ userPlan, totalDays, dayNum, getDayAdherence }) {
                 strokeWidth={g === 0 ? 1 : 0.8}
                 strokeDasharray={g === 0 ? "none" : "3 4"} />
               <text x={PL - 4} y={yOf(g) + 3.5} textAnchor="end"
-                fontSize="7" fill="rgba(90,122,110,0.7)" fontFamily="DM Sans,sans-serif">
+                fontSize="7" fill="rgba(90,122,110,0.7)" fontFamily="'Inter', sans-serif">
                 {g}
               </text>
             </g>
@@ -395,7 +395,7 @@ function PlanLineGraph({ userPlan, totalDays, dayNum, getDayAdherence }) {
           <line x1={PL} y1={yOf(80)} x2={W - PR} y2={yOf(80)}
             stroke="rgba(168,224,44,0.5)" strokeWidth="1" strokeDasharray="5 3" />
           <text x={W - PR + 3} y={yOf(80) + 3.5} fontSize="7"
-            fill="rgba(168,224,44,0.85)" fontFamily="DM Sans,sans-serif" fontWeight="700">
+            fill="rgba(168,224,44,0.85)" fontFamily=" 'Inter', sans-serif" fontWeight="700">
             80%
           </text>
 
@@ -423,7 +423,7 @@ function PlanLineGraph({ userPlan, totalDays, dayNum, getDayAdherence }) {
                 stroke="rgba(168,224,44,0.65)" strokeWidth="1.2" strokeDasharray="3 3" />
               <text x={todayX} y={PT - 5} textAnchor="middle"
                 fontSize="7" fill="rgba(168,224,44,0.9)"
-                fontFamily="DM Sans,sans-serif" fontWeight="700">
+                fontFamily="'Inter', sans-serif;" fontWeight="700">
                 Today
               </text>
             </g>
@@ -471,11 +471,11 @@ function PlanLineGraph({ userPlan, totalDays, dayNum, getDayAdherence }) {
                 <rect x={tx} y={ty} width={TIP_W} height={TIP_H} rx="8"
                   fill="rgba(26,51,41,0.93)" stroke="rgba(168,224,44,0.25)" strokeWidth="0.8" />
                 <text x={tx + TIP_W / 2} y={ty + 11} textAnchor="middle"
-                  fontSize="7.5" fill="#9ab8ae" fontFamily="DM Sans,sans-serif" fontWeight="700">
+                  fontSize="7.5" fill="#9ab8ae" fontFamily="'Inter', sans-serif;" fontWeight="700">
                   Day {hovered.idx + 1}
                 </text>
                 <text x={tx + TIP_W / 2} y={ty + 23} textAnchor="middle"
-                  fontSize="10" fill={dot} fontFamily="Syne,sans-serif" fontWeight="800">
+                  fontSize="10" fill={dot} fontFamily="'Inter', sans-serif;" fontWeight="800">
                   {hovered.pct}%
                 </text>
               </g>
@@ -486,7 +486,7 @@ function PlanLineGraph({ userPlan, totalDays, dayNum, getDayAdherence }) {
           {xLabels.map(d => (
             <text key={d.idx} x={xOf(d.idx)} y={H - 5} textAnchor="middle" fontSize="7"
               fill={d.idx === todayIdx ? "rgba(168,224,44,0.9)" : "rgba(90,122,110,0.5)"}
-              fontFamily="DM Sans,sans-serif"
+              fontFamily="'Inter', sans-serif;"
               fontWeight={d.idx === todayIdx ? "700" : "400"}>
               {d.idx + 1}
             </text>
@@ -674,7 +674,7 @@ export default function ProfileProgressPage() {
   const planPct = totalDays > 0 ? Math.round((dayNum / totalDays) * 100) : 0;
 
   if (loading) return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", padding:40, color:"#5a7a6e", display:"flex", alignItems:"center", gap:10 }}>
+    <div style={{ fontFamily:"'Inter', sans-serif;", padding:40, color:"#5a7a6e", display:"flex", alignItems:"center", gap:10 }}>
       <span style={{ width:18, height:18, border:"2px solid rgba(0,168,84,0.3)", borderTopColor:"#0b6630", borderRadius:"50%", animation:"spin .7s linear infinite", display:"inline-block" }} />
       Loading progress…
     </div>
@@ -682,7 +682,7 @@ export default function ProfileProgressPage() {
 
   /* ── RENDER ── */
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", paddingBottom:40 }}>
+    <div style={{ fontFamily:"'Inter', sans-serif;", paddingBottom:40 }}>
       <style>{CSS}</style>
 
       {toast && (
@@ -711,7 +711,7 @@ export default function ProfileProgressPage() {
         <div className="pr-hero">
           <div style={{ flex:1, position:"relative", zIndex:1 }}>
             <p style={{ fontSize:12, color:"rgba(255,255,255,0.55)", marginBottom:4 }}>Today's Adherence</p>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:52, fontWeight:800, color:"#a8e02c", letterSpacing:-2, lineHeight:1 }}>
+            <div style={{ fontFamily:"'Inter', sans-serif;", fontSize:52, fontWeight:800, color:"#a8e02c", letterSpacing:-2, lineHeight:1 }}>
               {overallPct}<span style={{ fontSize:20, opacity:0.6 }}>%</span>
             </div>
             <div style={{ fontSize:13, color:"rgba(255,255,255,0.55)", marginTop:6 }}>
@@ -724,7 +724,7 @@ export default function ProfileProgressPage() {
           <div style={{ marginLeft:22, textAlign:"right", flexShrink:0, position:"relative", zIndex:1 }}>
             {streak > 0 && (
               <div style={{ marginBottom:8, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4 }}>
-                <div style={{ fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:800, color:"#a8e02c", lineHeight:1 }}>{streak}🔥</div>
+                <div style={{ fontFamily:"'Inter', sans-serif;", fontSize:28, fontWeight:800, color:"#a8e02c", lineHeight:1 }}>{streak}🔥</div>
                 <div style={{ fontSize:10, color:"rgba(255,255,255,0.5)", fontWeight:700 }}>day streak</div>
               </div>
             )}
@@ -746,7 +746,7 @@ export default function ProfileProgressPage() {
           <div key={s.label} className="pr-stat-card" style={{ animationDelay:`${i*0.07}s` }}>
             <div style={{ width:32, height:32, borderRadius:9, background:"rgba(0,168,84,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, marginBottom:10 }}>{s.icon}</div>
             <div style={{ fontSize:9.5, fontWeight:700, color:"#9ab8ae", letterSpacing:0.8, textTransform:"uppercase", marginBottom:3 }}>{s.label}</div>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:s.color, lineHeight:1, marginBottom:2 }}>{s.val}</div>
+            <div style={{ fontFamily:"'Inter', sans-serif", fontSize:22, fontWeight:800, color:s.color, lineHeight:1, marginBottom:2 }}>{s.val}</div>
             {s.unit && <div style={{ fontSize:10.5, fontWeight:600, color:s.color, opacity:0.7 }}>{s.unit}</div>}
           </div>
         ))}
@@ -771,7 +771,7 @@ export default function ProfileProgressPage() {
           <SectionTitle icon="📅" title="Weekly Adherence" bg="#fefde8" />
           <div style={{ textAlign:"right" }}>
             <div style={{ fontSize:10.5, color:"#9ab8ae", fontWeight:600, marginBottom:2 }}>Weekly avg</div>
-            <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:weekAvg>=75?"#0b6630":weekAvg>=50?"#b8a200":"#c0392b" }}>
+            <div style={{ fontFamily:"'Inter', sans-serif;", fontSize:18, fontWeight:800, color:weekAvg>=75?"#0b6630":weekAvg>=50?"#b8a200":"#c0392b" }}>
               {weekAvg}<span style={{ fontSize:11, fontWeight:600, opacity:0.6 }}>%</span>
             </div>
           </div>
@@ -855,7 +855,7 @@ export default function ProfileProgressPage() {
             <div style={{ flex:1 }}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                 <span style={{ fontSize:12.5, fontWeight:600, color:"#5a7a6e" }}>Day {dayNum} of {totalDays}</span>
-                <span style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:800, color:"#1a6fa0" }}>{planPct}%</span>
+                <span style={{ fontFamily:"'Inter', sans-serif;", fontSize:13, fontWeight:800, color:"#1a6fa0" }}>{planPct}%</span>
               </div>
               <div className="pr-bar-track">
                 <div className="pr-bar-fill" style={{ width:`${planPct}%`, background:"linear-gradient(90deg,#1a6fa0,#a8e02c)" }} />
@@ -880,7 +880,7 @@ export default function ProfileProgressPage() {
             <div key={row.label}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
                 <span style={{ fontSize:12.5, fontWeight:600, color:"#5a7a6e" }}>{row.label}</span>
-                <span style={{ fontFamily:"'Syne',sans-serif", fontSize:13, fontWeight:800, color:row.color }}>{row.val}</span>
+                <span style={{ fontFamily:"'Inter', sans-serif;", fontSize:13, fontWeight:800, color:row.color }}>{row.val}</span>
               </div>
               <div className="pr-bar-track">
                 <div className="pr-bar-fill" style={{ width:`${Math.min(row.pct,100)}%`, background:row.color }} />
@@ -958,7 +958,7 @@ export default function ProfileProgressPage() {
             <div style={{ width:36, height:4, background:"rgba(0,168,84,0.2)", borderRadius:999, margin:"0 auto 20px" }} />
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18 }}>
               <div>
-                <div style={{ fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:800, color:"#1a3329" }}>
+                <div style={{ fontFamily:"'Inter', sans-serif;", fontSize:18, fontWeight:800, color:"#1a3329" }}>
                   {DAYS_FULL[new Date(selectedDay).getDay()]}
                 </div>
                 <div style={{ fontSize:12, color:"#5a7a6e", marginTop:2 }}>{dateLabel(selectedDay)}</div>

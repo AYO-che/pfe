@@ -40,7 +40,7 @@ const CSS = `
 .filter-tab {
   padding: 8px 16px; border-radius: 999px;
   border: 1.5px solid rgba(0,168,84,0.2);
-  cursor: pointer; font-family: 'Inter', sans-serif;
+  cursor: pointer; font-family: "Space Grotesk", sans-serif
   font-size: 13px; font-weight: 700;
   background: rgba(255,255,255,0.2); backdrop-filter: blur(8px);
   color: #1a3329; transition: all 0.18s;
@@ -65,7 +65,7 @@ const CSS = `
 
 .pf-btn {
   border-radius: 20px; padding: 8px 15px; font-size: 12px; font-weight: 700;
-  cursor: pointer; font-family: 'Inter', sans-serif;
+  cursor: pointer; font-family: "Space Grotesk", sans-serif
   display: inline-flex; align-items: center; gap: 6px;
   border: none; transition: all 0.2s ease;
 }
@@ -83,7 +83,8 @@ const CSS = `
   border: 1.5px solid rgba(0,168,84,0.2); border-radius: 12px; padding: 7px 12px;
   font-size: 12px; font-weight: 600; color: #1a3329;
   cursor: pointer; white-space: nowrap;
-  font-family: 'Inter', sans-serif; transition: all 0.18s; flex-shrink: 0;
+ font-family: "Space Grotesk", sans-serif
+  transition: all 0.18s; flex-shrink: 0;
 }
 .ss-date-btn:hover { background: rgba(255,255,255,0.55); border-color: rgba(168,224,44,0.5); }
 .ss-date-btn.active { background: #0b6630; color: #a8e02c; border-color: transparent; box-shadow: 0 3px 10px rgba(11,102,48,0.25); }
@@ -92,7 +93,7 @@ const CSS = `
   background: rgba(255,255,255,0.3); backdrop-filter: blur(6px);
   border: 1.5px solid rgba(0,168,84,0.18); border-radius: 12px; padding: 9px 8px;
   font-size: 12px; font-weight: 600; color: #1a3329;
-  cursor: pointer; font-family: 'Inter', sans-serif;
+  cursor: pointer; font-family: "Space Grotesk", sans-serif;
   transition: all 0.18s; text-align: center;
 }
 .ss-slot-btn:hover:not(.booked):not(.active) { background: rgba(255,255,255,0.55); border-color: rgba(168,224,44,0.5); }
@@ -123,7 +124,7 @@ const CSS = `
   background: rgba(26,51,41,0.92); color: #a8e02c;
   backdrop-filter: blur(16px); border: 1px solid rgba(168,224,44,0.35);
   padding: 11px 26px; border-radius: 999px;
-  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700;
+font-family: "Space Grotesk", sans-serif ;font-size: 13px; font-weight: 700;
   z-index: 9999; animation: toastIn 0.25s ease;
   box-shadow: 0 8px 28px rgba(15,89,47,0.3);
   display: flex; align-items: center; gap: 8px;
@@ -162,7 +163,7 @@ const CSS = `
   flex-shrink: 0;
 }
 .cp-header-text h1{
-font-family: 'Inter', sans-serif;
+font-family: "Space Grotesk", sans-serif;
   font-size: 22px;
   font-weight: 800;
   color: #1a3329;
@@ -271,7 +272,7 @@ function BookModal({ session, onClose, onBooked }) {
         <div style={{ padding: "22px 22px 0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div>
-              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, color: "#1a3329" }}>
+              <div style={{ fontFamily:  "Space Grotesk, sans-serif", fontSize: 16, fontWeight: 800, color: "#1a3329" }}>
                 Book Session {session.sessionNumber}
               </div>
               <div style={{ fontSize: 12, color: "#5a7a6e", marginTop: 3 }}>
@@ -299,7 +300,7 @@ function BookModal({ session, onClose, onBooked }) {
         <div style={{ padding: "0 22px 22px" }}>
           {/* Date picker */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: "#1a3329", marginBottom: 10 }}>
+            <div style={{ fontFamily:  "Space Grotesk, sans-serif", fontSize: 13, fontWeight: 800, color: "#1a3329", marginBottom: 10 }}>
               Select Date
             </div>
             <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "none" }}>
@@ -315,7 +316,7 @@ function BookModal({ session, onClose, onBooked }) {
           {/* Time slots */}
           <div style={{ marginBottom: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, alignItems: "center" }}>
-              <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: "#1a3329" }}>Select Time</div>
+              <div style={{ fontFamily:  "Space Grotesk, sans-serif", fontSize: 13, fontWeight: 800, color: "#1a3329" }}>Select Time</div>
               <div style={{ fontSize: 11, color: "#5a7a6e" }}>08:00 – 18:00 · No Fridays</div>
             </div>
             {loadingSlots ? (
@@ -358,7 +359,7 @@ function BookModal({ session, onClose, onBooked }) {
               border: "1.5px solid rgba(0,168,84,0.25)", borderRadius: 14,
               background: "rgba(255,255,255,0.35)", backdropFilter: "blur(8px)",
               fontSize: 13, fontWeight: 600, color: "#1a3329",
-              cursor: "pointer", fontFamily: "'DM Sans',sans-serif",
+              cursor: "pointer", fontFamily:  "Space Grotesk, sans-serif",
             }}>
               Cancel
             </button>
@@ -425,7 +426,7 @@ export default function SessionsPage() {
   })();
 
   return (
-    <div style={{ fontFamily: "'DM Sans',sans-serif", minHeight: "100vh" }}>
+    <div style={{ fontFamily:  "Space Grotesk, sans-serif", minHeight: "100vh" }}>
       <style>{CSS}</style>
 
       {/* Toast */}
@@ -504,7 +505,7 @@ export default function SessionsPage() {
       {!loading && grouped.length === 0 && (
         <div className="glass-card" style={{ textAlign: "center", padding: "50px 24px" }}>
           <div style={{ fontSize: 38, marginBottom: 12 }}>📅</div>
-          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 800, color: "#1a3329", marginBottom: 6 }}>
+          <div style={{ fontFamily:  "Space Grotesk, sans-serif", fontSize: 16, fontWeight: 800, color: "#1a3329", marginBottom: 6 }}>
             No sessions found
           </div>
           <div style={{ fontSize: 13, color: "#5a7a6e" }}>
@@ -558,7 +559,7 @@ export default function SessionsPage() {
                   width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
                   background: SESSION_NUM_BG[s.status] || "#0b6630",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: "#fff",
+                  fontFamily:  "Space Grotesk, sans-serif", fontSize: 13, fontWeight: 800, color: "#fff",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                 }}>
                   {s.sessionNumber ?? 1}

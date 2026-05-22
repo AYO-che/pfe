@@ -1,3 +1,4 @@
+//cliant
 import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext(null);
@@ -6,20 +7,27 @@ const API_URL = "http://localhost:5000";
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+const fetchUser = async () => {
+  try {
+    const res = await fetch(`${API_URL}/me`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) { setUser(null); return; }
+    const data = await res.json();
 
-  const fetchUser = async () => {
-    try {
-      const res = await fetch(`${API_URL}/me`, {
-        credentials: "include",
-        cache: "no-store",
-      });
-      if (!res.ok) { setUser(null); return; }
-      const data = await res.json();
+    // ✅ Only accept CLIENT or NUTRITION roles in the client app
+    if (data?.id && (data.role === "CLIENT" || data.role === "NUTRITION")) {
       setUser(data);
-    } catch {
+    } else {
+      // Wrong role (e.g. ADMIN cookie leaked in) — clear it
+      await fetch(`${API_URL}/logout`, { method: "POST", credentials: "include" });
       setUser(null);
     }
-  };
+  } catch {
+    setUser(null);
+  }
+};
 
   useEffect(() => {
     fetchUser().finally(() => setLoading(false));

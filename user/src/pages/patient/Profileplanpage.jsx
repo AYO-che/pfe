@@ -6,7 +6,7 @@ const BAR_COLORS = ["#a8e02c","#0b6630","#fb923c","#1a6fa0","#a78bfa","#f59e0b",
 const API_URL    = "http://localhost:5000";
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 @keyframes slideUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
@@ -42,16 +42,13 @@ const CSS = `
   backdrop-filter: blur(16px);
   border: 1px solid rgba(168,224,44,0.35);
   padding: 11px 26px; border-radius: 999px;
-  font-family: 'DM Sans',sans-serif; font-size: 13px; font-weight: 700;
+  font-family: 'Inter',sans-serif; font-size: 13px; font-weight: 700;
   z-index: 9999; animation: toastIn 0.25s ease;
   box-shadow: 0 8px 28px rgba(15,89,47,0.3);
   display: flex; align-items: center; gap: 8px;
 }
 
-/* ── Plan selector dropdown ── */
-.plan-select-wrap {
-  position: relative;
-}
+.plan-select-wrap { position: relative; }
 .plan-select-trigger {
   width: 100%;
   display: flex; align-items: center; gap: 12px;
@@ -61,14 +58,11 @@ const CSS = `
   border-left:   1.5px solid rgba(168,224,44,0.85);
   border-bottom: 1.5px solid rgba(0,168,84,0.75);
   border-right:  1.5px solid rgba(0,168,84,0.75);
-  border-radius: 16px;
   box-shadow: 0 4px 16px rgba(15,89,47,0.08), inset 0 0 8px rgba(255,255,255,0.4);
   transition: all 0.2s ease;
-  font-family: 'DM Sans',sans-serif;
+  font-family: 'Inter',sans-serif;
 }
-.plan-select-trigger:hover {
-  background: rgba(255,255,255,0.35);
-}
+.plan-select-trigger:hover { background: rgba(255,255,255,0.35); }
 .plan-select-dropdown {
   position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 50;
   background: rgba(240,252,245,0.95); backdrop-filter: blur(24px);
@@ -86,28 +80,26 @@ const CSS = `
   padding: 12px 16px; cursor: pointer;
   transition: background 0.15s;
   border-bottom: 1px solid rgba(0,168,84,0.08);
-  font-family: 'DM Sans',sans-serif;
+  font-family: 'Inter',sans-serif;
 }
 .plan-dropdown-item:last-child { border-bottom: none; }
 .plan-dropdown-item:hover { background: rgba(168,224,44,0.1); }
 .plan-dropdown-item.active { background: rgba(11,102,48,0.08); }
 
-/* ── Streak ── */
 .pp-streak-box { display:flex; justify-content:space-between; align-items:center; padding:18px 22px; }
 .pp-day-col { text-align:center; }
-.pp-day-name { font-size:9.5px; font-weight:700; color:#5a7a6e; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.6px; }
+.pp-day-name { font-size:9.5px; font-weight:700; color:#5a7a6e; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.6px; font-family:'Inter',sans-serif; }
 .pp-day-circle {
   width:33px; height:33px; border-radius:50%;
   border:1.5px solid rgba(0,168,84,0.2);
   background:rgba(255,255,255,0.2); backdrop-filter:blur(6px);
   display:flex; align-items:center; justify-content:center;
   font-size:11.5px; font-weight:700; color:#5a7a6e; transition:all 0.3s;
-  font-family:'DM Sans',sans-serif;
+  font-family:'Inter',sans-serif;
 }
 .pp-day-circle.done  { background:#0b6630; color:#a8e02c; border-color:transparent; box-shadow:0 3px 10px rgba(11,102,48,0.3); }
 .pp-day-circle.today { border-color:rgba(168,224,44,0.8); color:#0b6630; font-weight:800; background:rgba(168,224,44,0.12); }
 
-/* ── Hero ── */
 .pp-hero {
   padding:24px 26px;
   display:flex; align-items:center; justify-content:space-between;
@@ -116,17 +108,16 @@ const CSS = `
 }
 .pp-hero::before { content:""; position:absolute; right:-30px; top:-30px; width:180px; height:180px; border-radius:50%; background:rgba(168,224,44,0.08); }
 .pp-hero::after  { content:""; position:absolute; right:50px; bottom:-50px; width:120px; height:120px; border-radius:50%; background:rgba(168,224,44,0.05); }
-.pp-hero-perc { font-size:52px; font-weight:800; color:#a8e02c; letter-spacing:-2px; line-height:1; font-family:'Syne',sans-serif; }
+.pp-hero-perc { font-size:52px; font-weight:800; color:#a8e02c; letter-spacing:-2px; line-height:1; font-family:'Space Grotesk',sans-serif; }
 .pp-hero-bar { width:100%; height:5px; background:rgba(255,255,255,0.1); border-radius:999px; margin-top:14px; overflow:hidden; }
 .pp-hero-bar-fill { height:100%; background:linear-gradient(90deg,#a8e02c,#f5e642); border-radius:999px; transition:width 0.8s cubic-bezier(0.17,0.67,0.83,0.67); }
-.pp-macro-pill { display:inline-block; background:rgba(255,255,255,0.1); backdrop-filter:blur(6px); border:1px solid rgba(168,224,44,0.2); border-radius:20px; padding:5px 13px; font-size:12px; margin-bottom:6px; color:rgba(255,255,255,0.8); font-family:'DM Sans',sans-serif; }
+.pp-macro-pill { display:inline-block; background:rgba(255,255,255,0.1); backdrop-filter:blur(6px); border:1px solid rgba(168,224,44,0.2); border-radius:20px; padding:5px 13px; font-size:12px; margin-bottom:6px; color:rgba(255,255,255,0.8); font-family:'Inter',sans-serif; }
 .pp-macro-pill strong { color:#a8e02c; }
-.pp-pdf-pill { display:inline-block; background:rgba(168,224,44,0.15); border:1px solid rgba(168,224,44,0.3); border-radius:20px; padding:5px 13px; font-size:12px; color:#a8e02c; text-decoration:none; font-weight:700; margin-bottom:6px; font-family:'DM Sans',sans-serif; transition:background 0.2s; }
+.pp-pdf-pill { display:inline-block; background:rgba(168,224,44,0.15); border:1px solid rgba(168,224,44,0.3); border-radius:20px; padding:5px 13px; font-size:12px; color:#a8e02c; text-decoration:none; font-weight:700; margin-bottom:6px; font-family:'Inter',sans-serif; transition:background 0.2s; }
 .pp-pdf-pill:hover { background:rgba(168,224,44,0.28); }
 
-.pp-section-label { font-size:10px; font-weight:700; color:#5a7a6e; text-transform:uppercase; letter-spacing:1px; margin:20px 0 10px 4px; font-family:'DM Sans',sans-serif; }
+.pp-section-label { font-size:10px; font-weight:700; color:#5a7a6e; text-transform:uppercase; letter-spacing:1px; margin:20px 0 10px 4px; font-family:'Inter',sans-serif; }
 
-/* ── Diet cards ── */
 .pp-diet-card { display:flex; align-items:stretch; border-radius:16px; margin-bottom:9px; background:rgba(255,255,255,0.28); backdrop-filter:blur(8px); border:1px solid rgba(0,168,84,0.12); overflow:hidden; transition:all 0.2s ease; }
 .pp-diet-card:hover { background:rgba(255,255,255,0.42); border-color:rgba(168,224,44,0.35); }
 .pp-diet-card.done   { background:rgba(11,102,48,0.1);  border-color:rgba(168,224,44,0.4); }
@@ -134,11 +125,11 @@ const CSS = `
 .pp-diet-bar-side { width:4px; flex-shrink:0; }
 .pp-diet-body { flex:1; padding:14px 16px; min-width:0; }
 .pp-diet-top  { display:flex; align-items:baseline; gap:8px; margin-bottom:3px; }
-.pp-diet-name { font-size:14px; font-weight:700; color:#1a3329; font-family:'DM Sans',sans-serif; }
-.pp-diet-time { font-size:11.5px; color:#5a7a6e; font-family:'DM Sans',sans-serif; }
-.pp-diet-sub  { font-size:12px; color:#5a7a6e; font-family:'DM Sans',sans-serif; margin-bottom:8px; }
+.pp-diet-name { font-size:14px; font-weight:700; color:#1a3329; font-family:'Inter',sans-serif; }
+.pp-diet-time { font-size:11.5px; color:#5a7a6e; font-family:'Inter',sans-serif; }
+.pp-diet-sub  { font-size:12px; color:#5a7a6e; font-family:'Inter',sans-serif; margin-bottom:8px; }
 .pp-macro-tags { display:flex; gap:5px; flex-wrap:wrap; }
-.pp-macro-tag  { font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:999px; font-family:'DM Sans',sans-serif; }
+.pp-macro-tag  { font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:999px; font-family:'Inter',sans-serif; }
 .pp-macro-tag.p    { background:rgba(11,102,48,0.12);  color:#0b6630; }
 .pp-macro-tag.c    { background:rgba(26,111,160,0.12); color:#1a6fa0; }
 .pp-macro-tag.f    { background:rgba(251,146,60,0.15); color:#c2620a; }
@@ -150,13 +141,13 @@ const CSS = `
 .pp-diet-btn.check-active { background:#0b6630; color:#a8e02c; }
 .pp-diet-btn.x-active     { background:rgba(192,57,43,0.1); color:#c0392b; }
 
-.pp-btn-primary { background:#0b6630; color:#a8e02c; border:none; padding:12px 20px; border-radius:20px; font-size:13.5px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; box-shadow:0 4px 14px rgba(11,102,48,0.3); display:inline-flex; align-items:center; gap:7px; }
+.pp-btn-primary { background:#0b6630; color:#a8e02c; border:none; padding:12px 20px; border-radius:20px; font-size:13.5px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; box-shadow:0 4px 14px rgba(11,102,48,0.3); display:inline-flex; align-items:center; gap:7px; }
 .pp-btn-primary:hover    { background:#0d7a38; }
 .pp-btn-primary:disabled { opacity:0.6; cursor:not-allowed; }
-.pp-btn-glass { background:rgba(255,255,255,0.25); backdrop-filter:blur(8px); color:#1a3329; border:1.5px solid rgba(168,224,44,0.4); padding:12px 20px; border-radius:20px; font-size:13.5px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; white-space:nowrap; display:inline-flex; align-items:center; gap:7px; }
+.pp-btn-glass { background:rgba(255,255,255,0.25); backdrop-filter:blur(8px); color:#1a3329; border:1.5px solid rgba(168,224,44,0.4); padding:12px 20px; border-radius:20px; font-size:13.5px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; white-space:nowrap; display:inline-flex; align-items:center; gap:7px; }
 .pp-btn-glass:hover { background:rgba(255,255,255,0.5); border-color:rgba(168,224,44,0.7); }
 
-.nutri-avatar-initials { border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,#1a3329,#0b6630); border:2px solid rgba(168,224,44,0.5); display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:800; color:#a8e02c; }
+.nutri-avatar-initials { border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,#1a3329,#0b6630); border:2px solid rgba(168,224,44,0.5); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:800; color:#a8e02c; }
 `;
 
 function NutriAvatar({ user, size = 36 }) {
@@ -171,30 +162,21 @@ function NutriAvatar({ user, size = 36 }) {
   );
 }
 
-/* ── Key function: use totalDays from content, cycle day entries ── */
 function resolvePlanDay(userPlan) {
   const content   = userPlan?.plan?.content;
   const days      = content?.days;
   if (!days || !Array.isArray(days) || days.length === 0)
     return { dayNum:1, totalDays:0, todayPlan:null };
-
-  // totalDays set by nutritionist — the actual plan length shown to client
   const totalDays   = content?.totalDays ?? days.length;
-  const entryCount  = days.length; // how many unique day patterns exist
-
-  // Calculate current day number from startDate
+  const entryCount  = days.length;
   let currentDayNum = 1;
   if (userPlan.startDate) {
     const diffMs  = Date.now() - new Date(userPlan.startDate).getTime();
     const diffDay = Math.floor(diffMs / 86400000) + 1;
     currentDayNum = Math.min(Math.max(diffDay, 1), totalDays);
   }
-
-  // Cycle through entries if totalDays > entryCount
-  // e.g. Day 6 of 20 with 5 patterns → uses pattern index (6-1) % 5 = 0 → Day 1 pattern
   const entryIdx = (currentDayNum - 1) % entryCount;
   const todayPlan = days[entryIdx];
-
   return { dayNum: currentDayNum, totalDays, todayPlan };
 }
 
@@ -242,7 +224,7 @@ export default function ProfilePlanPage() {
           setActiveKey(plans[0].id);
           await loadTracking(plans[0]);
         }
-      } catch { /* noop */ }
+      } catch {}
       finally { setLoading(false); }
     })();
   }, []);
@@ -284,7 +266,6 @@ export default function ProfilePlanPage() {
     finally { setSaving(false); }
   };
 
-  /* ── Derived ── */
   const userPlan = allPlans.find(p => p.id === activeKey) ?? null;
   const { dayNum, totalDays, todayPlan } = userPlan
     ? resolvePlanDay(userPlan)
@@ -323,22 +304,22 @@ export default function ProfilePlanPage() {
 
   const activeNutri = getNutritionist(userPlan);
 
-  if (loading) return <div style={{ fontFamily:"'DM Sans',sans-serif", padding:40, color:"#5a7a6e" }}>Loading your plan…</div>;
+  if (loading) return <div style={{ fontFamily:"'Inter',sans-serif", padding:40, color:"#5a7a6e" }}>Loading your plan…</div>;
 
   if (allPlans.length === 0) return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", paddingBottom:40 }}>
+    <div style={{ fontFamily:"'Inter',sans-serif", paddingBottom:40 }}>
       <style>{CSS}</style>
-      <div style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:800, color:"#1a3329", marginBottom:6 }}>My Diet Plan</div>
+      <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:22, fontWeight:800, color:"#1a3329", marginBottom:6 }}>My Diet Plan</div>
       <div style={{ fontSize:13, color:"#5a7a6e", marginBottom:18 }}>You don't have an active plan yet.</div>
-      <button className="pp-btn-primary" onClick={() => navigate("/plans")}>Browse Plans</button>
+      <button className="pp-btn-primary" onClick={() => navigate("/specialist-plans")}>Browse Plans</button>
+
     </div>
   );
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", paddingBottom:40 }}>
+    <div style={{ fontFamily:"'Inter',sans-serif", paddingBottom:40 }}>
       <style>{CSS}</style>
 
-      {/* Toast */}
       {toast && (
         <div className="pp-toast">
           <div style={{ width:18, height:18, borderRadius:"50%", background:"#0b6630", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -350,43 +331,37 @@ export default function ProfilePlanPage() {
 
       {/* Page heading */}
       <div className="anim-up" style={{ marginBottom:20 }}>
-        <div style={{ fontSize:10.5, fontWeight:700, color:"#5a7a6e", textTransform:"uppercase", letterSpacing:1.2, marginBottom:5 }}>Nutrition</div>
-        <div style={{ fontFamily:"'Syne',sans-serif", fontSize:24, fontWeight:800, color:"#1a3329", letterSpacing:-0.5 }}>My Diet Plan</div>
-        <div style={{ fontSize:13, color:"#5a7a6e", marginTop:5, lineHeight:1.6 }}>
+        <div style={{ fontSize:10.5, fontWeight:700, color:"#5a7a6e", textTransform:"uppercase", letterSpacing:1.2, marginBottom:5, fontFamily:"'Inter',sans-serif" }}>Nutrition</div>
+        <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:24, fontWeight:800, color:"#1a3329", letterSpacing:-0.5 }}>My Diet Plan</div>
+        <div style={{ fontSize:13, color:"#5a7a6e", marginTop:5, lineHeight:1.6, fontFamily:"'Inter',sans-serif" }}>
           {now.toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric", year:"numeric" })}
-          {/* ── Day X of Y using nutritionist-set totalDays ── */}
           {totalDays > 0 ? ` — Day ${dayNum} of ${totalDays}` : ""}
         </div>
       </div>
 
-      {/* ── Plan selector dropdown (shown only if 2+ plans) ── */}
+      {/* Plan selector */}
       {allPlans.length > 1 && (
         <div className="anim-up" style={{ marginBottom:16, position:"relative" }}>
-          <div style={{ fontSize:10.5, fontWeight:700, color:"#5a7a6e", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>
+          <div style={{ fontSize:10.5, fontWeight:700, color:"#5a7a6e", textTransform:"uppercase", letterSpacing:1, marginBottom:8, fontFamily:"'Inter',sans-serif" }}>
             Active Plan
           </div>
-
           <div className="plan-select-wrap">
-            {/* Trigger button */}
             <div className="plan-select-trigger" onClick={() => setDropdownOpen(v => !v)}>
               <NutriAvatar user={activeNutri} size={36} />
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:14, fontWeight:700, color:"#1a3329", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:14, fontWeight:700, color:"#1a3329", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
                   {userPlan?.plan?.title ?? "Select a plan"}
                 </div>
-                <div style={{ fontSize:11.5, color:"#5a7a6e", marginTop:2 }}>
+                <div style={{ fontSize:11.5, color:"#5a7a6e", marginTop:2, fontFamily:"'Inter',sans-serif" }}>
                   {activeNutri ? `${activeNutri.firstName} ${activeNutri.lastName}` : ""}
                   {totalDays > 0 ? ` · Day ${dayNum} of ${totalDays}` : ""}
                 </div>
               </div>
-              {/* Chevron */}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a7a6e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                 style={{ transform: dropdownOpen ? "rotate(180deg)" : "none", transition:"transform 0.2s", flexShrink:0 }}>
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
             </div>
-
-            {/* Dropdown options */}
             {dropdownOpen && (
               <div className="plan-select-dropdown">
                 {allPlans.map(up => {
@@ -394,24 +369,18 @@ export default function ProfilePlanPage() {
                   const { dayNum: pDay, totalDays: pTotal } = resolvePlanDay(up);
                   const isActive = up.id === activeKey;
                   return (
-                    <div
-                      key={up.id}
-                      className={`plan-dropdown-item ${isActive ? "active" : ""}`}
-                      onClick={() => switchPlan(up)}
-                    >
+                    <div key={up.id} className={`plan-dropdown-item ${isActive ? "active" : ""}`} onClick={() => switchPlan(up)}>
                       <NutriAvatar user={nutri} size={36} />
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:13.5, fontWeight:700, color:"#1a3329" }}>
+                        <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13.5, fontWeight:700, color:"#1a3329" }}>
                           {up?.plan?.title ?? "Plan"}
                         </div>
-                        <div style={{ fontSize:11.5, color:"#5a7a6e", marginTop:2 }}>
+                        <div style={{ fontSize:11.5, color:"#5a7a6e", marginTop:2, fontFamily:"'Inter',sans-serif" }}>
                           {nutri ? `${nutri.firstName} ${nutri.lastName}` : ""}
                           {pTotal > 0 ? ` · Day ${pDay} of ${pTotal}` : ""}
                         </div>
                       </div>
-                      {isActive && (
-                        <div style={{ width:8, height:8, borderRadius:"50%", background:"#0b6630", flexShrink:0 }} />
-                      )}
+                      {isActive && <div style={{ width:8, height:8, borderRadius:"50%", background:"#0b6630", flexShrink:0 }} />}
                     </div>
                   );
                 })}
@@ -439,29 +408,28 @@ export default function ProfilePlanPage() {
       <div className="glass-card anim-up-d1" style={{ marginBottom:14 }}>
         <div className="pp-hero">
           <div style={{ flex:1, position:"relative", zIndex:1 }}>
-            <p style={{ fontSize:12.5, color:"rgba(255,255,255,0.6)", marginBottom:4, fontFamily:"'DM Sans',sans-serif" }}>Today's Completion</p>
+            <p style={{ fontSize:12.5, color:"rgba(255,255,255,0.6)", marginBottom:4, fontFamily:"'Inter',sans-serif" }}>Today's Completion</p>
             <div className="pp-hero-perc">{pct}<span style={{ fontSize:20, opacity:0.6 }}>%</span></div>
-            <div style={{ fontSize:13, color:"rgba(255,255,255,0.65)", marginTop:6, fontFamily:"'DM Sans',sans-serif" }}>{msgs[msgIdx]}</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.65)", marginTop:6, fontFamily:"'Inter',sans-serif" }}>{msgs[msgIdx]}</div>
             <div className="pp-hero-bar"><div className="pp-hero-bar-fill" style={{ width:`${pct}%` }} /></div>
           </div>
           <div style={{ marginLeft:22, textAlign:"right", flexShrink:0, position:"relative", zIndex:1 }}>
             {activeNutri && (
               <div style={{ display:"flex", alignItems:"center", gap:7, justifyContent:"flex-end", marginBottom:8 }}>
-                <span style={{ fontSize:11, color:"rgba(255,255,255,0.5)" }}>by</span>
+                <span style={{ fontSize:11, color:"rgba(255,255,255,0.5)", fontFamily:"'Inter',sans-serif" }}>by</span>
                 <NutriAvatar user={activeNutri} size={26} />
-                <span style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.85)" }}>
+                <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.85)" }}>
                   {activeNutri.firstName}
                 </span>
               </div>
             )}
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginBottom:6 }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.4)", marginBottom:6, fontFamily:"'Inter',sans-serif" }}>
               {userPlan?.plan?.title ?? ""}
             </div>
             {pdfUrl && <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="pp-pdf-pill">↓ PDF Plan</a>}
             <div className="pp-macro-pill" style={{ display:"block", marginTop: pdfUrl ? 6 : 0 }}>
               <strong>{done}</strong> / {total} tasks
             </div>
-            {/* ── The key display: Day X of totalDays ── */}
             <div className="pp-macro-pill" style={{ display:"block" }}>
               Day <strong>{dayNum}</strong> of {totalDays}
             </div>
@@ -538,8 +506,8 @@ export default function ProfilePlanPage() {
       {!loading && meals.length === 0 && habits.length === 0 && (
         <div className="glass-card anim-up-d2" style={{ textAlign:"center", padding:"48px 24px" }}>
           <div style={{ fontSize:36, marginBottom:12 }}>📋</div>
-          <div style={{ fontFamily:"'Syne',sans-serif", fontSize:15, fontWeight:800, color:"#1a3329", marginBottom:6 }}>No tasks for today</div>
-          <div style={{ fontSize:13, color:"#5a7a6e" }}>Your nutritionist hasn't added meals or habits for today yet.</div>
+          <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:15, fontWeight:800, color:"#1a3329", marginBottom:6 }}>No tasks for today</div>
+          <div style={{ fontSize:13, color:"#5a7a6e", fontFamily:"'Inter',sans-serif" }}>Your nutritionist hasn't added meals or habits for today yet.</div>
         </div>
       )}
 

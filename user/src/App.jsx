@@ -20,7 +20,7 @@ import ProfileProgressPage from "./pages/patient/ProgressPage";
 import ProfileNotifsPage from "./pages/patient/NotifsPage";
 import MoodPage from "./pages/patient/MoodPage";
 import Sessionspage from "./pages/patient/Sessionspage" 
-import ProfilePlanPage from "./pages/patient/ProfilePlanPage";
+import ProfilePlanPage from "./pages/patient/Profileplanpage";
 import ReviewPage from "./pages/patient/ReviewPage";
 import CommunityPostPage from "./pages/patient/Communitypostpage";
 

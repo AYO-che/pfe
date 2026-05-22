@@ -29,23 +29,20 @@ export const getNutritionistsByOfferType = async (req, res) => {
   try {
     const { type } = req.query;
 
-    if (!type)
-      return res.status(400).json({
-        message: "Type is required (PLAN or CONSULTATION)",
-      });
-
-   if (!["PLAN", "CONSULTATION", "PACKAGE"].includes(type))
-  return res.status(400).json({ message: "Invalid type" });
+    // Only validate type if it was actually provided
+    if (type && !["PLAN", "PACKAGE"].includes(type))
+      return res.status(400).json({ message: "Invalid type" });
 
     const users = await prisma.user.findMany({
       where: {
         role: "NUTRITION",
         deletedAt: null,
-        resume: {
-          offersTypes: {
-            has: type,
+        // Only filter by type if one was given
+        ...(type && {
+          resume: {
+            offersTypes: { has: type },
           },
-        },
+        }),
       },
       include: { resume: true },
     });
@@ -55,7 +52,6 @@ export const getNutritionistsByOfferType = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 // =====================
 // 3️⃣ Get all clients
 // =====================
@@ -197,3 +193,17 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getAdminActivity = async (req, res) => {
+  try {
+    const [recentUsers, recentSubs, recentPosts, recentInquiries] = await Promise.all([
+      prisma.user.findMany({ orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, firstName: true, lastName: true, role: true, createdAt: true } }),
+      prisma.subscription.findMany({ orderBy: { startDate: 'desc' }, take: 5, include: { patient: { select: { firstName: true, lastName: true } }, offer: { select: { name: true } } } }),
+      prisma.blogPost.findMany({ orderBy: { updatedAt: 'desc' }, take: 5, include: { author: { select: { firstName: true, lastName: true } } } }),
+      prisma.inquiry.findMany({ orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, name: true, resolved: true, createdAt: true } }),
+    ])
+    res.json({ recentUsers, recentSubs, recentPosts, recentInquiries })
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' })
+  }
+}

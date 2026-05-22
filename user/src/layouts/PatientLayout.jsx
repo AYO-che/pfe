@@ -12,7 +12,7 @@ const CSS = `
 
 body, html {
   font-family: 'DM Sans', sans-serif;
-  background-color: #f2f7f5;
+  background-color: #e8f5ef;
   color: #1a3329;
   min-height: 100vh;
   overflow-x: hidden;
@@ -48,10 +48,21 @@ body, html {
   transition: margin-left 0.3s ease;
 }
 
-/* ── Desktop Sidebar ── */
+/* ── Desktop Sidebar — fixed size, vertically centered, scrollable nav ── */
 .sidebar {
   width: 220px;
   flex-shrink: 0;
+
+  /* Fixed height — never grows with content */
+  height: 520px;
+
+  /* Vertically center in the viewport (accounting for header ~90px) */
+  position: fixed;
+  left: max(2%, calc((100vw - 1400px) / 2 + 2%));
+  top: 50%;
+  transform: translateY(-40%);
+
+  /* Glass card look */
   background: rgba(255,255,255,0.15);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
@@ -60,23 +71,64 @@ body, html {
   border-bottom: 1.5px solid rgba(0,168,84,0.8);
   border-right:  1.5px solid rgba(0,168,84,0.8);
   border-radius: 22px;
-  padding: 18px 12px;
   box-shadow: 0 8px 32px rgba(15,89,47,0.15), inset 0 0 12px rgba(255,255,255,0.6);
-  position: fixed;
-  left: max(2%, calc((100vw - 1400px) / 2 + 2%));
-  top: 50%;
-  transform: translateY(-50%);
-  height: fit-content;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
-  scrollbar-width: none;
-  transition: all 0.3s ease;
+
+  /* Internal layout — scrollable nav in the middle */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;          /* clip the card corners */
+
+  transition: background 0.3s ease, box-shadow 0.3s ease;
   z-index: 10;
 }
-.sidebar::-webkit-scrollbar { display: none; }
 .sidebar:hover {
   background: rgba(255,255,255,0.25);
   box-shadow: 0 10px 34px rgba(15,89,47,0.20), inset 0 0 16px rgba(255,255,255,0.8);
+}
+
+/* The scrollable area inside the sidebar */
+.sidebar-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 10px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,168,84,0.25) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar { width: 4px; }
+.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0,168,84,0.25);
+  border-radius: 99px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,168,84,0.45);
+}
+
+/* Subtle top/bottom fade to hint scroll */
+.sidebar-scroll-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-scroll-wrap::before,
+.sidebar-scroll-wrap::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 18px;
+  z-index: 2;
+  pointer-events: none;
+}
+.sidebar-scroll-wrap::before {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(240,252,244,0.85), transparent);
+}
+.sidebar-scroll-wrap::after {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(240,252,244,0.85), transparent);
 }
 
 /* ── Mobile overlay ── */
@@ -296,7 +348,7 @@ const ICONS = {
       <path d="M10 6.5 Q12 4 14 6.5" stroke="#c7d2fe" strokeWidth="1.3" strokeLinecap="round" fill="none"/>
     </svg>
   ),
-   community: (
+  community: (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
       <circle cx="9" cy="7" r="3.5" fill="#34d399"/>
       <circle cx="17" cy="9" r="2.5" fill="#6ee7b7"/>
@@ -308,35 +360,35 @@ const ICONS = {
 };
 
 const ICON_BG = {
-  info:     "#ccfbf1",
-  plan:     "#fef9c3",
-  progress: "#ede9fe",
-  mood:     "#fff7ed",
-  sessions: "#e0f2fe",
-  notifs:   "#ffe4e6",
-  chat:     "#fdf2f8",
-  review:   "#fef3c7",
-  calories: "#eef2ff",
-   community: "#d1fae5",
+  info:      "#ccfbf1",
+  plan:      "#fef9c3",
+  progress:  "#ede9fe",
+  mood:      "#fff7ed",
+  sessions:  "#e0f2fe",
+  notifs:    "#ffe4e6",
+  chat:      "#fdf2f8",
+  review:    "#fef3c7",
+  calories:  "#eef2ff",
+  community: "#d1fae5",
 };
 
 const BASE_MENU = [
-  { section: "ACCOUNT", key: "info",      path: "/profile",            label: "My Profile"      },
-  { section: "MY PLAN", key: "plan",      path: "/profile/plan",       label: "My Diet Plan"    },
-  { section: "MY PLAN", key: "progress",  path: "/profile/progress",   label: "Progress"        },
-  { section: "MY PLAN", key: "mood",      path: "/profile/mood",       label: "Mood & Symptoms" },
-  { section: "MY PLAN", key: "sessions",  path: "/profile/sessions",   label: "My Sessions"     },
-  { section: "OTHER",   key: "community", path: "/profile/community",  label: "Community"       }, // 👈
-  { section: "OTHER",   key: "notifs",    path: "/profile/notifs",     label: "Notifications"   },
-  { section: "OTHER",   key: "chat",      path: "/profile/chat",       label: "Chat"            },
-  { section: "OTHER",   key: "review",    path: "/profile/review",     label: "Rate Sessions"   },
+  { section: "ACCOUNT", key: "info",      path: "/profile",           label: "My Profile"      },
+  { section: "MY PLAN", key: "plan",      path: "/profile/plan",      label: "My Diet Plan"    },
+  { section: "MY PLAN", key: "progress",  path: "/profile/progress",  label: "Progress"        },
+  { section: "MY PLAN", key: "mood",      path: "/profile/mood",      label: "Mood & Symptoms" },
+  { section: "MY PLAN", key: "sessions",  path: "/profile/sessions",  label: "My Sessions"     },
+  { section: "OTHER",   key: "community", path: "/profile/community", label: "Community"       },
+  { section: "OTHER",   key: "notifs",    path: "/profile/notifs",    label: "Notifications"   },
+  { section: "OTHER",   key: "chat",      path: "/profile/chat",      label: "Chat"            },
+  { section: "OTHER",   key: "review",    path: "/profile/review",    label: "Rate Sessions"   },
 ];
 
 export default function PatientLayout() {
-  const navigate  = useNavigate();
-  const location  = useLocation();
-  const { user }  = useAuth();
-  const [hasAI, setHasAI]         = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const [hasAI,      setHasAI]      = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -382,10 +434,7 @@ export default function PatientLayout() {
               className={`nav-item${location.pathname === m.path ? " active" : ""}`}
               onClick={() => handleNav(m.path)}
             >
-              <span
-                className="nav-icon-pill"
-                style={{ background: ICON_BG[m.key] }}
-              >
+              <span className="nav-icon-pill" style={{ background: ICON_BG[m.key] }}>
                 {ICONS[m.key]}
               </span>
               {m.label}
@@ -403,18 +452,24 @@ export default function PatientLayout() {
       <Header />
 
       <div className="layout-body">
-        {/* Desktop Sidebar */}
+
+        {/* ── Desktop Sidebar ── */}
         <aside className="sidebar">
-          {renderMenuItems()}
+          {/* Scroll wrapper with top/bottom fade hints */}
+          <div className="sidebar-scroll-wrap">
+            <div className="sidebar-scroll">
+              {renderMenuItems()}
+            </div>
+          </div>
         </aside>
 
-        {/* Mobile overlay */}
+        {/* ── Mobile overlay ── */}
         <div
           className={`mobile-sidebar-overlay${mobileOpen ? " open" : ""}`}
           onClick={() => setMobileOpen(false)}
         />
 
-        {/* Mobile drawer */}
+        {/* ── Mobile drawer ── */}
         <aside className={`mobile-sidebar${mobileOpen ? " open" : ""}`}>
           <div className="mobile-sidebar-header">
             <span className="mobile-sidebar-title">Menu</span>
@@ -432,7 +487,7 @@ export default function PatientLayout() {
         </main>
       </div>
 
-      {/* Mobile hamburger */}
+      {/* ── Mobile hamburger ── */}
       <button
         className="mobile-menu-btn"
         onClick={() => setMobileOpen(o => !o)}

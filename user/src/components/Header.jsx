@@ -17,11 +17,14 @@ const CSS = `
 @keyframes shimmer   { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 @keyframes notifDrop { from{opacity:0;transform:translateY(-8px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
 
-/* ── Root ── */
+/* ── Root — NOT sticky/fixed so it scrolls with the page ── */
 .hdr-root {
   font-family: 'DM Sans', sans-serif;
-  position: sticky; top: 14px; z-index: 100;
-  max-width: 1200px; margin: 14px auto; padding: 0 16px;
+  position: relative;
+  z-index: 100;
+  max-width: 1200px;
+  margin: 14px auto;
+  padding: 0 16px;
 }
 
 /* ── Shell — glass card ── */
@@ -505,7 +508,7 @@ export default function Header() {
         <div className="hdr-bar">
 
           {/* Logo */}
-          <Link to="/"><img src={logo} alt="logo" style={{ height:44, marginRight:16, borderRadius:10 }} /></Link>
+          <Link to="/"><img src={logo} alt="logo" style={{ height:140, marginRight:16, borderRadius:10 }} /></Link>
 
           {/* Desktop nav */}
           <nav className="hdr-nav">
@@ -576,7 +579,6 @@ export default function Header() {
 
                     {userMenuOpen && (
                       <div className="hdr-user-dropdown">
-                        {/* User info */}
                         <div style={{ padding:"10px 12px", borderBottom:"1px solid rgba(0,168,84,0.12)", marginBottom:6 }}>
                           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:3 }}>
                             <div style={{ fontSize:13.5, fontWeight:700, color:"#1a3329" }}>

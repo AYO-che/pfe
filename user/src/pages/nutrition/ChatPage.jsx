@@ -481,7 +481,7 @@ const CSS = `
   display: flex;
   height: calc(100vh - 80px);
   background: transparent;
-  font-family: Inter, sans-serif;
+ font-family: Space Grotesk", sans-serif;
   overflow: hidden;
   border-radius: 22px;
   box-shadow: 0 8px 32px rgba(15, 89, 47, 0.12);
@@ -515,7 +515,8 @@ const CSS = `
 }
 
 .ch-sidebar-title {
-  font-family: Inter, sans-serif;
+font-family: Space Grotesk", sans-serif;
+
   font-size: 22px;
   font-weight: 800;
   color: #0b6630;
@@ -541,7 +542,7 @@ const CSS = `
   border: 1.5px solid rgba(168, 224, 44, 0.5);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.35);
-  font-family: Inter, sans-serif;
+font-family: Space Grotesk", sans-serif
   font-size: 13px;
   color: #1a3329;
   outline: none;
@@ -596,7 +597,7 @@ const CSS = `
   cursor: pointer;
   flex: 1;
   text-align: left;
-  font-family: Inter, sans-serif;
+font-family: Space Grotesk", sans-serif
 }
 
 .ch-avatar-wrap { position: relative; flex-shrink: 0; }
@@ -678,7 +679,7 @@ const CSS = `
   justify-content: center;
   opacity: 0;
   transition: all 0.15s;
-  font-family: Inter, sans-serif;
+font-family: "Space Grotesk", sans-serif
 }
 
 .ch-conv-item-wrap:hover .ch-conv-more { opacity: 1; }
@@ -708,7 +709,7 @@ const CSS = `
   border: none;
   border-radius: 12px;
   background: transparent;
-  font-family: Inter, sans-serif;
+font-family: "Space Grotesk", sans-serif
   font-size: 12.5px;
   color: #c0392b;
   cursor: pointer;
@@ -790,7 +791,7 @@ const CSS = `
 }
 
 .ch-placeholder-title {
-  font-family: Inter, sans-serif;
+font-family: "Space Grotesk", sans-serif
   font-size: 20px;
   font-weight: 800;
   color: #1a3329;
@@ -927,7 +928,7 @@ const CSS = `
   line-height: 1.5;
   position: relative;
   word-break: break-word;
-  font-family: Inter, sans-serif;
+font-family: "Space Grotesk", sans-serif
 }
 
 .ch-bubble.theirs {
@@ -973,7 +974,7 @@ const CSS = `
   justify-content: center;
   opacity: 0;
   transition: all 0.15s;
-  font-family: Inter, sans-serif;
+font-family: "Space Grotesk", sans-serif
 }
 
 .ch-msg-row.mine:hover .ch-msg-more { opacity: 1; }
@@ -1027,7 +1028,7 @@ const CSS = `
   border: 1.5px solid rgba(168, 224, 44, 0.4);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.4);
-  font-family: Inter, sans-serif;
+ font-family: "Space Grotesk", sans-serif
   font-size: 13.5px;
   color: #1a3329;
   outline: none;

@@ -1,98 +1,195 @@
-import React, { useState } from 'react'
-import { DollarSign, Activity, Calendar, TrendingUp, Trash2 } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { DollarSign, Activity, Calendar, TrendingUp, Trash2, Loader, RefreshCw } from 'lucide-react'
 
-const PLANS = ['Premium Annual','Premium Monthly','Summer Seasonal','Ramadan Plan','Free Plan']
-const PRICES = { 'Premium Annual':'SAR 499','Premium Monthly':'SAR 49','Summer Seasonal':'SAR 149','Ramadan Plan':'SAR 79','Free Plan':'SAR 0' }
+const BASE_URL = 'http://localhost:5000'
 
-const INIT = [
-  { id:1, user:'Ahmed Mohamed',  email:'ahmed@fitwise.com',   plan:'Premium Annual',   start:'2025-01-15', end:'2026-01-15', amount:'SAR 499', status:'Active'  },
-  { id:2, user:'Sara Khalil',    email:'sara.k@fitwise.com',  plan:'Summer Seasonal',  start:'2025-06-01', end:'2025-08-31', amount:'SAR 149', status:'Free'    },
-  { id:3, user:'Lina Jaber',     email:'lina.j@fitwise.com',  plan:'Premium Monthly',  start:'2024-12-01', end:'2025-01-01', amount:'SAR 49',  status:'Expired' },
-  { id:4, user:'Omar Hassan',    email:'omar.h@fitwise.com',  plan:'Ramadan Plan',     start:'2025-03-01', end:'2025-04-01', amount:'SAR 79',  status:'Active'  },
-  { id:5, user:'Nour Al-Rashid', email:'nour.r@fitwise.com',  plan:'Premium Annual',   start:'2025-03-20', end:'2026-03-20', amount:'SAR 499', status:'Active'  },
-]
+const apiFetch = (path, opts = {}) =>
+  fetch(`${BASE_URL}${path}`, { credentials: 'include', ...opts })
+
+const fmtDate = iso => iso ? new Date(iso).toISOString().split('T')[0] : '—'
 
 const Badge = ({ s }) => {
-  const m = { Active:['#DCFCE7','#16A34A'], Free:['#DBEAFE','#2563EB'], Expired:['#FEE2E2','#DC2626'] }
-  const [bg,c] = m[s]||['#F3F4F6','#6B7280']
-  return <span style={{ background:bg, color:c, padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:600 }}>{s}</span>
+  const m = {
+    ACTIVE:    ['#DCFCE7', '#16A34A'],
+    PENDING:   ['#EDE9FE', '#7C3AED'],
+    EXPIRED:   ['#FEE2E2', '#DC2626'],
+    CANCELLED: ['#F3F4F6', '#6B7280'],
+  }
+  const [bg, c] = m[s] ?? ['#F3F4F6', '#6B7280']
+  return <span style={{ background: bg, color: c, padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{s}</span>
 }
 
-/* ── Subscriptions Component (صلاحية العرض والمتابعة فقط) ── */
 const Subscriptions = () => {
-  const [subs,setSubs]   = useState(INIT)
-  const [filter,setFilter] = useState('All')
+  const [subs,    setSubs]    = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(null)
+  const [filter,  setFilter]  = useState('All')
 
-  const filtered = filter==='All' ? subs : subs.filter(s=>s.status===filter)
+  useEffect(() => { fetchSubs() }, [])
 
-  const totalRev = subs
-    .filter(s=>s.status==='Active')
-    .reduce((acc,s)=>acc+parseInt(s.amount.replace(/\D/g,'')||0), 0)
+  const fetchSubs = async () => {
+    setLoading(true); setError(null)
+    try {
+      const res  = await apiFetch('/subscriptions/all')
+      if (!res.ok) throw new Error('Failed to load subscriptions')
+      const data = await res.json()
+      setSubs(data.subscriptions)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCancel = async (id) => {
+    if (!window.confirm('Cancel this subscription?')) return
+    try {
+      const res = await apiFetch(`/subscriptions/${id}/cancel`, { method: 'PATCH' })
+      if (!res.ok) throw new Error('Failed to cancel')
+      const data = await res.json()
+      setSubs(prev => prev.map(s => s.id === id ? data.subscription : s))
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
+  // derived stats
+  const active    = subs.filter(s => s.status === 'ACTIVE')
+  const expired   = subs.filter(s => s.status === 'EXPIRED')
+  const pending   = subs.filter(s => s.status === 'PENDING')
+  const cancelled = subs.filter(s => s.status === 'CANCELLED')
+
+  // total revenue from completed payments only
+  const totalRev = subs.reduce((acc, s) => {
+    const paid = (s.payments ?? [])
+      .filter(p => p.status === 'SUCCESS')
+      .reduce((sum, p) => sum + (p.amount ?? 0), 0)
+    return acc + paid
+  }, 0)
 
   const CARDS = [
-    { l:'Total Revenue', v:`SAR ${totalRev.toLocaleString()}`, icon:DollarSign, c:'#2C6E3F' },
-    { l:'Active Plans',  v:String(subs.filter(s=>s.status==='Active').length),  icon:Activity,   c:'#3B82F6' },
-    { l:'Expired Plans', v:String(subs.filter(s=>s.status==='Expired').length), icon:Calendar,   c:'#EF4444' },
-    { l:'Free Plans',    v:String(subs.filter(s=>s.status==='Free').length),    icon:TrendingUp, c:'#F59E0B' },
+    { l: 'Total Revenue', v: `SAR ${totalRev.toLocaleString()}`, icon: DollarSign, c: '#2C6E3F' },
+    { l: 'Active',        v: String(active.length),              icon: Activity,   c: '#3B82F6' },
+    { l: 'Expired',       v: String(expired.length),             icon: Calendar,   c: '#EF4444' },
+    { l: 'Pending',       v: String(pending.length),             icon: TrendingUp, c: '#F59E0B' },
   ]
+
+  const filtered =
+    filter === 'All'       ? subs :
+    filter === 'ACTIVE'    ? active :
+    filter === 'EXPIRED'   ? expired :
+    filter === 'PENDING'   ? pending :
+    filter === 'CANCELLED' ? cancelled :
+    subs
+
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+      <Loader size={28} className="spin" style={{ color: '#2C6E3F' }} />
+    </div>
+  )
+
+  if (error) return (
+    <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
+      <p style={{ marginBottom: 12 }}>⚠️ {error}</p>
+      <button className="btn-primary" onClick={fetchSubs}>Retry</button>
+    </div>
+  )
 
   return (
     <div>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize:22, marginBottom:4, color:'var(--text-primary)' }}>Subscriptions & Payments</h1>
-          <p style={{ color:'var(--text-secondary)', fontSize:13 }}>Manage plans and track revenue</p>
+          <h1 style={{ fontSize: 22, marginBottom: 4, color: 'var(--text-primary)' }}>Subscriptions & Payments</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Monitor plans and track revenue</p>
         </div>
-        {/* تم حذف زر إضافة اشتراك جديد من هنا بناءً على الصلاحيات */}
+        <button className="btn-secondary" onClick={fetchSubs}><RefreshCw size={14} /> Refresh</button>
       </div>
 
       {/* Summary cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:24 }}>
-        {CARDS.map(c=>{
-          const Icon=c.icon
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 24 }}>
+        {CARDS.map(card => {
+          const Icon = card.icon
           return (
-            <div key={c.l} className="card" style={{ padding:20, display:'flex', gap:14, alignItems:'center' }}>
-              <div style={{ width:44, height:44, borderRadius:10, background:c.c+'15', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                <Icon size={20} color={c.c}/>
+            <div key={card.l} className="card" style={{ padding: 20, display: 'flex', gap: 14, alignItems: 'center' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: card.c + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon size={20} color={card.c} />
               </div>
               <div>
-                <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:2 }}>{c.l}</div>
-                <div style={{ fontSize:c.l==='Total Revenue'?16:22, fontWeight:700, fontFamily:'Syne,sans-serif', color:c.l==='Total Revenue'?'#2C6E3F':'var(--text-primary)' }}>{c.v}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>{card.l}</div>
+                <div style={{ fontSize: card.l === 'Total Revenue' ? 16 : 22, fontWeight: 700, fontFamily: 'Syne,sans-serif', color: card.l === 'Total Revenue' ? '#2C6E3F' : 'var(--text-primary)' }}>{card.v}</div>
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* Filter */}
-      <div style={{ display:'flex', gap:6, marginBottom:16 }}>
-        {['All','Active','Free','Expired'].map(f=>(
-          <button key={f} className={`filter-tab ${filter===f?'active':''}`} onClick={()=>setFilter(f)}>{f}</button>
+      {/* Filter tabs */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+        {['All', 'ACTIVE', 'PENDING', 'EXPIRED', 'CANCELLED'].map(f => (
+          <button key={f} className={`filter-tab ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>{f}</button>
         ))}
       </div>
 
       {/* Table */}
       <div className="table-container">
         <table>
-          <thead><tr><th>USER</th><th>PLAN</th><th>START</th><th>END</th><th>AMOUNT</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
+          <thead>
+            <tr>
+              <th>CLIENT</th>
+              <th>OFFER</th>
+              <th>NUTRITIONIST</th>
+              <th>START</th>
+              <th>END</th>
+              <th>AMOUNT</th>
+              <th>STATUS</th>
+              <th>ACTIONS</th>
+            </tr>
+          </thead>
           <tbody>
-            {filtered.map(s=>(
-              <tr key={s.id}>
-                <td>
-                  <div style={{ fontWeight:600, color:'var(--text-primary)' }}>{s.user}</div>
-                  {s.email&&<div style={{ fontSize:12, color:'var(--text-muted)' }}>{s.email}</div>}
-                </td>
-                <td style={{ color:'var(--text-secondary)' }}>{s.plan}</td>
-                <td style={{ color:'var(--text-secondary)' }}>{s.start}</td>
-                <td style={{ color:'var(--text-secondary)' }}>{s.end}</td>
-                <td style={{ fontWeight:700, color:'var(--text-primary)' }}>{s.amount}</td>
-                <td><Badge s={s.status}/></td>
-                <td>
-                  <button className="icon-btn danger" onClick={()=>setSubs(prev=>prev.filter(x=>x.id!==s.id))} title="Delete Record"><Trash2 size={14}/></button>
-                </td>
-              </tr>
-            ))}
-            {filtered.length===0&&<tr><td colSpan={7} style={{ textAlign:'center', color:'var(--text-muted)', padding:40 }}>No subscriptions found</td></tr>}
+            {filtered.length === 0 ? (
+              <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>No subscriptions found</td></tr>
+            ) : filtered.map(s => {
+              const paid = (s.payments ?? [])
+                .filter(p => p.status === 'SUCCESS')
+                .reduce((sum, p) => sum + (p.amount ?? 0), 0)
+
+              return (
+                <tr key={s.id}>
+                  <td>
+                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>
+                      {s.patient?.firstName} {s.patient?.lastName}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.patient?.email}</div>
+                  </td>
+                  <td>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{s.offer?.name ?? '—'}</div>
+                    {s.offer?.type && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.offer.type}</div>
+                    )}
+                  </td>
+                  <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+                    {s.nutrition ? `${s.nutrition.firstName} ${s.nutrition.lastName}` : '—'}
+                  </td>
+                  <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{fmtDate(s.startDate)}</td>
+                  <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{fmtDate(s.endDate)}</td>
+                  <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {paid > 0 ? `SAR ${paid.toLocaleString()}` : '—'}
+                  </td>
+                  <td><Badge s={s.status} /></td>
+                  <td>
+                    {s.status !== 'CANCELLED' && s.status !== 'EXPIRED' && (
+                      <button
+                        className="icon-btn danger"
+                        onClick={() => handleCancel(s.id)}
+                        title="Cancel Subscription"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
         <div className="table-footer">Showing {filtered.length} of {subs.length} subscriptions</div>

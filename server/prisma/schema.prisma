@@ -95,6 +95,7 @@ model Offer {
   chatDays      Int            @default(0)
   createdAt     DateTime       @default(now())
   isActive      Boolean        @default(true)
+  isDeleted Boolean 
   plan          Plan?
   subscriptions Subscription[]
   nutrition     User?          @relation("NutritionOffers", fields: [nutritionId], references: [id], onDelete: SetNull)
@@ -228,6 +229,7 @@ model Inquiry {
   name      String
   email     String
   message   String
+  adminReply String?
   resolved  Boolean  @default(false)
   createdAt DateTime @default(now())
   userId    String?  @db.Uuid

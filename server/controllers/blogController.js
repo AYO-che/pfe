@@ -206,3 +206,16 @@ export const getMyPosts = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+// Admin gets ALL posts (any status)
+export const getAllPosts = async (req, res) => {
+  try {
+    const posts = await prisma.blogPost.findMany({
+      where:   { deletedAt: null },
+      include: { author: authorSelect },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ posts });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};

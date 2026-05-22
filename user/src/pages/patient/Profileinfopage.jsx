@@ -54,6 +54,7 @@ const CSS = `
   gap: 8px;
   border: none;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 .pf-btn-primary {
   background: #0b6630;
@@ -105,33 +106,112 @@ const CSS = `
 }
 .info-row:last-child { border-bottom: none; }
 
-.cp-header-glass{
+/* ── Page header ── */
+.cp-header-glass {
   background: rgba(255,255,255,0.18);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-  border-top: 1.5px solid rgba(168,224,44,0.85);
-  border-left: 1.5px solid rgba(168,224,44,0.85);
+  border-top:    1.5px solid rgba(168,224,44,0.85);
+  border-left:   1.5px solid rgba(168,224,44,0.85);
   border-bottom: 1.5px solid rgba(0,168,84,0.75);
-  border-right: 1.5px solid rgba(0,168,84,0.75);
+  border-right:  1.5px solid rgba(0,168,84,0.75);
   border-radius: 22px;
-  padding: 24px 28px;
-  margin-bottom: 22px;
-  box-shadow: 0 8px 32px rgba(15,89,47,0.1),inset 0 0 10px rgba(255,255,255,0.5);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 32px rgba(15,89,47,0.1), inset 0 0 10px rgba(255,255,255,0.5);
   animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
 }
-.cp-header-icon{
-  width:52px;height:52px;border-radius:16px;
+.cp-header-icon {
+  width: 48px; height: 48px; border-radius: 14px;
   background: linear-gradient(135deg,#0b6630,#2d6b50);
-  display:flex;align-items:center;justify-content:center;
-  font-size:24px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
   box-shadow: 0 4px 16px rgba(11,102,48,0.25);
-  flex-shrink:0;
+  flex-shrink: 0;
 }
-.cp-header-text h1{font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:#1a3329;margin:0 0 4px 0;}
-.cp-header-text p{font-size:13px;color:rgba(11,102,48,0.55);margin:0;}
+.cp-header-text h1 {
+  font-family: 'Inter', sans-serif;
+  font-size: 20px; font-weight: 800; color: #1a3329; margin: 0 0 3px;
+}
+.cp-header-text p { font-size: 12px; color: rgba(11,102,48,0.55); margin: 0; }
+
+/* ── Main grid: sidebar + content ── */
+.pf-main-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── Two-column field rows inside edit forms ── */
+.pf-field-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+}
+
+/* ── Weight / Height stats row ── */
+.pf-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* ── Edit / Cancel button row ── */
+.pf-edit-btns {
+  display: flex;
+  gap: 7px;
+}
+
+/* ════ TABLET  ≤ 900px ════ */
+@media (max-width: 900px) {
+  .pf-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ════ MOBILE  ≤ 600px ════ */
+@media (max-width: 600px) {
+  .cp-header-glass {
+    padding: 16px 18px;
+    gap: 12px;
+    border-radius: 18px;
+  }
+  .cp-header-icon { width: 42px; height: 42px; font-size: 18px; }
+  .cp-header-text h1 { font-size: 17px; }
+  .cp-header-text p { font-size: 11px; }
+
+  .pf-field-row-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .pf-stats-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pf-edit-btns {
+    flex-direction: column;
+  }
+  .pf-edit-btns .pf-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pf-btn { font-size: 12px; padding: 8px 14px; }
+
+  .info-row {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
+/* ════ SMALL MOBILE  ≤ 400px ════ */
+@media (max-width: 400px) {
+  .cp-header-glass { flex-direction: column; text-align: center; }
+  .cp-header-text h1 { font-size: 16px; }
+}
 `;
 
 export default function ProfileInfoPage() {
@@ -159,8 +239,8 @@ export default function ProfileInfoPage() {
   const [saving,  setSaving]  = useState(false);
   const avatarRef             = useRef(null);
 
-  const [showPwd, setShowPwd] = useState(false);
-  const [pwdForm, setPwdForm] = useState({ newPassword: "", confirmPassword: "" });
+  const [showPwd,  setShowPwd]  = useState(false);
+  const [pwdForm,  setPwdForm]  = useState({ newPassword: "", confirmPassword: "" });
   const [pwdSaving, setPwdSaving] = useState(false);
   const [pwdSaved,  setPwdSaved]  = useState(false);
   const [pwdError,  setPwdError]  = useState("");
@@ -188,9 +268,9 @@ export default function ProfileInfoPage() {
     : bmi < 30   ? { label: "Overweight",  color: "#c07a00", pct: 63 }
     :              { label: "Obese",        color: "#c0392b", pct: 86 };
 
-  const fullName       = `${form.firstName} ${form.lastName}`.trim();
+  const fullName        = `${form.firstName} ${form.lastName}`.trim();
   const profileComplete = form.firstName && form.lastName && form.weight && form.height && form.goal;
-  const plan           = user?.plan || MOCK_PLAN;
+  const plan            = user?.plan || MOCK_PLAN;
 
   const handleAvatar = (file) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -266,8 +346,8 @@ export default function ProfileInfoPage() {
 
   const InfoRow = ({ label, value, icon }) => (
     <div className="info-row">
-      <span style={{ fontSize: 15, opacity: 0.55 }}>{icon}</span>
-      <span style={{ fontSize: 11.5, color: "#5a7a6e", fontWeight: 600, minWidth: 90 }}>{label}</span>
+      <span style={{ fontSize: 15, opacity: 0.55, flexShrink: 0 }}>{icon}</span>
+      <span style={{ fontSize: 11.5, color: "#5a7a6e", fontWeight: 600, minWidth: 90, flexShrink: 0 }}>{label}</span>
       <span style={{ fontSize: 13, fontWeight: 700, color: "#1a3329", flex: 1, textAlign: "right" }}>{value || "—"}</span>
     </div>
   );
@@ -303,7 +383,7 @@ export default function ProfileInfoPage() {
   const SecCard = ({ title, subtitle, accent, children }) => (
     <div className="sec-card">
       <div style={{
-        padding: "16px 22px 13px", borderBottom: "1px solid rgba(0,168,84,0.12)",
+        padding: "14px 20px 12px", borderBottom: "1px solid rgba(0,168,84,0.12)",
         display: "flex", alignItems: "center", gap: 10,
       }}>
         <div style={{ width: 7, height: 7, borderRadius: "50%", background: accent, flexShrink: 0 }} />
@@ -312,7 +392,7 @@ export default function ProfileInfoPage() {
           {subtitle && <div style={{ fontSize: 11, color: "#5a7a6e", marginTop: 2 }}>{subtitle}</div>}
         </div>
       </div>
-      <div style={{ padding: "10px 22px 20px" }}>{children}</div>
+      <div style={{ padding: "10px 20px 18px" }}>{children}</div>
     </div>
   );
 
@@ -321,16 +401,16 @@ export default function ProfileInfoPage() {
     <div style={{ fontFamily: "'Inter', sans-serif", minHeight: "100vh", position: "relative" }}>
       <style>{CSS}</style>
 
-      <div style={{ padding: "28px 28px 40px" }}>
+      <div style={{ padding: "24px 20px 40px" }}>
 
-        
+        {/* ── Page header ── */}
         <div className="cp-header-glass">
-        <div className="cp-header-icon">👤</div>
-        <div className="cp-header-text">
-          <h1>your profile</h1>
-          <p>anage your personal information and health details</p>
+          <div className="cp-header-icon">👤</div>
+          <div className="cp-header-text">
+            <h1>Your profile</h1>
+            <p>Manage your personal information and health details</p>
+          </div>
         </div>
-      </div>
 
         {/* ── Success banner ── */}
         {saved && (
@@ -340,7 +420,7 @@ export default function ProfileInfoPage() {
             backdropFilter: "blur(10px)",
             borderRadius: 14, padding: "13px 18px",
             fontSize: 13.5, fontWeight: 600, color: "#2d7a4f",
-            display: "flex", alignItems: "center", gap: 10, marginBottom: 22,
+            display: "flex", alignItems: "center", gap: 10, marginBottom: 20,
           }}>
             <div style={{
               width: 24, height: 24, borderRadius: "50%", background: "#0b6630",
@@ -356,31 +436,32 @@ export default function ProfileInfoPage() {
         {isFirstTime && editing && (
           <div className="anim-up" style={{
             background: "linear-gradient(135deg,#1a3329 0%,#0b6630 60%,#1a5e3a 100%)",
-            borderRadius: 20, padding: "26px 30px", marginBottom: 22,
-            display: "flex", alignItems: "center", gap: 18,
+            borderRadius: 20, padding: "22px 26px", marginBottom: 20,
+            display: "flex", alignItems: "center", gap: 16,
             position: "relative", overflow: "hidden",
           }}>
             <div style={{ position: "absolute", right: -25, top: -25, width: 160, height: 160, borderRadius: "50%", background: "rgba(168,224,44,0.09)" }} />
             <div style={{ position: "absolute", right: 45, bottom: -45, width: 110, height: 110, borderRadius: "50%", background: "rgba(168,224,44,0.06)" }} />
             <div style={{ position: "relative", zIndex: 1, flex: 1 }}>
-              <div style={{ fontSize: 19, fontWeight: 800, color: "#fff", marginBottom: 5 }}>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", marginBottom: 5 }}>
                 Welcome aboard, {form.firstName || "there"} 🌱
               </div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.6, maxWidth: 440 }}>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
                 Complete your profile to unlock personalised nutrition plans, meal tracking, and health insights tailored just for you.
               </div>
             </div>
             <div style={{
               position: "relative", zIndex: 1,
-              width: 52, height: 52, borderRadius: 14,
+              width: 48, height: 48, borderRadius: 14,
               background: "rgba(168,224,44,0.15)",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26,
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
+              flexShrink: 0,
             }}>🌟</div>
           </div>
         )}
 
         {/* ── Main grid ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20 }}>
+        <div className="pf-main-grid">
 
           {/* ════════════ LEFT SIDEBAR ════════════ */}
           <div className="anim-up" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -389,7 +470,7 @@ export default function ProfileInfoPage() {
             <div className="glass-card">
               {/* Strip header */}
               <div style={{
-                height: 76,
+                height: 72,
                 background: "linear-gradient(135deg,#1a3329 0%,#0b6630 55%,#1a5e3a 100%)",
                 position: "relative", overflow: "hidden",
               }}>
@@ -400,11 +481,11 @@ export default function ProfileInfoPage() {
                 }} />
               </div>
 
-              <div style={{ padding: "0 22px 22px" }}>
+              <div style={{ padding: "0 20px 20px" }}>
                 {/* Avatar */}
-                <div style={{ marginTop: -38, display: "flex", justifyContent: "center", position: "relative" }}>
+                <div style={{ marginTop: -36, display: "flex", justifyContent: "center", position: "relative" }}>
                   <div style={{
-                    width: 76, height: 76, borderRadius: "50%",
+                    width: 72, height: 72, borderRadius: "50%",
                     border: "3px solid rgba(168,224,44,0.7)",
                     background: avatar ? "transparent" : "rgba(255,255,255,0.3)",
                     display: "flex", alignItems: "center", justifyContent: "center",
@@ -413,7 +494,7 @@ export default function ProfileInfoPage() {
                   }}>
                     {avatar
                       ? <img src={avatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, fontWeight: 800, color: "#1a3329" }}>
+                      : <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 800, color: "#1a3329" }}>
                           {form.firstName?.[0] || "?"}
                         </span>
                     }
@@ -421,7 +502,7 @@ export default function ProfileInfoPage() {
                   <button
                     onClick={() => avatarRef.current?.click()}
                     style={{
-                      position: "absolute", bottom: -2, right: "calc(50% - 40px)",
+                      position: "absolute", bottom: 0, left: "calc(50% + 18px)",
                       width: 24, height: 24, borderRadius: "50%",
                       background: "#a8e02c", border: "2.5px solid rgba(255,255,255,0.8)",
                       cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
@@ -437,7 +518,7 @@ export default function ProfileInfoPage() {
 
                 {/* Name + email */}
                 <div style={{ textAlign: "center", marginTop: 10 }}>
-                  <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, fontWeight: 800, color: "#1a3329" }}>
+                  <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 800, color: "#1a3329" }}>
                     {fullName || <span style={{ color: "#9ab5a5", fontStyle: "italic" }}>Your Name</span>}
                   </div>
                   <div style={{ fontSize: 12, color: "#5a7a6e", marginTop: 3 }}>
@@ -447,17 +528,17 @@ export default function ProfileInfoPage() {
 
                 {/* Badges */}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 5, justifyContent: "center", marginTop: 12 }}>
-                  {form.gender       && <Badge bg="rgba(168,224,44,0.18)" color="#0b6630"  border="1px solid rgba(168,224,44,0.4)">{form.gender}</Badge>}
-                  {age !== null      && <Badge bg="rgba(26,111,160,0.1)"  color="#1a6fa0"  border="1px solid rgba(26,111,160,0.2)">Age {age}</Badge>}
-                  {form.goal         && <Badge bg="rgba(245,230,66,0.18)" color="#8a7200"  border="1px solid rgba(245,230,66,0.4)">{form.goal}</Badge>}
+                  {form.gender        && <Badge bg="rgba(168,224,44,0.18)" color="#0b6630"  border="1px solid rgba(168,224,44,0.4)">{form.gender}</Badge>}
+                  {age !== null       && <Badge bg="rgba(26,111,160,0.1)"  color="#1a6fa0"  border="1px solid rgba(26,111,160,0.2)">Age {age}</Badge>}
+                  {form.goal          && <Badge bg="rgba(245,230,66,0.18)" color="#8a7200"  border="1px solid rgba(245,230,66,0.4)">{form.goal}</Badge>}
                   {form.activityLevel && <Badge bg="rgba(122,63,160,0.1)"  color="#7a3fa0"  border="1px solid rgba(122,63,160,0.2)">{form.activityLevel}</Badge>}
                 </div>
 
                 {/* Divider */}
-                <div style={{ height: 1, background: "rgba(0,168,84,0.15)", margin: "14px -22px 12px" }} />
+                <div style={{ height: 1, background: "rgba(0,168,84,0.15)", margin: "12px -20px 10px" }} />
 
                 {/* Weight / Height */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+                <div className="pf-stats-row">
                   <div style={{ textAlign: "center", padding: "8px 0" }}>
                     <div style={{ fontSize: 20, fontWeight: 800, color: "#1a3329" }}>{form.weight || "—"}</div>
                     <div style={{ fontSize: 10, color: "#5a7a6e", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 2 }}>kg</div>
@@ -493,26 +574,26 @@ export default function ProfileInfoPage() {
             </div>
 
             {/* Membership Card */}
-            <div className="glass-card" style={{ padding: "18px 22px" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#5a7a6e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 11 }}>Membership</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+            <div className="glass-card" style={{ padding: "16px 20px" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#5a7a6e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Membership</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{
-                  width: 38, height: 38, borderRadius: 10,
+                  width: 36, height: 36, borderRadius: 10,
                   background: "linear-gradient(135deg,#1a3329,#0b6630)",
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0,
                 }}>⭐</div>
                 <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "#1a3329" }}>{plan?.name || plan?.goal || "Basic Plan"}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1a3329" }}>{plan?.name || plan?.goal || "Basic Plan"}</div>
                   <div style={{ fontSize: 11, color: "#5a7a6e", marginTop: 2 }}>Active since {user?.joinDate || "2026"}</div>
                 </div>
               </div>
             </div>
 
             {/* Edit Profile Card */}
-            <div className="glass-card" style={{ padding: "18px 22px" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#5a7a6e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 11 }}>Edit Profile</div>
+            <div className="glass-card" style={{ padding: "16px 20px" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#5a7a6e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Edit Profile</div>
               {editing ? (
-                <div style={{ display: "flex", gap: 7 }}>
+                <div className="pf-edit-btns">
                   {!isFirstTime && (
                     <button className="pf-btn pf-btn-secondary" onClick={() => setEditing(false)} style={{ flex: 1, justifyContent: "center" }}>
                       Cancel
@@ -556,8 +637,8 @@ export default function ProfileInfoPage() {
             </div>
 
             {/* Change Password Card */}
-            <div className="glass-card" style={{ padding: "18px 22px" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#5a7a6e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 11 }}>Security</div>
+            <div className="glass-card" style={{ padding: "16px 20px" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#5a7a6e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Security</div>
               {!showPwd ? (
                 <button className="pf-btn pf-btn-danger" onClick={() => setShowPwd(true)} style={{ width: "100%", justifyContent: "center" }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
@@ -605,21 +686,21 @@ export default function ProfileInfoPage() {
               <SecCard title="Personal Information" subtitle="Your basic identity details" accent="#0b6630">
                 {editing ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+                    <div className="pf-field-row-2">
                       <FieldGroup label="First Name"><Input field="firstName" placeholder="First name" /></FieldGroup>
                       <FieldGroup label="Last Name"><Input field="lastName" placeholder="Last name" /></FieldGroup>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+                    <div className="pf-field-row-2">
                       <FieldGroup label="Date of Birth"><Input field="dateOfBirth" type="date" /></FieldGroup>
                       <FieldGroup label="Gender"><Select field="gender" options={["Female", "Male"]} /></FieldGroup>
                     </div>
                   </div>
                 ) : (
                   <>
-                    <InfoRow label="Full Name"    value={fullName}                             icon="👤" />
-                    <InfoRow label="Date of Birth" value={form.dateOfBirth}                   icon="📅" />
-                    <InfoRow label="Gender"        value={form.gender}                         icon="⚧"  />
-                    <InfoRow label="Age"           value={age !== null ? `${age} years` : null} icon="🎂" />
+                    <InfoRow label="Full Name"     value={fullName}                              icon="👤" />
+                    <InfoRow label="Date of Birth" value={form.dateOfBirth}                      icon="📅" />
+                    <InfoRow label="Gender"        value={form.gender}                           icon="⚧"  />
+                    <InfoRow label="Age"           value={age !== null ? `${age} years` : null}  icon="🎂" />
                   </>
                 )}
               </SecCard>
@@ -630,7 +711,7 @@ export default function ProfileInfoPage() {
               <SecCard title="Health Details" subtitle="Medical background & body metrics" accent="#1a6fa0">
                 {editing ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+                    <div className="pf-field-row-2">
                       <FieldGroup label="Weight (kg)"><Input field="weight" type="number" placeholder="62" /></FieldGroup>
                       <FieldGroup label="Height (cm)"><Input field="height" type="number" placeholder="165" /></FieldGroup>
                     </div>
@@ -639,9 +720,9 @@ export default function ProfileInfoPage() {
                   </div>
                 ) : (
                   <>
-                    <InfoRow label="Weight"   value={form.weight ? `${form.weight} kg` : null} icon="⚖️" />
-                    <InfoRow label="Height"   value={form.height ? `${form.height} cm` : null} icon="📏" />
-                    <InfoRow label="Medical"  value={form.medicalConditions || "None"}           icon="🩺" />
+                    <InfoRow label="Weight"    value={form.weight ? `${form.weight} kg` : null} icon="⚖️" />
+                    <InfoRow label="Height"    value={form.height ? `${form.height} cm` : null} icon="📏" />
+                    <InfoRow label="Medical"   value={form.medicalConditions || "None"}          icon="🩺" />
                     <InfoRow label="Allergies" value={form.allergies || "None"}                  icon="🌾" />
                   </>
                 )}
@@ -662,8 +743,8 @@ export default function ProfileInfoPage() {
                   </div>
                 ) : (
                   <>
-                    <InfoRow label="Primary Goal" value={form.goal}          icon="🎯" />
-                    <InfoRow label="Activity"      value={form.activityLevel} icon="🏃" />
+                    <InfoRow label="Primary Goal" value={form.goal}           icon="🎯" />
+                    <InfoRow label="Activity"      value={form.activityLevel}  icon="🏃" />
                     <InfoRow label="BMI"           value={bmi ? `${bmi} (${bmiCat?.label})` : null} icon="📊" />
                   </>
                 )}
@@ -674,17 +755,17 @@ export default function ProfileInfoPage() {
             {!profileComplete && !editing && (
               <div className="anim-up" style={{
                 background: "rgba(254,253,232,0.7)", backdropFilter: "blur(12px)",
-                borderRadius: 16, padding: "16px 20px",
-                display: "flex", alignItems: "center", gap: 14,
+                borderRadius: 16, padding: "14px 18px",
+                display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
                 border: "1px solid rgba(184,162,0,0.2)",
               }}>
                 <div style={{
-                  width: 38, height: 38, borderRadius: 10,
+                  width: 36, height: 36, borderRadius: 10,
                   background: "#f5e642", display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 18, flexShrink: 0,
+                  fontSize: 17, flexShrink: 0,
                 }}>⚠️</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "#8a7200" }}>Profile incomplete</div>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#8a7200" }}>Profile incomplete</div>
                   <div style={{ fontSize: 12, color: "#b8a200", marginTop: 2 }}>Add weight, height and goal for personalised recommendations.</div>
                 </div>
                 <button className="pf-btn pf-btn-primary" onClick={() => setEditing(true)}>Complete →</button>

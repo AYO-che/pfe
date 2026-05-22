@@ -24,7 +24,6 @@ function getOrCreateSessionId() {
   return id;
 }
 
-// Fix 1: convert base64 data URL to Blob without fetch()
 function dataURLtoBlob(dataURL) {
   const [header, data] = dataURL.split(",");
   const mime = header.match(/:(.*?);/)[1];
@@ -34,7 +33,6 @@ function dataURLtoBlob(dataURL) {
   return new Blob([arr], { type: mime });
 }
 
-// Grade helpers
 function gradeFromCalories(cal) {
   if (cal <= 300) return "A";
   if (cal <= 500) return "B";
@@ -55,6 +53,32 @@ function gradeMessage(grade) {
     D: "High calorie — balance with lighter options for the rest of the day.",
     F: "Very high calorie — consider a smaller portion next time.",
   }[grade] ?? "";
+}
+
+/**
+ * diffColor: returns a color interpolated from green → orange → red
+ * based on how large the absolute difference is relative to the goal.
+ * diff=0   → pure green  (#22c55e)
+ * diff=25% → orange      (#f97316)
+ * diff=50%+ → red        (#ef4444)
+ */
+function diffColor(diff, goal) {
+  if (goal <= 0) return "#22c55e";
+  const ratio = Math.min(diff / (goal * 0.5), 1); // clamp 0..1
+  // green (34,197,94) → orange (249,115,22) → red (239,68,68)
+  if (ratio <= 0.5) {
+    const t = ratio / 0.5;
+    const r = Math.round(34  + (249 - 34)  * t);
+    const g = Math.round(197 + (115 - 197) * t);
+    const b = Math.round(94  + (22  - 94)  * t);
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const t = (ratio - 0.5) / 0.5;
+    const r = Math.round(249 + (239 - 249) * t);
+    const g = Math.round(115 + (68  - 115) * t);
+    const b = Math.round(22  + (68  - 22)  * t);
+    return `rgb(${r},${g},${b})`;
+  }
 }
 
 const CSS = `
@@ -178,6 +202,18 @@ const CSS = `
   width:8px; height:8px; border-radius:50%; background:#0b6630;
   display:inline-block; animation:pulse 2s ease infinite;
 }
+
+.goal-input {
+  flex:1; padding:10px 14px; border-radius:12px;
+  border:1.5px solid rgba(0,168,84,0.25);
+  background:rgba(255,255,255,0.5);
+  font-family:'Inter',sans-serif;
+  font-size:15px; font-weight:700; color:#000;
+  outline:none; transition:border-color 0.2s;
+}
+.goal-input:focus { border-color:rgba(0,168,84,0.6); background:rgba(255,255,255,0.75); }
+.goal-input::-webkit-inner-spin-button,
+.goal-input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
 `;
 
 const STEP_IMGS = [
@@ -199,22 +235,25 @@ const STEPS = [
   { num:"03", title:"Receive your report",  desc:"Get an instant calorie count with your daily intake percentage and a personalised health grade.", img:STEP_IMGS[2] },
 ];
 
+const GOAL_PRESETS = [1500, 1800, 2000, 2500];
+
 export default function CaloriesAI() {
   const fileRef  = useRef(null);
   const dbRef    = useRef(null);
-  const [stage,     setStage]    = useState("idle");
-  const [imgSrc,    setImgSrc]   = useState(null);
-  const [drag,      setDrag]     = useState(false);
-  const [progress,  setProgress] = useState(0);
-  const [result,    setResult]   = useState(null);
-  const [w,         setW]        = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
-  const [sessionId]              = useState(getOrCreateSessionId);
-  const [qrMode,    setQrMode]   = useState(false);
+  const [stage,      setStage]     = useState("idle");
+  const [imgSrc,     setImgSrc]    = useState(null);
+  const [drag,       setDrag]      = useState(false);
+  const [progress,   setProgress]  = useState(0);
+  const [result,     setResult]    = useState(null);
+  const [w,          setW]         = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+  const [sessionId]                = useState(getOrCreateSessionId);
+  const [qrMode,     setQrMode]    = useState(false);
+  const [customGoal, setCustomGoal] = useState(2000);
+  const [goalInput,  setGoalInput]  = useState("2000");
   const mob = w < 768;
 
   const scanURL = `http://192.168.1.5:5173/scan?session=${sessionId}`;
 
-  // Inject CSS once
   useEffect(() => {
     if (!document.getElementById("cal-ai-css")) {
       const s = document.createElement("style");
@@ -226,7 +265,6 @@ export default function CaloriesAI() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Firebase listener for QR phone upload
   useEffect(() => {
     const db = initFirebase();
     dbRef.current = ref(db, `sessions/${sessionId}`);
@@ -249,118 +287,141 @@ export default function CaloriesAI() {
     reader.readAsDataURL(file);
   };
 
-const startScan = async () => {
-  setStage("scanning");
-  setProgress(0);
-
-  let p = 0;
-  const iv = setInterval(() => {
-    p += Math.random() * 8 + 3;
-    if (p >= 90) { p = 90; clearInterval(iv); }
-    setProgress(Math.min(p, 90));
-  }, 160);
-
-  try {
-    const blob = dataURLtoBlob(imgSrc);
-    const formData = new FormData();
-    formData.append("image", blob, "meal.jpg");
-
-    const response = await fetch("http://localhost:5001/analyze", {
-      method: "POST",
-      body: formData,
-    });
-
-    clearInterval(iv);
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error || "Analysis failed");
-    }
-
-    const data = await response.json();
-    console.log("Server response:", data);
-
-    const { detections = [], total = {} } = data;
-
-    // ── Filter: remove zero-calorie, low-confidence, deduplicate ──
-    const valid = detections
-      .filter(d => (d.calories ?? 0) > 1 && (d.confidence ?? 0) >= 0.30)
-      .sort((a, b) => (b.calories ?? 0) - (a.calories ?? 0));
-
-    // ── Merge same food label ──
-    const grouped = [];
-    valid.forEach(d => {
-      const key = d.food.toLowerCase().trim();
-      const existing = grouped.find(g => g.food.toLowerCase().trim() === key);
-      if (existing) {
-        existing.calories  = (existing.calories  ?? 0) + (d.calories  ?? 0);
-        existing.weight_g  = (existing.weight_g  ?? 0) + (d.weight_g  ?? 0);
-        existing.protein   = (existing.protein   ?? 0) + (d.protein   ?? 0);
-        existing.carbs     = (existing.carbs     ?? 0) + (d.carbs     ?? 0);
-        existing.fat       = (existing.fat       ?? 0) + (d.fat       ?? 0);
-        existing.count     = (existing.count     ?? 1) + 1;
-        existing.confidence = Math.max(existing.confidence, d.confidence ?? 0);
-      } else {
-        grouped.push({ ...d, count: 1 });
-      }
-    });
-
-    const best = grouped[0] ?? null;
-
-    const foodLabel = grouped.length === 0
-      ? "No food detected"
-      : grouped.length === 1
-        ? (best.count > 1 ? `${best.food} ×${best.count}` : best.food)
-        : grouped.slice(0, 2).map(d =>
-            d.count > 1 ? `${d.food} ×${d.count}` : d.food
-          ).join(" + ") + (grouped.length > 2 ? ` +${grouped.length - 2} more` : "");
-
-    const totalCalories = Math.round(
-      grouped.length > 0
-        ? grouped.reduce((s, d) => s + (d.calories ?? 0), 0)
-        : (total.calories ?? 0)
-    );
-
-    const grade = gradeFromCalories(totalCalories);
-
-    const mapped = {
-      food:       foodLabel,
-      confidence: best ? Math.round((best.confidence ?? 0) * 100) : 0,
-      calories:   totalCalories,
-      // ── Fix: read fat/carbs/protein (matching predict.py output) ──
-      protein:    Math.round(total.protein ?? grouped.reduce((s,d) => s+(d.protein??0), 0)),
-      carbs:      Math.round(total.carbs   ?? grouped.reduce((s,d) => s+(d.carbs??0),   0)),
-      fat:        Math.round(total.fat     ?? grouped.reduce((s,d) => s+(d.fat??0),     0)),
-      fiber:      null,
-      sodium:     null,
-      weight:     grouped.length > 0
-        ? `~${Math.round(grouped.reduce((s,d) => s+(d.weight_g??0), 0))}g`
-        : "—",
-      grade,
-      gradeColor:     gradeColor(grade),
-      daily:          { cal: totalCalories, total: 2000 },
-      annotatedImage: null,
-      detections:     grouped,
-    };
-
-    setProgress(100);
-    setTimeout(() => { setResult(mapped); setStage("result"); }, 400);
-
-  } catch (err) {
-    clearInterval(iv);
+  const startScan = async () => {
+    setStage("scanning");
     setProgress(0);
-    setStage("preview");
-    alert(`Analysis failed: ${err.message}`);
-  }
-};
+
+    let p = 0;
+    const iv = setInterval(() => {
+      p += Math.random() * 8 + 3;
+      if (p >= 90) { p = 90; clearInterval(iv); }
+      setProgress(Math.min(p, 90));
+    }, 160);
+
+    try {
+      const blob = dataURLtoBlob(imgSrc);
+      const formData = new FormData();
+      formData.append("image", blob, "meal.jpg");
+
+      const response = await fetch("http://localhost:5001/analyze", {
+        method: "POST",
+        body: formData,
+      });
+
+      clearInterval(iv);
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Analysis failed");
+      }
+
+      const data = await response.json();
+      const { detections = [], total = {} } = data;
+
+      const valid = detections
+        .filter(d => (d.calories ?? 0) > 1 && (d.confidence ?? 0) >= 0.30)
+        .sort((a, b) => (b.calories ?? 0) - (a.calories ?? 0));
+
+      const grouped = [];
+      valid.forEach(d => {
+        const key = d.food.toLowerCase().trim();
+        const existing = grouped.find(g => g.food.toLowerCase().trim() === key);
+        if (existing) {
+          existing.calories  = (existing.calories  ?? 0) + (d.calories  ?? 0);
+          existing.weight_g  = (existing.weight_g  ?? 0) + (d.weight_g  ?? 0);
+          existing.protein   = (existing.protein   ?? 0) + (d.protein   ?? 0);
+          existing.carbs     = (existing.carbs     ?? 0) + (d.carbs     ?? 0);
+          existing.fat       = (existing.fat       ?? 0) + (d.fat       ?? 0);
+          existing.count     = (existing.count     ?? 1) + 1;
+          existing.confidence = Math.max(existing.confidence, d.confidence ?? 0);
+        } else {
+          grouped.push({ ...d, count: 1 });
+        }
+      });
+
+      const best = grouped[0] ?? null;
+
+      const foodLabel = grouped.length === 0
+        ? "No food detected"
+        : grouped.length === 1
+          ? (best.count > 1 ? `${best.food} ×${best.count}` : best.food)
+          : grouped.slice(0, 2).map(d =>
+              d.count > 1 ? `${d.food} ×${d.count}` : d.food
+            ).join(" + ") + (grouped.length > 2 ? ` +${grouped.length - 2} more` : "");
+
+      const totalCalories = Math.round(
+        grouped.length > 0
+          ? grouped.reduce((s, d) => s + (d.calories ?? 0), 0)
+          : (total.calories ?? 0)
+      );
+
+      const grade = gradeFromCalories(totalCalories);
+
+      const mapped = {
+        food:       foodLabel,
+        confidence: best ? Math.round((best.confidence ?? 0) * 100) : 0,
+        calories:   totalCalories,
+        protein:    Math.round(total.protein ?? grouped.reduce((s,d) => s+(d.protein??0), 0)),
+        carbs:      Math.round(total.carbs   ?? grouped.reduce((s,d) => s+(d.carbs??0),   0)),
+        fat:        Math.round(total.fat     ?? grouped.reduce((s,d) => s+(d.fat??0),     0)),
+        fiber:      null,
+        sodium:     null,
+        weight:     grouped.length > 0
+          ? `~${Math.round(grouped.reduce((s,d) => s+(d.weight_g??0), 0))}g`
+          : "—",
+        grade,
+        gradeColor:  gradeColor(grade),
+        daily:       { cal: totalCalories, total: 2000 },
+        annotatedImage: null,
+        detections:  grouped,
+      };
+
+      setProgress(100);
+      setTimeout(() => { setResult(mapped); setStage("result"); }, 400);
+
+    } catch (err) {
+      clearInterval(iv);
+      setProgress(0);
+      setStage("preview");
+      alert(`Analysis failed: ${err.message}`);
+    }
+  };
 
   const reset = () => {
     setStage("idle"); setImgSrc(null);
     setResult(null); setProgress(0); setQrMode(false);
   };
 
-  const dailyPct   = result ? Math.round((result.daily.cal / result.daily.total) * 100) : 0;
-const displayImg = imgSrc;
+  const handleGoalBlur = () => {
+    const v = parseInt(goalInput);
+    if (!isNaN(v) && v >= 1 && v <= 99999) {
+      setCustomGoal(v);
+    } else {
+      setGoalInput(String(customGoal));
+    }
+  };
+
+  const handleGoalKeyDown = (e) => {
+    if (e.key === "Enter") e.target.blur();
+  };
+
+  // ── Derived diff values ──────────────────────────────────────────
+  const scannedCal  = result ? result.calories : 0;
+  const diff        = result ? Math.abs(customGoal - scannedCal) : 0;
+  const exceeded    = result ? scannedCal > customGoal : false;
+  const remaining   = result ? Math.max(0, customGoal - scannedCal) : 0;
+  const dailyPct    = result ? Math.round((scannedCal / customGoal) * 100) : 0;
+  const color       = result ? diffColor(diff, customGoal) : "#22c55e";
+
+  // alpha version of color for backgrounds
+  const colorBg = result
+    ? `${color.replace("rgb(", "rgba(").replace(")", ", 0.10)")}`
+    : "rgba(34,197,94,0.10)";
+  const colorBorder = result
+    ? `${color.replace("rgb(", "rgba(").replace(")", ", 0.28)")}`
+    : "rgba(34,197,94,0.28)";
+
+  const displayImg = imgSrc;
 
   return (
     <div style={{ minHeight:"100vh", background:"#f2f7f5", fontFamily:"'Inter',sans-serif" }}>
@@ -517,10 +578,9 @@ const displayImg = imgSrc;
         {stage === "result" && result && (
           <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap:20 }}>
 
-            {/* Left — image + nutrition table + per-item breakdown */}
+            {/* ── Left — image + nutrition table + per-item breakdown ── */}
             <div className="glass-card anim-pop">
               <div style={{ position:"relative" }}>
-                {/* Fix 7: annotated image with YOLO bounding boxes */}
                 <img src={displayImg} alt="meal" style={{ width:"100%", maxHeight:320, objectFit:"cover", display:"block" }} />
                 <div style={{ position:"absolute", inset:0, background:"linear-gradient(to bottom,transparent 45%,rgba(26,51,41,0.72))" }} />
                 <div style={{ position:"absolute", top:14, left:14, background:"rgba(255,255,255,0.9)", backdropFilter:"blur(8px)", borderRadius:999, padding:"4px 12px", fontSize:12, fontWeight:700, color:"#000", display:"flex", alignItems:"center", gap:6, border:"1px solid rgba(168,224,44,0.4)" }}>
@@ -539,75 +599,75 @@ const displayImg = imgSrc;
                 <div style={{ padding:"12px 18px 8px", fontSize:10.5, fontWeight:700, color:"#000", textTransform:"uppercase", letterSpacing:1 }}>Nutrition Facts</div>
                 <table className="result-table">
                   <tbody>
-                    <tr>
-                      <td>Total Calories</td>
-                      <td>
-                        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:22, fontWeight:800, color:"#0b6630" }}>{result.calories}</span>
-                        <span style={{ fontSize:12, color:"#5a7a6e", marginLeft:4 }}>kcal</span>
-                      </td>
-                    </tr>
-                    {result.protein != null && <tr><td>Protein</td><td><span className="macro-badge" style={{ background:"rgba(11,102,48,0.1)", color:"#0b6630" }}>{result.protein}g</span></td></tr>}
-                    {result.carbs   != null && <tr><td>Carbohydrates</td><td><span className="macro-badge" style={{ background:"rgba(26,111,160,0.1)", color:"#1a6fa0" }}>{result.carbs}g</span></td></tr>}
-                    {result.fat     != null && <tr><td>Fat</td><td><span className="macro-badge" style={{ background:"rgba(251,146,60,0.12)", color:"#c2620a" }}>{result.fat}g</span></td></tr>}
-                    {result.fiber   != null && <tr><td>Fiber</td><td><span className="macro-badge" style={{ background:"rgba(167,139,250,0.12)", color:"#6d28d9" }}>{result.fiber}g</span></td></tr>}
-                    {result.sodium  != null && <tr><td>Sodium</td><td><span className="macro-badge" style={{ background:"rgba(184,162,0,0.1)", color:"#8a7200" }}>{result.sodium}mg</span></td></tr>}
-                    <tr><td>Portion weight</td><td style={{ color:"#5a7a6e" }}>{result.weight}</td></tr>
+                    {[
+                      {
+                        label: "Total Calories",
+                        value: (
+                          <>
+                            <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:22, fontWeight:800, color:"#0b6630" }}>{result.calories}</span>
+                            <span style={{ fontSize:12, color:"#5a7a6e", marginLeft:4 }}>kcal</span>
+                          </>
+                        ),
+                      },
+                      result.protein != null ? { label: "Protein",       value: <span className="macro-badge" style={{ background:"rgba(11,102,48,0.1)",   color:"#0b6630" }}>{result.protein}g</span> } : null,
+                      result.carbs   != null ? { label: "Carbohydrates", value: <span className="macro-badge" style={{ background:"rgba(26,111,160,0.1)",  color:"#1a6fa0" }}>{result.carbs}g</span>   } : null,
+                      result.fat     != null ? { label: "Fat",           value: <span className="macro-badge" style={{ background:"rgba(251,146,60,0.12)", color:"#c2620a" }}>{result.fat}g</span>     } : null,
+                      result.fiber   != null ? { label: "Fiber",         value: <span className="macro-badge" style={{ background:"rgba(167,139,250,0.12)",color:"#6d28d9" }}>{result.fiber}g</span>   } : null,
+                      result.sodium  != null ? { label: "Sodium",        value: <span className="macro-badge" style={{ background:"rgba(184,162,0,0.1)",   color:"#8a7200" }}>{result.sodium}mg</span> } : null,
+                      { label: "Portion weight", value: <span style={{ color:"#5a7a6e" }}>{result.weight}</span> },
+                    ].filter(Boolean).map(row => (
+                      <tr key={row.label}>
+                        <td>{row.label}</td>
+                        <td>{row.value}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
 
-            {/* Per-item breakdown — only when multiple VALID foods detected */}
-{result.detections && result.detections.length > 1 && (
-  <div style={{ padding:"12px 18px 14px", borderTop:"1px solid rgba(0,168,84,0.08)" }}>
-    <div style={{
-      fontSize:10.5, fontWeight:700, color:"#5a7a6e",
-      textTransform:"uppercase", letterSpacing:1, marginBottom:10,
-      display:"flex", alignItems:"center", gap:8,
-    }}>
-      <span>Detected Items</span>
-      <span style={{ background:"rgba(11,102,48,0.1)", color:"#0b6630", borderRadius:999, padding:"1px 8px", fontSize:10, fontWeight:800 }}>
-        {result.detections.length}
-      </span>
-    </div>
-    {result.detections.map((d, i) => (
-      <div key={i} style={{
-        display:"flex", justifyContent:"space-between", alignItems:"center",
-        padding:"9px 0", fontSize:13,
-        borderBottom: i < result.detections.length - 1
-          ? "1px solid rgba(0,168,84,0.06)" : "none",
-      }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{
-            width:6, height:6, borderRadius:"50%", flexShrink:0,
-            background: i === 0 ? "#0b6630" : i === 1 ? "#1a6fa0" : "#fb923c",
-          }} />
-          <span style={{ fontWeight:600, textTransform:"capitalize", color:"#1a3329" }}>
-            {d.food}
-            {d.count > 1 && (
-              <span style={{ fontSize:11, color:"#5a7a6e", fontWeight:500, marginLeft:5 }}>
-                ×{d.count}
-              </span>
-            )}
-          </span>
-        </div>
-        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-          {(d.weight_g ?? 0) > 0 && (
-            <span style={{ fontSize:11.5, color:"#5a7a6e" }}>
-              ~{Math.round(d.weight_g)}g
-            </span>
-          )}
-          <span style={{
-            background:"rgba(11,102,48,0.1)", color:"#0b6630",
-            borderRadius:999, padding:"2px 9px",
-            fontSize:12, fontWeight:700,
-          }}>
-            {Math.round(d.calories ?? 0)} kcal
-          </span>
-        </div>
-      </div>
-    ))}
-  </div>
-)}
+              {/* Per-item breakdown */}
+              {result.detections && result.detections.length > 1 && (
+                <div style={{ padding:"12px 18px 14px", borderTop:"1px solid rgba(0,168,84,0.08)" }}>
+                  <div style={{
+                    fontSize:10.5, fontWeight:700, color:"#5a7a6e",
+                    textTransform:"uppercase", letterSpacing:1, marginBottom:10,
+                    display:"flex", alignItems:"center", gap:8,
+                  }}>
+                    <span>Detected Items</span>
+                    <span style={{ background:"rgba(11,102,48,0.1)", color:"#0b6630", borderRadius:999, padding:"1px 8px", fontSize:10, fontWeight:800 }}>
+                      {result.detections.length}
+                    </span>
+                  </div>
+                  {result.detections.map((d, i) => (
+                    <div key={i} style={{
+                      display:"flex", justifyContent:"space-between", alignItems:"center",
+                      padding:"9px 0", fontSize:13,
+                      borderBottom: i < result.detections.length - 1 ? "1px solid rgba(0,168,84,0.06)" : "none",
+                    }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <div style={{
+                          width:6, height:6, borderRadius:"50%", flexShrink:0,
+                          background: i === 0 ? "#0b6630" : i === 1 ? "#1a6fa0" : "#fb923c",
+                        }} />
+                        <span style={{ fontWeight:600, textTransform:"capitalize", color:"#1a3329" }}>
+                          {d.food}
+                          {d.count > 1 && (
+                            <span style={{ fontSize:11, color:"#5a7a6e", fontWeight:500, marginLeft:5 }}>×{d.count}</span>
+                          )}
+                        </span>
+                      </div>
+                      <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                        {(d.weight_g ?? 0) > 0 && (
+                          <span style={{ fontSize:11.5, color:"#5a7a6e" }}>~{Math.round(d.weight_g)}g</span>
+                        )}
+                        <span style={{ background:"rgba(11,102,48,0.1)", color:"#0b6630", borderRadius:999, padding:"2px 9px", fontSize:12, fontWeight:700 }}>
+                          {Math.round(d.calories ?? 0)} kcal
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div style={{ padding:"14px 18px 18px" }}>
                 <button className="btn-glass" onClick={reset} style={{ width:"100%", justifyContent:"center", borderRadius:14 }}>
@@ -616,7 +676,7 @@ const displayImg = imgSrc;
               </div>
             </div>
 
-            {/* Right — calorie hero + daily summary + grade */}
+            {/* ── Right — calorie hero + goal input + diff card + daily summary + grade ── */}
             <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
 
               {/* Calorie hero */}
@@ -625,40 +685,152 @@ const displayImg = imgSrc;
                   <div style={{ position:"absolute", right:-25, top:-25, width:140, height:140, borderRadius:"50%", background:"rgba(168,224,44,0.08)" }} />
                   <div style={{ position:"absolute", right:40, bottom:-40, width:100, height:100, borderRadius:"50%", background:"rgba(168,224,44,0.05)" }} />
                   <div style={{ position:"relative", zIndex:1 }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.5)", letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>Daily Intake</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.5)", letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>Scanned Calories</div>
                     <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:20 }}>
                       <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize: mob ? 60 : 72, fontWeight:700, color:"#a8e02c", lineHeight:1 }}>{result.calories}</span>
                       <span style={{ fontSize:18, fontWeight:600, color:"rgba(255,255,255,0.5)" }}>kcal</span>
                     </div>
                     <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, fontWeight:600, color:"rgba(255,255,255,0.5)", marginBottom:8 }}>
-                      <span>Daily intake used</span>
-                      <span style={{ color:"#a8e02c" }}>{dailyPct}% of {result.daily.total} kcal</span>
+                      <span>vs your goal</span>
+                      <span style={{ color: dailyPct > 100 ? "#ff7c5c" : "#a8e02c" }}>{dailyPct}% of {customGoal} kcal</span>
                     </div>
                     <div style={{ height:8, background:"rgba(255,255,255,0.1)", borderRadius:999, overflow:"hidden" }}>
-                      <div style={{ height:"100%", width:`${Math.min(dailyPct, 100)}%`, background:"linear-gradient(90deg,#a8e02c,#f5e642)", borderRadius:999, boxShadow:"0 0 10px rgba(168,224,44,0.5)", transition:"width 1s ease" }} />
+                      <div style={{ height:"100%", width:`${Math.min(dailyPct, 100)}%`, background: dailyPct > 100 ? "linear-gradient(90deg,#ff7c5c,#ff4444)" : "linear-gradient(90deg,#a8e02c,#f5e642)", borderRadius:999, boxShadow:"0 0 10px rgba(168,224,44,0.5)", transition:"width 1s ease" }} />
                     </div>
                     <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:6 }}>
-                      <span>0 kcal</span><span>{result.daily.total} kcal</span>
+                      <span>0 kcal</span>
+                      <span>{customGoal} kcal</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Calorie Goal Input ── */}
+              <div className="glass-card anim-pop" style={{ animationDelay:"0.09s" }}>
+                <div style={{ padding:"18px 20px 20px" }}>
+                  <div style={{ fontSize:10.5, fontWeight:700, color:"#5a7a6e", textTransform:"uppercase", letterSpacing:1, marginBottom:14 }}>
+                    Your daily calorie goal
+                  </div>
+
+                  {/* Preset buttons */}
+                  <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
+                    {GOAL_PRESETS.map(preset => (
+                      <button
+                        key={preset}
+                        onClick={() => { setCustomGoal(preset); setGoalInput(String(preset)); }}
+                        style={{
+                          padding:"5px 13px", borderRadius:999, fontSize:12, fontWeight:700, cursor:"pointer",
+                          border: customGoal === preset ? "1.5px solid #0b6630" : "1.5px solid rgba(0,168,84,0.2)",
+                          background: customGoal === preset ? "rgba(11,102,48,0.12)" : "rgba(255,255,255,0.4)",
+                          color: customGoal === preset ? "#0b6630" : "#5a7a6e",
+                          transition:"all 0.18s",
+                        }}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom input — any value accepted */}
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+                    <input
+                      className="goal-input"
+                      type="number"
+                      value={goalInput}
+                      min={1}
+                      max={99999}
+                      step={50}
+                      onChange={e => setGoalInput(e.target.value)}
+                      onBlur={handleGoalBlur}
+                      onKeyDown={handleGoalKeyDown}
+                      placeholder="Enter your goal…"
+                    />
+                    <span style={{ fontSize:13, fontWeight:600, color:"#5a7a6e", whiteSpace:"nowrap" }}>kcal / day</span>
+                  </div>
+
+                  {/* ── Dynamic Diff Card ── */}
+                  <div style={{
+                    borderRadius:16, padding:"16px 20px",
+                    background: colorBg,
+                    border: `1.5px solid ${colorBorder}`,
+                    display:"flex", justifyContent:"space-between", alignItems:"center",
+                    transition:"background 0.5s ease, border-color 0.5s ease",
+                  }}>
+                    <div>
+                      <div style={{
+                        fontSize:10.5, fontWeight:700, textTransform:"uppercase",
+                        letterSpacing:0.8, color, marginBottom:4,
+                        transition:"color 0.5s ease",
+                      }}>
+                        {diff === 0 ? "Perfect match!" : exceeded ? "Goal exceeded" : "Still remaining"}
+                      </div>
+                      <div style={{ fontSize:12, color:"#5a7a6e" }}>
+                        {exceeded
+                          ? `${scannedCal} kcal scanned · goal was ${customGoal}`
+                          : `${scannedCal} kcal scanned · goal is ${customGoal}`}
+                      </div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{
+                        fontFamily:"'Space Grotesk',sans-serif", fontSize:32, fontWeight:700,
+                        lineHeight:1, color, transition:"color 0.5s ease",
+                      }}>
+                        {diff === 0 ? "✓" : `${exceeded ? "+" : ""}${exceeded ? diff : remaining}`}
+                      </div>
+                      {diff !== 0 && (
+                        <div style={{ fontSize:11, fontWeight:600, color:"#5a7a6e" }}>kcal</div>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Daily summary */}
-              <div className="glass-card anim-pop" style={{ animationDelay:"0.1s" }}>
+              <div className="glass-card anim-pop" style={{ animationDelay:"0.12s" }}>
                 <div style={{ padding:"12px 18px 8px", fontSize:10.5, fontWeight:700, color:"#000", textTransform:"uppercase", letterSpacing:1 }}>Daily Summary</div>
                 <table className="result-table">
                   <tbody>
-                    <tr><td>This meal</td>  <td style={{ color:"#000" }}>{result.daily.cal} kcal</td></tr>
-                    <tr><td>Daily goal</td> <td>{result.daily.total} kcal</td></tr>
-                    <tr><td>Remaining</td>  <td style={{ color:"#000" }}>{Math.max(0, result.daily.total - result.daily.cal)} kcal</td></tr>
-                    <tr><td>% Consumed</td> <td><span className="macro-badge" style={{ background:"rgba(184,162,0,0.1)", color:"#000" }}>{dailyPct}%</span></td></tr>
+                    {[
+                      { label: "This meal",     value: `${scannedCal} kcal`,   tdStyle: { color:"#000" } },
+                      { label: "Daily goal",    value: `${customGoal} kcal`,   tdStyle: {} },
+                      {
+                        label: diff === 0 ? "Difference" : exceeded ? "Exceeded by" : "Remaining",
+                        value: (
+                          <span className="macro-badge" style={{
+                            background: colorBg,
+                            color,
+                            transition:"background 0.5s ease, color 0.5s ease",
+                          }}>
+                            {diff === 0 ? "0 kcal" : `${exceeded ? "+" : ""}${diff} kcal`}
+                          </span>
+                        ),
+                        tdStyle: {},
+                      },
+                      {
+                        label: "% of Goal",
+                        value: (
+                          <span className="macro-badge" style={{
+                            background: colorBg,
+                            color,
+                            transition:"background 0.5s ease, color 0.5s ease",
+                          }}>
+                            {dailyPct}%
+                          </span>
+                        ),
+                        tdStyle: {},
+                      },
+                    ].map(row => (
+                      <tr key={row.label}>
+                        <td>{row.label}</td>
+                        <td style={row.tdStyle}>{row.value}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
 
               {/* Health grade */}
-              <div className="glass-card anim-pop" style={{ animationDelay:"0.14s" }}>
+              <div className="glass-card anim-pop" style={{ animationDelay:"0.16s" }}>
                 <div style={{ padding:"18px 20px", display:"flex", alignItems:"center", gap:18 }}>
                   <div style={{ width:64, height:64, borderRadius:18, background:"rgba(11,102,48,0.1)", border:"1.5px solid rgba(168,224,44,0.4)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                     <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:36, fontWeight:700, color:result.gradeColor, lineHeight:1 }}>{result.grade}</span>
@@ -669,6 +841,7 @@ const displayImg = imgSrc;
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
         )}
@@ -702,6 +875,7 @@ const displayImg = imgSrc;
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

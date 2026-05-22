@@ -7,6 +7,8 @@ import Inquiries from '../components/admin/Inquiries'
 import Content from '../components/admin/Content'
 import Subscriptions from '../components/admin/Subscriptions'
 import Settings  from '../components/admin/Settings'
+import Comminity from '../components/admin/comminity'
+import OffersManagement from '../components/admin/Offersmanagement'
 import { useAuth } from '../contexts/AuthContext'
 
 const PAGE_NAMES = {
@@ -40,7 +42,9 @@ const AdminDashboard = () => {
  case 'content':  return <Content />
  case 'subscriptions': return <Subscriptions />
  case 'settings': return <Settings />
- default: return <Dashboard />
+case 'comminity': return <Comminity/>
+case 'offermanagement': return <OffersManagement/>
+default: return <Dashboard />
  }
  }
 

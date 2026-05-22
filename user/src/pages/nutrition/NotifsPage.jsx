@@ -81,7 +81,7 @@ const CSS = `
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-font-family: Inter, sans-serif;
+font-family: "Space Grotesk", sans-serif;
   display: inline-flex;
   align-items: center;
   gap: 7px;

@@ -2,10 +2,9 @@ import express from "express";
 import passport from "../passport.js";
 import { authenticateToken } from "../middleware/checkauth.js";
 import { authorizeRoles } from "../middleware/checkroles.js";
-import axios from "axios";
 import upload from "../middleware/upload.js";
 import prisma from "../prismaClient.js";
-
+import axios from "axios";
 /* =========================
    CONTROLLERS IMPORTS
 ========================= */
@@ -14,7 +13,7 @@ import prisma from "../prismaClient.js";
 import { logout, signup, login, googleCallback, changePassword, forgotPassword, getMe,resetPassword } from "../controllers/authController.js";
 
 // Users
-import { getAllNutritionists, getAllClients, getUserById, createNutritionist, updateUser, deleteUser, getNutritionistsByOfferType } from "../controllers/userController.js";
+import { getAllNutritionists, getAllClients, getUserById, createNutritionist, updateUser, deleteUser, getNutritionistsByOfferType,getAdminActivity } from "../controllers/userController.js";
 
 // Profile
 import { createProfile, getProfile, updateProfile } from "../controllers/profileController.js";
@@ -27,18 +26,22 @@ import { getMyResume, createResume, updateResume } from "../controllers/resumeCo
 
 // Offers
 import {
-  createOffer, getAllOffers, getOfferById,
-  getPlanOffers,    // ← was getConsultationOffers
+  createOffer,
+  getAllOffers,
   getPackageOffers,
-  getMyOffers,      // ← add this
-  updateOffer, deleteOffer
+  getPlanOffers,
+  getOfferById,
+  getMyOffers,
+  updateOffer,
+  deleteOffer,
+  getAICaloriesOffers, // ← add this
 } from "../controllers/offerController.js";
 // Plans
 import { createPlan, getMyPlans, getPlanById, updatePlan, deletePlan, getAllPlans, getRecommendedPlans,  assignPlanToPatient,  
   getPatientPlans } from "../controllers/planController.js";
 
 // Subscriptions
-import { createSubscription, getMySubscriptions, getSubscriptionById, getNutritionSubscriptions, cancelSubscription } from "../controllers/SubscriptionController.js";
+import { createSubscription, getMySubscriptions, getSubscriptionById, getNutritionSubscriptions, cancelSubscription, getSubscriptionsByPatient, getAllSubscriptions } from "../controllers/SubscriptionController.js"
 
 // Payments
 import { createPayment, getMyPayments, getPaymentById } from "../controllers/PaymentController.js";
@@ -61,10 +64,10 @@ import {
   getClientReviews,
 } from "../controllers/reviewController.js";
 // Inquiry
-import { createInquiry, getAllInquiries, resolveInquiry } from "../controllers/inquiryController.js";
+import { createInquiry, getAllInquiries, resolveInquiry,getInquiry } from "../controllers/inquiryController.js";
 
 // Blog
-import { createBlogPost, updateBlogPost, updateBlogStatus, getAllApprovedPosts, getPostById, deleteBlogPost } from "../controllers/blogController.js";
+import { createBlogPost, updateBlogPost, updateBlogStatus, getAllApprovedPosts, getPostById, deleteBlogPost,getAllPosts  } from "../controllers/blogController.js";
 
 // Notifications
 import { getMyNotifications, markAsRead, markAllAsRead, deleteNotification, getUnreadCount } from "../controllers/notificationController.js";
@@ -79,7 +82,7 @@ import { getMyCurrentPlanDay, getMyUserPlans, createOrUpdateDailyTracking, getDa
 import {
   createClientPost, getAllClientPosts, getClientPostById,
   getMyClientPosts, getPendingClientPosts, updateClientPostStatus,
-  updateClientPost, deleteClientPost
+  updateClientPost, deleteClientPost ,getAllClientPostsAdmin
 } from "../controllers/Clientpostcontroller.js";
 const router = express.Router();
 
@@ -106,6 +109,7 @@ router.get("/nutritionists", authenticateToken, authorizeRoles("ADMIN"), getAllN
 router.post("/nutritionists", authenticateToken, authorizeRoles("ADMIN"), createNutritionist);
 router.get("/clients", authenticateToken, authorizeRoles("ADMIN"), getAllClients);
 router.get("/nutritionists/by-type", authenticateToken, authorizeRoles("CLIENT", "ADMIN"), getNutritionistsByOfferType);
+router.get("/admin/activity", authenticateToken, authorizeRoles("ADMIN"), getAdminActivity)
 
 router.get("/users/:id", authenticateToken, (req, res, next) => {
   if (req.user.role === "ADMIN" || req.user.id === req.params.id) return next();
@@ -156,9 +160,14 @@ router.get("/offers", authenticateToken, getAllOffers);
 router.get("/offers/packages", authenticateToken, getPackageOffers);
 router.get("/offers/plans", authenticateToken, getPlanOffers);
 router.get("/offers/mine", authenticateToken, authorizeRoles("NUTRITION"), getMyOffers);
+router.get("/offers/ai-calories", authenticateToken, getAICaloriesOffers); // ← here
 router.get("/offers/:id", authenticateToken, getOfferById);
-router.post("/offers", authenticateToken, authorizeRoles("NUTRITION"), createOffer);
-router.patch("/offers/:id", authenticateToken, authorizeRoles("NUTRITION", "ADMIN"), updateOffer);
+router.post(
+  "/offers",
+  authenticateToken,
+  authorizeRoles("NUTRITION", "ADMIN"),
+  createOffer
+);router.patch("/offers/:id", authenticateToken, authorizeRoles("NUTRITION", "ADMIN"), updateOffer);
 router.delete("/offers/:id", authenticateToken, authorizeRoles("NUTRITION", "ADMIN"), deleteOffer);
 /* =========================
    PLAN ROUTES
@@ -177,12 +186,13 @@ router.get("/plans/patient/:patientId", authenticateToken, authorizeRoles("NUTRI
 /* =========================
    SUBSCRIPTION ROUTES
 ========================= */
-
-router.post("/subscriptions", authenticateToken, authorizeRoles("CLIENT"), createSubscription);
-router.get("/subscriptions/mine", authenticateToken, authorizeRoles("CLIENT"), getMySubscriptions);
-router.get("/subscriptions/nutrition", authenticateToken, authorizeRoles("NUTRITION"), getNutritionSubscriptions);
-router.get("/subscriptions/:id", authenticateToken, getSubscriptionById);
-router.patch("/subscriptions/:id/cancel", authenticateToken, authorizeRoles("CLIENT"), cancelSubscription);
+router.get("/subscriptions/all",           authenticateToken, authorizeRoles("ADMIN"),       getAllSubscriptions)
+router.get("/subscriptions/mine",          authenticateToken, authorizeRoles("CLIENT"),       getMySubscriptions)
+router.get("/subscriptions/nutrition",     authenticateToken, authorizeRoles("NUTRITION"),    getNutritionSubscriptions)
+router.get("/subscriptions/patient/:patientId", authenticateToken, authorizeRoles("ADMIN"),  getSubscriptionsByPatient)
+router.get("/subscriptions/:id",           authenticateToken,                                 getSubscriptionById)
+router.patch("/subscriptions/:id/cancel",  authenticateToken, authorizeRoles("CLIENT"),       cancelSubscription)
+router.post("/subscriptions",              authenticateToken, authorizeRoles("CLIENT"),       createSubscription)
 
 /* =========================
    PAYMENT ROUTES
@@ -226,17 +236,19 @@ router.get("/nutrition/:id/reviews", getPublicNutritionReviews);
 router.post("/inquiries", createInquiry);
 router.get("/inquiries", authenticateToken, authorizeRoles("ADMIN"), getAllInquiries);
 router.patch("/inquiries/:id/resolve", authenticateToken, authorizeRoles("ADMIN"), resolveInquiry);
-
+router.get("/inquiries/:id", getInquiry); 
 /* =========================
    BLOG ROUTES
 ========================= */
 
+router.get("/blog/all", authenticateToken, authorizeRoles("ADMIN"), getAllPosts);
 router.get("/blog", getAllApprovedPosts);
 router.get("/blog/:id", getPostById);
 router.post("/blog", authenticateToken, authorizeRoles("NUTRITION"), createBlogPost);
+router.patch("/blog/:id/status", authenticateToken, authorizeRoles("ADMIN"), updateBlogStatus);
 router.patch("/blog/:id", authenticateToken, authorizeRoles("NUTRITION"), updateBlogPost);
 router.delete("/blog/:id", authenticateToken, authorizeRoles("NUTRITION", "ADMIN"), deleteBlogPost);
-router.patch("/blog/:id/status", authenticateToken, authorizeRoles("ADMIN"), updateBlogStatus);
+
 
 /* =========================
    NOTIFICATION ROUTES
@@ -270,9 +282,14 @@ router.post("/user-plans/:userPlanId/tracking", authenticateToken, authorizeRole
 router.get("/user-plans/:userPlanId/tracking", authenticateToken, authorizeRoles("CLIENT"), getDailyTracking);
 router.get("/user-plans/:userPlanId/tracking/:date", authenticateToken, authorizeRoles("CLIENT"), getDailyTrackingByDate);
 
+/* =========================
+   comunity  ROUTES
+========================= */
 router.get("/community/pending", authenticateToken, authorizeRoles("ADMIN"), getPendingClientPosts);
 router.get("/community/mine",    authenticateToken, authorizeRoles("CLIENT"), getMyClientPosts);
 router.get("/community",         getAllClientPosts);
+router.get("/community/all", authenticateToken, authorizeRoles("ADMIN"), getAllClientPostsAdmin)
+
 router.get("/community/:id",     getClientPostById);
 router.post("/community",        authenticateToken, authorizeRoles("CLIENT"), createClientPost);
 router.patch("/community/:id",         authenticateToken, authorizeRoles("CLIENT"), updateClientPost);

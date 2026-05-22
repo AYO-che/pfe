@@ -1,20 +1,16 @@
-//page1 — restyled to match page2 aesthetics
-
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/Authcontext";
 
-// ── Styles ────────────────────────────────────────────────────────────────
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@keyframes fadeUp { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: translateY(0) } }
-@keyframes pulse  { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }
-@keyframes spin   { to { transform: rotate(360deg) } }
+@keyframes fadeUp   { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes pulse    { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }
+@keyframes spin     { to { transform: rotate(360deg) } }
+@keyframes slideDown{ from { opacity:0; transform:translateY(-10px) } to { opacity:1; transform:translateY(0) } }
 
 .pr-fade { animation: fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both }
 
@@ -46,26 +42,17 @@ const CSS = `
 }
 
 .pr-btn {
-  width: 100%;
-  padding: 13px 0;
-  border-radius: 14px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  border: none;
+  width: 100%; padding: 13px 0; border-radius: 14px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  font-family: 'Inter', sans-serif; border: none;
   transition: all 0.25s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 .pr-btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.05); }
 .pr-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .pr-spinner {
-  width: 16px;
-  height: 16px;
+  width: 16px; height: 16px;
   border: 2px solid rgba(255,255,255,0.3);
   border-top-color: currentColor;
   border-radius: 50%;
@@ -78,64 +65,103 @@ const CSS = `
 }
 `;
 
-// ── Plans data ────────────────────────────────────────────────────────────
-const PLANS = [
-  {
-    offerId: "11da6e89-07a3-4258-98cb-665c710b38aa",
-    label: "Starter",
-    badge: "Free Trial",
-    price: "Free",
-    period: "3 days · no card needed",
-    desc: "Try the full power of our AI calorie tracker with no commitment.",
-    features: [
-      "AI food recognition",
-      "Calorie & macro tracking",
-      "3-day meal history",
-      "Basic nutrition insights",
-    ],
-    cta: "Start Free Trial",
-    featured: false,
-    isFree: true,
-  },
-  {
-    offerId: "3b6e0518-95a5-4b5f-8442-fb68dfe6165f",
-    label: "Pro",
-    badge: "Most Popular",
-    price: "$9.99",
-    period: "per month",
-    desc: "Unlimited AI scans, advanced analytics and personalised recommendations.",
-    features: [
-      "Unlimited AI food scans",
-      "Advanced macro breakdown",
-      "30-day history & trends",
-      "Custom calorie goals",
-      "Priority support",
-    ],
-    cta: "Get Pro",
-    featured: true,
-    isFree: false,
-  },
-  {
-    offerId: "d892a444-25d9-4c88-a5f8-463d5430b817",
-    label: "Elite",
-    badge: "Best Value",
-    price: "$59.99",
-    period: "per year · save 50%",
-    desc: "Full year of elite AI nutrition with QR code meal sharing and team features.",
-    features: [
-      "Everything in Pro",
-      "QR code meal sharing",
-      "Yearly progress report",
-      "Team & family mode",
-      "Dedicated nutritionist chat",
-    ],
-    cta: "Go Elite",
-    featured: false,
-    isFree: false,
-  },
-];
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
-// ── Sub-components ────────────────────────────────────────────────────────
+/**
+ * Given a sorted array of offers (cheapest → most expensive),
+ * assign a positional badge + featured flag.
+ *
+ * Rules:
+ *  • 1 offer  → always "Featured"
+ *  • 2 offers → first = "Starter", second = "Best Value" + featured
+ *  • 3+ offers→ first = "Free Trial" (if free) or "Starter"
+ *               middle = "Most Popular" + featured
+ *               last   = "Best Value"
+ *               any extras between = "Popular"
+ */
+function enrichOffers(offers) {
+  const total = offers.length;
+  if (total === 0) return [];
+
+  const middleIndex = Math.floor((total - 1) / 2);
+
+  return offers.map((offer, i) => {
+    const isFree     = Number(offer.price) === 0;
+    const isFirst    = i === 0;
+    const isLast     = i === total - 1;
+    const isFeatured = total === 1 ? true : i === middleIndex;
+
+    let badge;
+    if (total === 1) {
+      badge = "Featured";
+    } else if (total === 2) {
+      badge = isFirst ? "Starter" : "Best Value";
+    } else {
+      if (isFirst)        badge = isFree ? "Free Trial" : "Starter";
+      else if (isFeatured) badge = "Most Popular";
+      else if (isLast)    badge = "Best Value";
+      else                badge = "Popular";
+    }
+
+    // Price display
+    const priceDisplay = isFree ? "Free" : `$${Number(offer.price).toFixed(2)}`;
+
+    // Period display
+    let period;
+    if (isFree) {
+      period = `${offer.durationDays} days · no card needed`;
+    } else if (offer.durationDays >= 300) {
+      period = "per year";
+    } else if (offer.durationDays >= 25 && offer.durationDays <= 35) {
+      period = "per month";
+    } else {
+      period = `${offer.durationDays} days access`;
+    }
+
+    // CTA label
+    let cta;
+    if (isFree)        cta = "Start Free Trial";
+    else if (isFeatured) cta = `Get ${offer.name}`;
+    else               cta = "Get Started";
+
+    // Features: parse newline/comma/semicolon separated description,
+    // fall back to a sensible default list built from offer fields.
+    let features = [];
+    if (offer.description && offer.description.trim().length > 0) {
+      // Split on newlines, commas, or semicolons
+      features = offer.description
+        .split(/[\n,;]+/)
+        .map(f => f.trim())
+        .filter(f => f.length > 2);
+    }
+    // If nothing parsed, build generic features from offer data
+    if (features.length === 0) {
+      features = [
+        isFree ? "AI food recognition" : "Unlimited AI food scans",
+        "Calorie & macro tracking",
+        `${offer.durationDays}-day meal history`,
+        "Nutrition insights",
+      ];
+      if (!isFree) features.push("Priority support");
+    }
+
+    return {
+      offerId:  offer.id,
+      label:    offer.name,
+      price:    priceDisplay,
+      period,
+      badge,
+      featured: isFeatured,
+      isFree,
+      cta,
+      features,
+      rawPrice: Number(offer.price),
+    };
+  });
+}
+
+// ─── Icons ──────────────────────────────────────────────────────────────────
+
 function Check() {
   return (
     <svg width="8" height="8" viewBox="0 0 24 24" fill="none"
@@ -155,9 +181,11 @@ function ArrowRight() {
   );
 }
 
+// ─── PlanCard ────────────────────────────────────────────────────────────────
+
 function PlanCard({ plan, index, onSelect, trialUsed, loadingId }) {
   const isTrialDone = plan.isFree && trialUsed;
-  const isLoading = loadingId === plan.offerId;
+  const isLoading   = loadingId === plan.offerId;
 
   return (
     <div
@@ -176,13 +204,10 @@ function PlanCard({ plan, index, onSelect, trialUsed, loadingId }) {
       {plan.featured && (
         <div style={{
           background: "linear-gradient(135deg,#0b6630,#2d7a4f)",
-          padding: "7px 20px",
-          textAlign: "center",
-          fontSize: 11.5,
-          fontWeight: 800,
+          padding: "7px 20px", textAlign: "center",
+          fontSize: 11.5, fontWeight: 800,
           color: "rgba(168,224,44,0.95)",
-          letterSpacing: 0.5,
-          textTransform: "uppercase",
+          letterSpacing: 0.5, textTransform: "uppercase",
         }}>
           ⭐ Most Popular
         </div>
@@ -190,11 +215,8 @@ function PlanCard({ plan, index, onSelect, trialUsed, loadingId }) {
 
       <div style={{
         padding: "24px 22px 26px",
-        display: "flex",
-        flexDirection: "column",
-        flex: 1,
-        background: "rgba(255,255,255,0.55)",
-        backdropFilter: "blur(10px)",
+        display: "flex", flexDirection: "column", flex: 1,
+        background: "rgba(255,255,255,0.55)", backdropFilter: "blur(10px)",
       }}>
 
         {/* Badge */}
@@ -202,8 +224,9 @@ function PlanCard({ plan, index, onSelect, trialUsed, loadingId }) {
           display: "inline-flex", alignItems: "center", gap: 6,
           background: "rgba(168,224,44,0.15)",
           border: "1px solid rgba(168,224,44,0.4)",
-          borderRadius: 999, padding: "5px 12px", fontSize: 11, fontWeight: 700,
-          color: "#0b6630", textTransform: "uppercase", letterSpacing: 0.4,
+          borderRadius: 999, padding: "5px 12px",
+          fontSize: 11, fontWeight: 700, color: "#0b6630",
+          textTransform: "uppercase", letterSpacing: 0.4,
           marginBottom: 16, width: "fit-content",
         }}>
           <span style={{
@@ -231,16 +254,12 @@ function PlanCard({ plan, index, onSelect, trialUsed, loadingId }) {
         }}>
           {plan.price}
         </div>
-        <div style={{ fontSize: 12.5, color: "#5a7a6e", fontWeight: 500, marginBottom: 12 }}>
+
+        {/* Period */}
+        <div style={{ fontSize: 12.5, color: "#5a7a6e", fontWeight: 500, marginBottom: 20 }}>
           {plan.period}
         </div>
 
-        {/* Description */}
-        <p style={{ fontSize: 13, color: "#5a7a6e", lineHeight: 1.7, marginBottom: 16, minHeight: 40 }}>
-          {plan.desc}
-        </p>
-
-        {/* Divider */}
         <div style={{ height: 1, background: "rgba(0,168,84,0.1)", marginBottom: 16 }} />
 
         {/* Features */}
@@ -281,52 +300,59 @@ function PlanCard({ plan, index, onSelect, trialUsed, loadingId }) {
               : { background: "rgba(168,224,44,0.15)", color: "#0b6630", border: "1.5px solid rgba(0,168,84,0.3)" }
             }
           >
-            {isLoading
-              ? <span className="pr-spinner" />
-              : <>{plan.cta} <ArrowRight /></>
-            }
+            {isLoading ? <span className="pr-spinner" /> : <>{plan.cta} <ArrowRight /></>}
           </button>
         )}
-
       </div>
     </div>
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────
+// ─── Page ────────────────────────────────────────────────────────────────────
+
 export default function AIPremiumPage() {
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
+  const location  = useLocation();
   const { isLoggedIn } = useAuth();
 
+  const reason = location.state?.reason;
+
+  const [plans,     setPlans]     = useState([]);
   const [trialUsed, setTrialUsed] = useState(false);
-  const [hasActiveSub, setHasActiveSub] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [checking,  setChecking]  = useState(true);
   const [loadingId, setLoadingId] = useState(null);
-  const [error, setError] = useState(null);
+  const [error,     setError]     = useState(null);
 
-  // Check existing subscriptions
   useEffect(() => {
-    if (!isLoggedIn) { setChecking(false); return; }
-
     (async () => {
       try {
-        const res = await fetch("/api/subscriptions/mine", { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch subscriptions");
+        const offersRes = await fetch(
+          "http://localhost:5000/offers/ai-calories",
+          { credentials: "include" }
+        );
+        if (!offersRes.ok) throw new Error("Failed to load plans");
 
-        const data = await res.json();
-        const subs = data.subscriptions ?? [];
-        const now = new Date();
+        const offersData = await offersRes.json();
+        const raw = offersData.offers ?? [];
+
+        // Sort cheapest → most expensive so positional logic is reliable
+        const sorted  = [...raw].sort((a, b) => Number(a.price) - Number(b.price));
+        const enriched = enrichOffers(sorted);
+        setPlans(enriched);
+
+        if (!isLoggedIn) return;
+
+        const subRes  = await fetch("http://localhost:5000/subscriptions/mine", { credentials: "include" });
+        const subData = await subRes.json();
+        const subs    = subData.subscriptions ?? [];
+        const now     = new Date();
 
         const active = subs.find(s =>
-          s.status === "ACTIVE" &&
+          (s.status === "ACTIVE" || s.status === "TRIAL") &&
           new Date(s.endDate) > now &&
           s.offer?.type === "AI_CALORIES"
         );
-
-        if (active) {
-          setHasActiveSub(true);
-          return;
-        }
+        if (active) { navigate("/calories-ai", { replace: true }); return; }
 
         const usedTrial = subs.some(s =>
           s.offer?.type === "AI_CALORIES" && s.offer?.hasFreeTrial === true
@@ -334,32 +360,24 @@ export default function AIPremiumPage() {
         setTrialUsed(usedTrial);
 
       } catch (err) {
-        console.error("Subscription check failed:", err);
+        console.error("Load failed:", err);
+        setError("Failed to load plans. Please refresh the page.");
       } finally {
         setChecking(false);
       }
     })();
   }, [isLoggedIn]);
 
-  // Redirect if already subscribed
-  useEffect(() => {
-    if (!checking && hasActiveSub) navigate("/calories");
-  }, [checking, hasActiveSub, navigate]);
-
-  // Handle plan selection
   const handleSelect = async (plan) => {
     if (!isLoggedIn) {
-      navigate("/login", { state: { redirect: "/premium" } });
+      navigate("/login", { state: { redirect: "/ai-premium" } });
       return;
     }
-
     setError(null);
     setLoadingId(plan.offerId);
-
     try {
-      const res = await fetch("/api/subscriptions", {
-        method: "POST",
-        credentials: "include",
+      const res  = await fetch("http://localhost:5000/subscriptions", {
+        method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ offerId: plan.offerId }),
       });
@@ -367,21 +385,20 @@ export default function AIPremiumPage() {
 
       if (!res.ok) {
         if (res.status === 400 && data.message?.includes("already have")) {
-          navigate("/calories");
-          return;
+          navigate("/calories-ai", { replace: true }); return;
         }
         throw new Error(data.message ?? "Something went wrong");
       }
 
       if (plan.isFree || data.isFree) {
-        navigate("/calories");
+        navigate("/calories-ai", { replace: true });
       } else {
         navigate("/payment", {
           state: {
             subscriptionId: data.subscription.id,
-            offerId: plan.offerId,
-            offerLabel: plan.label,
-            price: plan.price,
+            offerId:        plan.offerId,
+            offerLabel:     plan.label,
+            price:          plan.price,
           },
         });
       }
@@ -392,113 +409,98 @@ export default function AIPremiumPage() {
     }
   };
 
-  // Loading screen
-  if (checking) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#f7faf8", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <div style={{ width: 40, height: 40, border: "3px solid rgba(0,168,84,0.2)", borderTop: "3px solid #0b6630", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      </div>
-    );
-  }
+  if (checking) return (
+    <div style={{ minHeight: "100vh", background: "#f7faf8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ width: 40, height: 40, border: "3px solid rgba(0,168,84,0.2)", borderTop: "3px solid #0b6630", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+    </div>
+  );
 
   return (
     <div style={{ minHeight: "100vh", background: "#f7faf8", fontFamily: "'Inter', sans-serif" }}>
       <style>{CSS}</style>
 
-   {/* ── Hero ─────────────────────────────────────────────────────────────── */}
-<section style={{
-  position: "relative",
-  background: "#1a5c35",
-  padding: "60px 24px 64px",
-  textAlign: "center",
-  overflow: "hidden",
-}}>
-  {/* Dot pattern */}
-  <div style={{
-    position: "absolute", inset: 0,
-    backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.07) 1.5px, transparent 1.5px)",
-    backgroundSize: "24px 24px",
-    pointerEvents: "none",
-  }} />
- 
-  {/* Radial glow */}
-  <div style={{
-    position: "absolute", top: -120, left: "50%", transform: "translateX(-50%)",
-    width: 600, height: 400,
-    background: "radial-gradient(ellipse, rgba(45,122,60,0.55) 0%, transparent 70%)",
-    pointerEvents: "none",
-  }} />
- 
-  {/* Pill badge */}
-  <div style={{ position: "relative", marginBottom: 26 }}>
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 7,
-      border: "1px solid rgba(245,230,66,0.45)",
-      borderRadius: 999, padding: "7px 16px",
-      fontSize: 11, fontWeight: 700,
-      color: "#f5e642",
-      letterSpacing: "1.8px", textTransform: "uppercase",
-    }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f5e642" }} />
-      AI · QR Code Scanner · Calorie Tracking
-    </span>
-  </div>
- 
-  {/* Headline */}
-  <h1 style={{
-    position: "relative",
-    fontFamily: "'Space Grotesk', sans-serif",
-    fontSize: "clamp(36px, 6vw, 52px)",
-    fontWeight: 800, color: "#fff",
-    lineHeight: 1.07, letterSpacing: -1.5,
-    marginBottom: 18,
-  }}>
-    Know exactly what<br />
-    <span style={{ color: "#f5e642" }}>you're eating.</span>
-  </h1>
- 
-  {/* Subheading */}
-  <p style={{
-    position: "relative",
-    fontSize: 15, color: "rgba(255,255,255,0.62)",
-    lineHeight: 1.8, maxWidth: 440,
-    margin: "0 auto 42px",
-  }}>
-    Scan any meal with AI or share your plate via QR code — get instant
-    calorie breakdowns in under 3 seconds.
-  </p>
- 
-  {/* Stats */}
-  <div style={{
-    position: "relative",
-    display: "flex", justifyContent: "center",
-    alignItems: "flex-start", gap: 48,
-    flexWrap: "wrap",
-  }}>
-    {[
-      ["50K+", "Meals scanned"],
-      ["6",    "Specialists"],
-      ["98%",  "AI accuracy"],
-    ].map(([num, label]) => (
-      <div key={label} style={{ textAlign: "center" }}>
+      {/* Trial-expired banner */}
+      {reason === "trial-expired" && (
         <div style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: 38, fontWeight: 800, color: "#f5e642", lineHeight: 1,
+          background: "linear-gradient(135deg,#fff8e1,#fffde7)",
+          borderBottom: "1.5px solid rgba(245,180,0,0.35)",
+          padding: "14px 24px",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+          fontSize: 14, color: "#7a5800", fontWeight: 600,
+          animation: "slideDown 0.4s ease both",
         }}>
-          {num}
+          <span style={{ fontSize: 20 }}>⏱️</span>
+          Your free trial has ended. Upgrade to keep using AI calorie tracking.
         </div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 6 }}>
-          {label}
+      )}
+
+      {/* Hero */}
+      <section style={{
+        position: "relative", background: "#1a5c35",
+        padding: "60px 24px 64px", textAlign: "center", overflow: "hidden",
+      }}>
+        <div style={{
+          position: "absolute", inset: 0,
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.07) 1.5px, transparent 1.5px)",
+          backgroundSize: "24px 24px", pointerEvents: "none",
+        }} />
+        <div style={{
+          position: "absolute", top: -120, left: "50%", transform: "translateX(-50%)",
+          width: 600, height: 400,
+          background: "radial-gradient(ellipse, rgba(45,122,60,0.55) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
+
+        <div style={{ position: "relative", marginBottom: 26 }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            border: "1px solid rgba(245,230,66,0.45)",
+            borderRadius: 999, padding: "7px 16px",
+            fontSize: 11, fontWeight: 700, color: "#f5e642",
+            letterSpacing: "1.8px", textTransform: "uppercase",
+          }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f5e642" }} />
+            AI · QR Code Scanner · Calorie Tracking
+          </span>
         </div>
-      </div>
-    ))}
-  </div>
- 
-</section>
+
+        <h1 style={{
+          position: "relative",
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: "clamp(36px, 6vw, 52px)",
+          fontWeight: 800, color: "#fff",
+          lineHeight: 1.07, letterSpacing: -1.5, marginBottom: 18,
+        }}>
+          Know exactly what<br />
+          <span style={{ color: "#f5e642" }}>you're eating.</span>
+        </h1>
+
+        <p style={{
+          position: "relative",
+          fontSize: 15, color: "rgba(255,255,255,0.62)",
+          lineHeight: 1.8, maxWidth: 440, margin: "0 auto 42px",
+        }}>
+          Scan any meal with AI or share your plate via QR code — get instant
+          calorie breakdowns in under 3 seconds.
+        </p>
+
+        <div style={{
+          position: "relative",
+          display: "flex", justifyContent: "center",
+          alignItems: "flex-start", gap: 48, flexWrap: "wrap",
+        }}>
+          {[["50K+","Meals scanned"],["6","Specialists"],["98%","AI accuracy"]].map(([num, label]) => (
+            <div key={label} style={{ textAlign: "center" }}>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 38, fontWeight: 800, color: "#f5e642", lineHeight: 1 }}>{num}</div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 6 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Plans */}
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 40px 80px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "56px 40px 80px" }}>
 
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <h2 className="pr-fade" style={{
@@ -508,54 +510,57 @@ export default function AIPremiumPage() {
           }}>
             Choose your plan
           </h2>
-          <p style={{ fontSize: 14, color: "#5a7a6e" }}>
-            Start free, upgrade anytime. No hidden fees.
-          </p>
+          <p style={{ fontSize: 14, color: "#5a7a6e" }}>Start free, upgrade anytime. No hidden fees.</p>
         </div>
 
-        {/* Error banner */}
+        {/* Error */}
         {error && (
           <div style={{
             background: "rgba(255,255,255,0.7)", backdropFilter: "blur(8px)",
-            border: "1px solid rgba(0,168,84,0.2)", borderRadius: 14,
+            border: "1px solid rgba(192,57,43,0.2)", borderRadius: 14,
             padding: "14px 20px", marginBottom: 24,
-            color: "#0b6630", fontSize: 13.5,
+            color: "#c0392b", fontSize: 13.5,
             display: "flex", alignItems: "center", gap: 12,
             maxWidth: 600, margin: "0 auto 24px",
           }}>
-            <span style={{ fontSize: 18 }}>🌿</span>
+            <span style={{ fontSize: 18 }}>⚠️</span>
             <span>{error}</span>
-            <button
-              onClick={() => setError(null)}
-              style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#0b6630", fontWeight: 700, fontSize: 18 }}
-            >
-              ×
-            </button>
+            <button onClick={() => setError(null)}
+              style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#c0392b", fontWeight: 700, fontSize: 18 }}>×</button>
           </div>
         )}
 
-        {/* Plans grid */}
-        <div className="pr-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 22, alignItems: "start" }}>
-          {PLANS.map((plan, i) => (
-            <PlanCard
-              key={plan.offerId}
-              plan={plan}
-              index={i}
-              onSelect={handleSelect}
-              trialUsed={trialUsed}
-              loadingId={loadingId}
-            />
-          ))}
+        {/* Grid — columns adapt to number of offers */}
+        <div
+          className="pr-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${Math.min(Math.max(plans.length, 1), 3)}, 1fr)`,
+            gap: 22, alignItems: "start",
+          }}
+        >
+          {plans.length === 0 ? (
+            <div style={{ gridColumn: "1/-1", textAlign: "center", color: "#5a7a6e", fontSize: 14, padding: "40px 0" }}>
+              No plans available at the moment.
+            </div>
+          ) : (
+            plans.map((plan, i) => (
+              <PlanCard
+                key={plan.offerId}
+                plan={plan}
+                index={i}
+                onSelect={handleSelect}
+                trialUsed={trialUsed}
+                loadingId={loadingId}
+              />
+            ))
+          )}
         </div>
 
-        {/* Footer note */}
         <div style={{ textAlign: "center", marginTop: 28, fontSize: 13, color: "#5a7a6e" }}>
           🔒 Secure payments · Cancel anytime · Free trial requires no credit card
         </div>
-
       </div>
-
-      
     </div>
   );
 }
