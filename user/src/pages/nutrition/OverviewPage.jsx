@@ -1,4 +1,4 @@
-import { authFetch } from "../context/Authcontext";
+import { authFetch } from "../../context/Authcontext";
 import { useAuth } from "../../context/Authcontext";
 import { useEffect, useState } from "react";
 
