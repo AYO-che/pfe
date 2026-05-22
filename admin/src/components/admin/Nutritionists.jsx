@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Search, Plus, Eye, Trash2, Star, X, Mail, Calendar, Lock, Loader, RefreshCw } from 'lucide-react'
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'https://chrysalise-server.onrender.com'
 const COLORS = ['#2C6E3F', '#2196F3', '#9C27B0', '#FF9800']
 
 const TYPE_COLORS = {

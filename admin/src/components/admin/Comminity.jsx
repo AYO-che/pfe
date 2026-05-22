@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Trash2, X, Loader, RefreshCw, Eye } from 'lucide-react'
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'https://chrysalise-server.onrender.com'
 
 const STATUS_COLORS = {
   APPROVED: ['#DCFCE7', '#16A34A'],

@@ -172,7 +172,7 @@ export default function PatientSetup() {
     setLoading(true);
     try {
       // 1 — Register user
-      const signupRes = await fetch("http://localhost:5000/auth/register", {
+      const signupRes = await fetch("https://chrysalise-server.onrender.com/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firstName, lastName, email, role: "PATIENT" }),
@@ -182,7 +182,7 @@ export default function PatientSetup() {
       if (token) localStorage.setItem("token", token);
 
       // 2 — Create profile
-      await fetch("http://localhost:5000/profile", {
+      await fetch("https://chrysalise-server.onrender.com/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({

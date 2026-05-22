@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Trash2, RefreshCw, ChevronDown } from 'lucide-react'
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'https://chrysalise-server.onrender.com'
 const api = (path, opts) =>
   fetch(`${BASE_URL}${path}`, { credentials: 'include', ...opts })
 

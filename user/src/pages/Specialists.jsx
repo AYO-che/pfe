@@ -488,7 +488,7 @@ function BookingModal({ sp, selectedOffer, onClose, onConfirm }) {
     : "—";
 
 useEffect(() => {
-  fetch("http://localhost:5000/offers/plans", { credentials: "include" })
+  fetch("https://chrysalise-server.onrender.com/offers/plans", { credentials: "include" })
     .then(r => {
       console.log("STATUS:", r.status);
       return r.json();
@@ -705,7 +705,7 @@ export default function Specialists() {
   const [bookingSp,   setBookingSp]   = useState(null);  // for BookingModal
 
 useEffect(() => {
-  fetch("http://localhost:5000/nutritionists/public?type=PACKAGE", { credentials: "include" })
+  fetch("https://chrysalise-server.onrender.com/nutritionists/public?type=PACKAGE", { credentials: "include" })
     .then(r => r.json())
     .then(data => setSpecialists(Array.isArray(data) ? data : []))
     .catch(err => console.error(err))

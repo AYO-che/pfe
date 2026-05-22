@@ -18,12 +18,14 @@ process.on("unhandledRejection", (err) => {
 /* ========================
    CORS (FRONTEND ONLY)
 ======================== */
-app.use(
-  cors({
-     origin: ["http://localhost:5173", "http://localhost:5174"],
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: [
+    "https://chrysalise-user.onrender.com",
+    "https://chrysalise-a4400.web.app",
+    "http://localhost:5173",
+  ],
+  credentials: true
+}))
 
 /* ========================
    CORE MIDDLEWARE

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { DollarSign, Activity, Calendar, TrendingUp, Trash2, Loader, RefreshCw } from 'lucide-react'
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'https://chrysalise-server.onrender.com'
 
 const apiFetch = (path, opts = {}) =>
   fetch(`${BASE_URL}${path}`, { credentials: 'include', ...opts })

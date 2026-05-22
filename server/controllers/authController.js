@@ -9,8 +9,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const cookieOptions = {
   httpOnly: true,
-  secure: false,
-  sameSite: "lax",
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   maxAge: 24 * 60 * 60 * 1000,
 };
 
@@ -273,8 +273,7 @@ export const googleCallback = async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    res.cookie("token", token, cookieOptions);
-    res.redirect(`${process.env.CLIENT_URL}/profile`);
+   res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
   } catch (err) {
     console.error("Google auth error:", err);
     return res.redirect(`${process.env.CLIENT_URL}/login?error=google_failed`);

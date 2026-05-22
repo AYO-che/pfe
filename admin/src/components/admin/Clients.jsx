@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Search, Eye, Trash2, X, CreditCard, Mail, Loader, RefreshCw, Calendar, User } from 'lucide-react'
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'https://chrysalise-server.onrender.com'
 const COLORS = ['#2C6E3F', '#4CAF50', '#FF9800', '#9C27B0', '#2196F3']
 
 const apiFetch = (path, opts = {}) =>

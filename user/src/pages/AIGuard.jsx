@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import { useAuth } from "../context/Authcontext";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://chrysalise-server.onrender.com";
 
 export default function AIGuard({ children }) {
   const navigate = useNavigate();

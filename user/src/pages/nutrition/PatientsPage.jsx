@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://chrysalise-server.onrender.com";
 
 const GlassCard = ({ children, style = {}, onClick }) => (
   <div onClick={onClick} style={{

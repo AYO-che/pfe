@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Users, UserPlus, Activity, DollarSign, RefreshCw } from 'lucide-react'
 import { UserChart, DonutChart } from './Charts/UserChart'
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'https://chrysalise-server.onrender.com'
 const api = (path) =>
   fetch(`${BASE_URL}${path}`, { credentials: 'include' }).then(r => r.json())
 

@@ -6,7 +6,7 @@ import p2 from "../assets/p2.jpg";
 import p3 from "../assets/p3.jpg";
 import { useAuth } from "../context/Authcontext";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://chrysalise-server.onrender.com";
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');

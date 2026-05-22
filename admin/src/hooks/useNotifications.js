@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const API = 'http://localhost:5000'
+const API = 'https://chrysalise-server.onrender.com'
 
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState([])

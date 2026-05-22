@@ -327,7 +327,7 @@ export default function AIPremiumPage() {
     (async () => {
       try {
         const offersRes = await fetch(
-          "http://localhost:5000/offers/ai-calories",
+          "https://chrysalise-server.onrender.com/offers/ai-calories",
           { credentials: "include" }
         );
         if (!offersRes.ok) throw new Error("Failed to load plans");
@@ -342,7 +342,7 @@ export default function AIPremiumPage() {
 
         if (!isLoggedIn) return;
 
-        const subRes  = await fetch("http://localhost:5000/subscriptions/mine", { credentials: "include" });
+        const subRes  = await fetch("https://chrysalise-server.onrender.com/subscriptions/mine", { credentials: "include" });
         const subData = await subRes.json();
         const subs    = subData.subscriptions ?? [];
         const now     = new Date();
@@ -376,7 +376,7 @@ export default function AIPremiumPage() {
     setError(null);
     setLoadingId(plan.offerId);
     try {
-      const res  = await fetch("http://localhost:5000/subscriptions", {
+      const res  = await fetch("https://chrysalise-server.onrender.com/subscriptions", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ offerId: plan.offerId }),

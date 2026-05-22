@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/Authcontext";
+import AuthCallback from "./pages/AuthCallback";
 import SnakeGameOverlay from "./components/SnakeGameOverlay";
 
 // --- COMPONENTS ---
@@ -81,6 +82,7 @@ function App() {
            <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password"  element={<ResetPassword />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/signup" element={<SignupPage />} />
 
           <Route path="/blogs" element={<><Header /><BlogsPage /><Footer /></>} />

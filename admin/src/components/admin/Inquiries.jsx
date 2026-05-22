@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { CheckCheck, Send, X, MessageSquare, Clock, CheckCircle, Loader } from 'lucide-react'
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'https://chrysalise-server.onrender.com'
 const COLORS   = ['#2C6E3F', '#2196F3', '#FF9800', '#EF4444']
 const QUICK = [
   'Thank you for contacting us. We are looking into your issue.',

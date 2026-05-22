@@ -301,8 +301,8 @@ export default function BlogsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:5000/blog").then(r => r.json()),
-      fetch("http://localhost:5000/community").then(r => r.json()),
+      fetch("https://chrysalise-server.onrender.com/blog").then(r => r.json()),
+      fetch("https://chrysalise-server.onrender.com/community").then(r => r.json()),
     ])
       .then(([blogData, communityData]) => {
         setBlogs(blogData.posts ?? []);

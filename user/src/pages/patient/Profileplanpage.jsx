@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const DAYS       = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const BAR_COLORS = ["#a8e02c","#0b6630","#fb923c","#1a6fa0","#a78bfa","#f59e0b","#34d399","#60a5fa"];
-const API_URL    = "http://localhost:5000";
+const API_URL    = "https://chrysalise-server.onrender.com";
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');

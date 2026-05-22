@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/Authcontext";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://chrysalise-server.onrender.com";
 
 const OFFER_ICONS = {
   PLAN:        { icon: "📋", label: "Meal Plan"   },

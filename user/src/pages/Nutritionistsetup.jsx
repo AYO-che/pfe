@@ -127,7 +127,7 @@ export default function NutritionistSetup() {
     setLoading(true);
     try {
       // 1 — Register
-      const signupRes = await fetch("http://localhost:5000/auth/register", {
+      const signupRes = await fetch("https://chrysalise-server.onrender.com/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firstName, lastName, email, role: "NUTRITIONIST" }),
@@ -137,7 +137,7 @@ export default function NutritionistSetup() {
       if (token) localStorage.setItem("token", token);
 
       // 2 — Create resume
-      await fetch("http://localhost:5000/resume", {
+      await fetch("https://chrysalise-server.onrender.com/resume", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({

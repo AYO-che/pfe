@@ -282,7 +282,7 @@ const toArray = (val) => {
 const getImage = (sp) => {
   const img = sp.image || sp.resume?.images?.[0];
   if (!img) return "https://placehold.co/300x300";
-  return img.startsWith("http") ? img : `http://localhost:5000${img}`;
+  return img.startsWith("http") ? img : `https://chrysalise-server.onrender.com${img}`;
 };
 
 const OFFER_MAP = {
@@ -477,7 +477,7 @@ export default function OurTeam() {
   const [error,    setError]    = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:5000/nutritionists/public", { credentials: "include" })
+    fetch("https://chrysalise-server.onrender.com/nutritionists/public", { credentials: "include" })
       .then(async r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()

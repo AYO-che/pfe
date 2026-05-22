@@ -256,7 +256,7 @@ export default function SpecialistPlansPage() {
   const [error,   setError]   = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:5000/offers/packages", { credentials: "include" })
+    fetch("https://chrysalise-server.onrender.com/offers/packages", { credentials: "include" })
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();

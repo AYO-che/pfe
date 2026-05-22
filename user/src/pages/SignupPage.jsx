@@ -250,7 +250,7 @@ export default function SignupPage() {
   };
 
   const googleLogin = () => {
-    window.location.href = "http://localhost:5000/auth/google";
+    window.location.href = "https://chrysalise-server.onrender.com/auth/google";
   };
 
   return (

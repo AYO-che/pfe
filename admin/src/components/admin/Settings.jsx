@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Shield, Settings as Ico, Activity, Eye, EyeOff, Save, CheckCircle, Sun, Moon, Mail, Calendar, Loader, Users, CreditCard, FileText, MessageSquare } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'https://chrysalise-server.onrender.com'
 
 const apiFetch = (path, opts = {}) =>
   fetch(`${BASE_URL}${path}`, { credentials: 'include', ...opts })

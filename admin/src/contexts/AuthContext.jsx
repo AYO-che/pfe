@@ -12,7 +12,7 @@ useEffect(() => {
   const stored = localStorage.getItem('fitwise_user')
   if (!stored) { setLoading(false); return }
 
-  fetch('http://localhost:5000/me', { credentials: 'include' })
+  fetch('https://chrysalise-server.onrender.com/me', { credentials: 'include' })
     .then(r => r.json())
     .then(data => {
       if (data?.id && data?.role === 'ADMIN') {
@@ -40,7 +40,7 @@ useEffect(() => {
 
   const logout = async () => {
     try {
-      await fetch('http://localhost:5000/logout', {
+      await fetch('https://chrysalise-server.onrender.com/logout', {
         method:      'POST',
         credentials: 'include',
       })

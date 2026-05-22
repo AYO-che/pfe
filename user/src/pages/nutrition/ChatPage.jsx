@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../../context/Authcontext";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://chrysalise-server.onrender.com";
 
 let _sio = null;
 const getSio = async (userId) => {
   if (_sio) return _sio;
   try {
     const { io } = await import("socket.io-client");
-    _sio = io(import.meta.env.VITE_API_URL || "http://localhost:5000", {
+    _sio = io(import.meta.env.VITE_API_URL || "https://chrysalise-server.onrender.com", {
       query: { userId },
       withCredentials: true,
     });

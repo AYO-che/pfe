@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = "https://chrysalise-server.onrender.com";
 const STORAGE_KEY = "contact_inquiry_id";
 
 function buildInitialMessages(inquiry) {

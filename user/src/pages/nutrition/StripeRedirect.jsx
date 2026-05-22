@@ -1,7 +1,7 @@
 // StripeRedirect.jsx
 import { useEffect } from "react";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://chrysalise-server.onrender.com";
 
 export default function StripeRedirect() {
   useEffect(() => {
