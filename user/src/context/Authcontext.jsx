@@ -1,35 +1,35 @@
-//cliant
 import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext(null);
 const API_URL = "https://chrysalise-server.onrender.com";
 
+export const authFetch = (url, options = {}) => {
+  const token = localStorage.getItem("token");
+  const headers = { ...options.headers };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(url, { ...options, credentials: "include", headers });
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-const fetchUser = async () => {
-  try {
-    const token = document.cookie.split('; ').find(r => r.startsWith('token='))?.split('=')[1];
-    const headers = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${API_URL}/me`, {
-      credentials: "include",
-      cache: "no-store",
-      headers,
-    });
-    if (!res.ok) { setUser(null); return; }
-    const data = await res.json();
-    if (data?.id && (data.role === "CLIENT" || data.role === "NUTRITION")) {
-      setUser(data);
-    } else {
-      await fetch(`${API_URL}/logout`, { method: "POST", credentials: "include" });
+  const fetchUser = async () => {
+    try {
+      const res = await authFetch(`${API_URL}/me`, { cache: "no-store" });
+      if (!res.ok) { setUser(null); return; }
+      const data = await res.json();
+      if (data?.id && (data.role === "CLIENT" || data.role === "NUTRITION")) {
+        setUser(data);
+      } else {
+        await authFetch(`${API_URL}/logout`, { method: "POST" });
+        localStorage.removeItem("token");
+        setUser(null);
+      }
+    } catch {
       setUser(null);
     }
-  } catch {
-    setUser(null);
-  }
-};
+  };
 
   useEffect(() => {
     fetchUser().finally(() => setLoading(false));
@@ -40,9 +40,8 @@ const fetchUser = async () => {
   };
 
   async function signup(formData) {
-    const res = await fetch(`${API_URL}/signup`, {
+    const res = await authFetch(`${API_URL}/signup`, {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
     });
@@ -52,23 +51,21 @@ const fetchUser = async () => {
   }
 
   async function login(email, password) {
-    const res = await fetch(`${API_URL}/login`, {
+    const res = await authFetch(`${API_URL}/login`, {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Login failed");
+    localStorage.setItem("token", data.token);
     setUser(data.user);
     return data.user;
   }
 
   async function logout() {
-    await fetch(`${API_URL}/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
+    await authFetch(`${API_URL}/logout`, { method: "POST" });
+    localStorage.removeItem("token");
     setUser(null);
   }
 

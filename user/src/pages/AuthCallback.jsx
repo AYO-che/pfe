@@ -10,7 +10,7 @@ export default function AuthCallback() {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
     if (token) {
-      document.cookie = `token=${token}; path=/; max-age=86400; SameSite=None; Secure`;
+      localStorage.setItem("token", token);
       fetchUser().then(() => navigate("/profile"));
     } else {
       navigate("/login");

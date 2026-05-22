@@ -145,9 +145,13 @@ export const login = async (req, res) => {
     );
  
     res.cookie("token", token, cookieOptions);
- 
-    return res.status(200).json({
-      user: {
+
+res
+  .cookie("token", token, cookieOptions)
+  .status(201)
+  .json({
+    token,
+    user: {
         id:              user.id,
         email:           user.email,
         role:            user.role,
