@@ -9,18 +9,20 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 const fetchUser = async () => {
   try {
+    const token = document.cookie.split('; ').find(r => r.startsWith('token='))?.split('=')[1];
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(`${API_URL}/me`, {
       credentials: "include",
       cache: "no-store",
+      headers,
     });
     if (!res.ok) { setUser(null); return; }
     const data = await res.json();
-
-    // ✅ Only accept CLIENT or NUTRITION roles in the client app
     if (data?.id && (data.role === "CLIENT" || data.role === "NUTRITION")) {
       setUser(data);
     } else {
-      // Wrong role (e.g. ADMIN cookie leaked in) — clear it
       await fetch(`${API_URL}/logout`, { method: "POST", credentials: "include" });
       setUser(null);
     }
