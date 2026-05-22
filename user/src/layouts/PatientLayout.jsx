@@ -1,3 +1,4 @@
+import { authFetch } from "../context/Authcontext";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import { useEffect, useState } from "react";
@@ -498,3 +499,4 @@ export default function PatientLayout() {
     </>
   );
 }
+

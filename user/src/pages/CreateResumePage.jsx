@@ -523,7 +523,7 @@ export default function CreateResumePage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API_URL}/resume`, {
+      const res = await authFetch(`${API_URL}/resume`, {
         method:      "POST",
         credentials: "include",
         headers:     { "Content-Type": "application/json" },

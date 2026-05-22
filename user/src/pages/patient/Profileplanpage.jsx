@@ -201,7 +201,7 @@ export default function ProfilePlanPage() {
   const loadTracking = async (userPlan) => {
     const today = new Date().toISOString().split("T")[0];
     try {
-      const r = await fetch(`${API_URL}/user-plans/${userPlan.id}/tracking/${today}`, { credentials:"include" });
+      const r = await authFetch(`${API_URL}/user-plans/${userPlan.id}/tracking/${today}`, { credentials:"include" });
       if (!r.ok) { setMarks({}); return; }
       const d = await r.json();
       const init = {};
@@ -216,7 +216,7 @@ export default function ProfilePlanPage() {
   useEffect(() => {
     (async () => {
       try {
-        const r     = await fetch(`${API_URL}/user-plans/mine`, { credentials:"include" });
+        const r     = await authFetch(`${API_URL}/user-plans/mine`, { credentials:"include" });
         const data  = await r.json();
         const plans = data.userPlans ?? [];
         setAllPlans(plans);
@@ -250,7 +250,7 @@ export default function ProfilePlanPage() {
     const habits = todayPlan?.habits ?? [];
     setSaving(true);
     try {
-      await fetch(`${API_URL}/user-plans/${userPlan.id}/tracking`, {
+      await authFetch(`${API_URL}/user-plans/${userPlan.id}/tracking`, {
         method:"POST", credentials:"include",
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({

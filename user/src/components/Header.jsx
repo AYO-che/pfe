@@ -344,7 +344,7 @@ function NotifDropdown({ onClose }) {
 
   const fetchNotifs = useCallback(async () => {
     try {
-      const res  = await fetch(`${API_URL}/notifications`, { credentials:"include" });
+      const res  = await authFetch(`${API_URL}/notifications`, { credentials:"include" });
       const data = await res.json();
       setNotifs((data.notifications ?? []).map(n => ({ ...n, url: n.url ?? n.link ?? null })));
     } catch { }
@@ -354,7 +354,7 @@ function NotifDropdown({ onClose }) {
   useEffect(() => { fetchNotifs(); }, [fetchNotifs]);
 
   const markAllRead = async () => {
-    await fetch(`${API_URL}/notifications/read-all`, { method:"PATCH", credentials:"include" });
+    await authFetch(`${API_URL}/notifications/read-all`, { method:"PATCH", credentials:"include" });
     setNotifs(prev => prev.map(n => ({ ...n, isRead:true })));
   };
 
@@ -459,7 +459,7 @@ export default function Header() {
   const fetchUnreadCount = useCallback(async () => {
     if (!isLoggedIn) return;
     try {
-      const res  = await fetch(`${API_URL}/notifications/unread-count`, { credentials:"include" });
+      const res  = await authFetch(`${API_URL}/notifications/unread-count`, { credentials:"include" });
       const data = await res.json();
       setUnreadCount(data.count ?? 0);
     } catch { }

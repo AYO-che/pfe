@@ -144,7 +144,7 @@ export default function NutritionProfilePage() {
   const save = async () => {
     setSaving(true); setError("");
     try {
-      const res  = await fetch(`${API_URL}/resume`, {
+      const res  = await authFetch(`${API_URL}/resume`, {
         method: "PATCH", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, experienceYears: form.experienceYears ? parseInt(form.experienceYears, 10) : null }),

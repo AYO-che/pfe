@@ -193,7 +193,7 @@ export default function NutritionNotifsPage() {
 
   const fetchNotifs = useCallback(async () => {
     try {
-      const res  = await fetch(`${API_URL}/notifications`, { credentials: "include" });
+      const res  = await authFetch(`${API_URL}/notifications`, { credentials: "include" });
       const data = await res.json();
       setNotifs((data.notifications ?? []).map(n => ({ ...n, url: n.url ?? n.link ?? null })));
     } catch {}
@@ -216,17 +216,17 @@ export default function NutritionNotifsPage() {
   }, [fetchNotifs]);
 
   const markAllRead = async () => {
-    await fetch(`${API_URL}/notifications/read-all`, { method: "PATCH", credentials: "include" });
+    await authFetch(`${API_URL}/notifications/read-all`, { method: "PATCH", credentials: "include" });
     setNotifs(prev => prev.map(n => ({ ...n, isRead: true })));
   };
 
   const markOneRead = async (id) => {
-    await fetch(`${API_URL}/notifications/${id}/read`, { method: "PATCH", credentials: "include" });
+    await authFetch(`${API_URL}/notifications/${id}/read`, { method: "PATCH", credentials: "include" });
     setNotifs(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
 
   const deleteNotif = async (id) => {
-    await fetch(`${API_URL}/notifications/${id}`, { method: "DELETE", credentials: "include" });
+    await authFetch(`${API_URL}/notifications/${id}`, { method: "DELETE", credentials: "include" });
     setNotifs(prev => prev.filter(n => n.id !== id));
   };
 

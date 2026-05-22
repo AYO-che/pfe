@@ -18,7 +18,7 @@ export default function AIGuard({ children }) {
 
     (async () => {
       try {
-        const res  = await fetch(`${API_URL}/subscriptions/mine`, { credentials: "include" });
+        const res  = await authFetch(`${API_URL}/subscriptions/mine`, { credentials: "include" });
         const data = await res.json();
         const subs = data.subscriptions ?? [];
         const now  = new Date();

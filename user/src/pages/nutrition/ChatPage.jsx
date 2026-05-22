@@ -58,7 +58,7 @@ export default function ProfileChatPage() {
 
   const fetchConversations = useCallback(async () => {
     try {
-      const res  = await fetch(`${API_URL}/conversations`, { credentials: "include" });
+      const res  = await authFetch(`${API_URL}/conversations`, { credentials: "include" });
       const data = await res.json();
       const sorted = (data.conversations || []).sort(
         (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
@@ -78,7 +78,7 @@ export default function ProfileChatPage() {
   const fetchMessages = useCallback(async (convId) => {
     setMsgLoading(true);
     try {
-      const res  = await fetch(`${API_URL}/conversations/${convId}/messages`, { credentials: "include" });
+      const res  = await authFetch(`${API_URL}/conversations/${convId}/messages`, { credentials: "include" });
       const data = await res.json();
       setMessages(data.messages ?? []);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
@@ -189,7 +189,7 @@ export default function ProfileChatPage() {
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 40);
 
     try {
-      const res  = await fetch(`${API_URL}/conversations/${activeConv.id}/messages`, {
+      const res  = await authFetch(`${API_URL}/conversations/${activeConv.id}/messages`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -207,7 +207,7 @@ export default function ProfileChatPage() {
     setMenuMsgId(null);
     setMessages((prev) => prev.filter((m) => m.id !== msgId));
     try {
-      await fetch(`${API_URL}/conversations/${activeConv.id}/messages/${msgId}`, {
+      await authFetch(`${API_URL}/conversations/${activeConv.id}/messages/${msgId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -223,7 +223,7 @@ export default function ProfileChatPage() {
       setShowSidebar(true);
     }
     try {
-      await fetch(`${API_URL}/conversations/${convId}`, {
+      await authFetch(`${API_URL}/conversations/${convId}`, {
         method: "DELETE",
         credentials: "include",
       });

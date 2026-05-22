@@ -441,7 +441,7 @@ export default function CreatePostPage() {
   const fetchMyPosts = async () => {
     setLoading(true);
     try {
-      const res  = await fetch(`${API_URL}/blog/mine`, { credentials: "include" });
+      const res  = await authFetch(`${API_URL}/blog/mine`, { credentials: "include" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       setPosts(data.posts ?? []);
@@ -473,7 +473,7 @@ const submit = async () => {
 
 
 
-      const res  = await fetch(`${API_URL}/blog`, {
+      const res  = await authFetch(`${API_URL}/blog`, {
         method:      "POST",
         credentials: "include",
         headers:     { "Content-Type": "application/json" },
@@ -496,7 +496,7 @@ const submit = async () => {
   const deletePost = async (id) => {
     if (!window.confirm("Delete this post?")) return;
     try {
-      const res = await fetch(`${API_URL}/blog/${id}`, {
+      const res = await authFetch(`${API_URL}/blog/${id}`, {
         method:      "DELETE",
         credentials: "include",
       });

@@ -89,7 +89,7 @@ export default function PlanPage() {
       fd.append("title", pdfPlan.title);
       fd.append("type","PDF");
       fd.append("pdfFile", pdfPlan.pdfFile);
-      res = await fetch(`${API_URL}/plans`, { method:"POST", credentials:"include", body:fd });
+      res = await authFetch(`${API_URL}/plans`, { method:"POST", credentials:"include", body:fd });
     } else {
       if (!trackerPlan.title)                                     { alert("Enter a plan title"); return; }
       if (!trackerPlan.clientId || !trackerPlan.subscriptionId)  { alert("Select a subscribed client"); return; }
@@ -123,7 +123,7 @@ export default function PlanPage() {
         }),
       };
 
-      res = await fetch(`${API_URL}/plans/assign`, {
+      res = await authFetch(`${API_URL}/plans/assign`, {
         method:"POST", credentials:"include",
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({

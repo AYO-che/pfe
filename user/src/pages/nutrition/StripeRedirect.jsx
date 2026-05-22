@@ -8,7 +8,7 @@ export default function StripeRedirect() {
     const goToStripe = async () => {
       try {
         // Step 1: Create the connected account first
-        const accountRes = await fetch(`${API_URL}/stripe/create-account`, {
+        const accountRes = await authFetch(`${API_URL}/stripe/create-account`, {
           method: "POST",
           credentials: "include",
         });
@@ -20,7 +20,7 @@ export default function StripeRedirect() {
         }
 
         // Step 2: Generate the onboarding link
-        const res = await fetch(`${API_URL}/stripe/onboarding`, {
+        const res = await authFetch(`${API_URL}/stripe/onboarding`, {
           method: "POST",
           credentials: "include",
         });

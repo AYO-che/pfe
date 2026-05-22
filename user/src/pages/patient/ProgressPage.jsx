@@ -538,7 +538,7 @@ export default function ProfileProgressPage() {
   useEffect(() => {
     (async () => {
       try {
-        const r     = await fetch(`${API_URL}/user-plans/mine`, { credentials:"include" });
+        const r     = await authFetch(`${API_URL}/user-plans/mine`, { credentials:"include" });
         const data  = await r.json();
         const plans = data.userPlans ?? [];
         setAllPlans(plans);
@@ -555,7 +555,7 @@ export default function ProfileProgressPage() {
     });
     // We check outside setState to avoid stale closure issues
     try {
-      const r = await fetch(`${API_URL}/user-plans/${planId}/tracking/${dateIso}`, { credentials:"include" });
+      const r = await authFetch(`${API_URL}/user-plans/${planId}/tracking/${dateIso}`, { credentials:"include" });
       if (!r.ok) return;
       const d = await r.json();
       const t = d.dailyTracking ?? {};

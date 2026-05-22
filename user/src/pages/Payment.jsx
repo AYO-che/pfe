@@ -429,7 +429,7 @@ export default function Payment() {
     if (!isPlan) return;
     (async () => {
       try {
-        const res  = await fetch(`${API_URL}/plans/${state.planId}`, { credentials: "include" });
+        const res  = await authFetch(`${API_URL}/plans/${state.planId}`, { credentials: "include" });
         const data = await res.json();
         setPlanData(data.plan);
       } catch {
@@ -528,7 +528,7 @@ export default function Payment() {
 
   // ── Safe fetch helper ──────────────────────────────────────────
   const apiFetch = async (path, options) => {
-    const res  = await fetch(`${API_URL}${path}`, {
+    const res  = await authFetch(`${API_URL}${path}`, {
       credentials: "include",
       headers:     { "Content-Type": "application/json" },
       ...options,

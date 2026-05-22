@@ -307,7 +307,7 @@ export default function CommunityPostPage() {
   const fetchMyPosts = async () => {
     setLoading(true);
     try {
-      const res  = await fetch(`${API_URL}/community/mine`, { credentials: "include" });
+      const res  = await authFetch(`${API_URL}/community/mine`, { credentials: "include" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || `Error ${res.status}`);
       setPosts(data.posts ?? []);
@@ -331,7 +331,7 @@ const submit = async () => {
   setSaving(true);
 
   try {
-    const res = await fetch(`${API_URL}/community`, {
+    const res = await authFetch(`${API_URL}/community`, {
       method:      "POST",
       credentials: "include",
       headers:     { "Content-Type": "application/json" },
@@ -363,7 +363,7 @@ const submit = async () => {
   const deletePost = async (id) => {
     if (!window.confirm("Delete this post?")) return;
     try {
-      const res = await fetch(`${API_URL}/community/${id}`, {
+      const res = await authFetch(`${API_URL}/community/${id}`, {
         method: "DELETE", credentials: "include",
       });
       if (!res.ok) throw new Error();
