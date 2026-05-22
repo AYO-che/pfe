@@ -1,7 +1,7 @@
 import express from "express";
 import passport from "../passport.js";
 import { authenticateToken } from "../middleware/checkAuth.js";
-import { authorizeRoles } from "../middleware/checkroles.js";
+import { authorizeRoles } from "../middleware/checkRoles.js";
 import upload from "../middleware/upload.js";
 import prisma from "../prismaClient.js";
 import axios from "axios";
