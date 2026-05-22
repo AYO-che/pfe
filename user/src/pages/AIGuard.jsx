@@ -1,4 +1,4 @@
-import { authFetch } from "../../context/Authcontext";
+import { authFetch } from "../context/Authcontext";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
