@@ -52,7 +52,7 @@ import OurSpecialists from "./pages/OurSpecialists";
 import AIPremiumPage from "./pages/AIPremiumPage";
 import Planspage from "./pages/Planspage";
 import SpecialistPlansPage from "./pages/SpecialistPlansPage";
-import ForgotPassword from "./pages/ForgotPassword";
+import ForgotPassword from "./pages/Forgotpassword";
 import ResetPassword  from "./pages/ResetPassword";
 // --- OTHER ---
 import MobileScan from "./pages/MobileScan";
