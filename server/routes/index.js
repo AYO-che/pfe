@@ -1,6 +1,6 @@
 import express from "express";
 import passport from "../passport.js";
-import { authenticateToken } from "../middleware/checkauth.js";
+import { authenticateToken } from "../middleware/checkAuth.js";
 import { authorizeRoles } from "../middleware/checkroles.js";
 import upload from "../middleware/upload.js";
 import prisma from "../prismaClient.js";
