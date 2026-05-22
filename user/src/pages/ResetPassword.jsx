@@ -25,7 +25,7 @@ export default function ResetPassword() {
     setError("");
 
     try {
-      const res = await fetch("https://chrysalise-server.onrender.com/reset-password", {
+      const res = await authFetch("https://chrysalise-server.onrender.com/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword: password }),

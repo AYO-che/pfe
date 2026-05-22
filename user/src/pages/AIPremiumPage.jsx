@@ -326,7 +326,7 @@ export default function AIPremiumPage() {
   useEffect(() => {
     (async () => {
       try {
-        const offersRes = await fetch(
+        const offersRes = await authFetch(
           "https://chrysalise-server.onrender.com/offers/ai-calories",
           { credentials: "include" }
         );
@@ -342,7 +342,7 @@ export default function AIPremiumPage() {
 
         if (!isLoggedIn) return;
 
-        const subRes  = await fetch("https://chrysalise-server.onrender.com/subscriptions/mine", { credentials: "include" });
+        const subRes  = await authFetch("https://chrysalise-server.onrender.com/subscriptions/mine", { credentials: "include" });
         const subData = await subRes.json();
         const subs    = subData.subscriptions ?? [];
         const now     = new Date();
@@ -376,7 +376,7 @@ export default function AIPremiumPage() {
     setError(null);
     setLoadingId(plan.offerId);
     try {
-      const res  = await fetch("https://chrysalise-server.onrender.com/subscriptions", {
+      const res  = await authFetch("https://chrysalise-server.onrender.com/subscriptions", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ offerId: plan.offerId }),

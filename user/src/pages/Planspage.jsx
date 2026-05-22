@@ -355,7 +355,7 @@ export default function PlansPage() {
     (async () => {
       try {
         setLoading(true); setError(null);
-        const res = await fetch("/plans", { signal: controller.signal });
+        const res = await authFetch("/plans", { signal: controller.signal });
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         const data = await res.json();
         setPlans((data.plans ?? []).map(mapPlan));

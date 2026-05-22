@@ -282,13 +282,13 @@ export default function ProfileInfoPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch(`https://chrysalise-server.onrender.com/users/${user.id}`, {
+      await authFetch(`https://chrysalise-server.onrender.com/users/${user.id}`, {
         method: "PATCH", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firstName: form.firstName, lastName: form.lastName }),
       });
 
-      const res = await fetch("https://chrysalise-server.onrender.com/profile", {
+      const res = await authFetch("https://chrysalise-server.onrender.com/profile", {
         method:      !user?.profile ? "POST" : "PATCH",
         credentials: "include",
         headers:     { "Content-Type": "application/json" },
@@ -320,7 +320,7 @@ export default function ProfileInfoPage() {
     if (pwdForm.newPassword.length < 6) { setPwdError("Password must be at least 6 characters."); return; }
     setPwdSaving(true);
     try {
-      const res = await fetch("https://chrysalise-server.onrender.com/change-password", {
+      const res = await authFetch("https://chrysalise-server.onrender.com/change-password", {
         method: "PATCH", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newPassword: pwdForm.newPassword }),

@@ -55,7 +55,7 @@ export function ContactModal({ onClose, currentUser }) {
 
   const loadExisting = async (id, isInitial) => {
     try {
-      const res = await fetch(`${BASE_URL}/inquiries/${id}`);
+      const res = await authFetch(`${BASE_URL}/inquiries/${id}`);
       if (!res.ok) {
         localStorage.removeItem(STORAGE_KEY);
         setMessages([{ sender:"bot", text:"Hello 👋 How can we help you today?", id:"init" }]);
@@ -85,7 +85,7 @@ export function ContactModal({ onClose, currentUser }) {
   const sendFirst = async (text) => {
     setSending(true);
     try {
-      const res = await fetch(`${BASE_URL}/inquiries`, {
+      const res = await authFetch(`${BASE_URL}/inquiries`, {
         method:"POST", headers:{ "Content-Type":"application/json" }, credentials:"include",
         body: JSON.stringify({ name:nameVal, email:emailVal, message:text }),
       });

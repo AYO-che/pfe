@@ -303,7 +303,7 @@ export default function CaloriesAI() {
       const formData = new FormData();
       formData.append("image", blob, "meal.jpg");
 
-      const response = await fetch("http://localhost:5001/analyze", {
+      const response = await authFetch("http://localhost:5001/analyze", {
         method: "POST",
         body: formData,
       });

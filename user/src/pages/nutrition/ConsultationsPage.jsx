@@ -254,7 +254,7 @@ function BookModal({ session, onClose, onBooked }) {
     const slotHour    = parseInt(selSlot.key.split("_")[1], 10);
     const sessionDate = new Date(`${selDate}T${String(slotHour).padStart(2,"00")}:00:00`).toISOString();
     try {
-      const res  = await fetch(`https://chrysalise-server.onrender.com/sessions/${session.id}/schedule`, {
+      const res  = await authFetch(`https://chrysalise-server.onrender.com/sessions/${session.id}/schedule`, {
         method: "PATCH", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionDate }),
