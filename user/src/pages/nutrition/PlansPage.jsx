@@ -19,10 +19,11 @@ export default function PlanPage() {
   const [subscriptions,  setSubscriptions]  = useState([]);
   const [selectedClient, setSelectedClient] = useState("");
   const [fileName,       setFileName]       = useState("");
+  const [existingPlan,   setExistingPlan]   = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    fetch(`${API_URL}/subscriptions/nutrition`, { credentials:"include" })
+    authFetch(`${API_URL}/subscriptions/nutrition`, { credentials:"include" })
       .then(r => r.json())
       .then(data => {
         const subs = data.subscriptions ?? [];
@@ -38,14 +39,44 @@ export default function PlanPage() {
     if (file) { setPdfPlan({ ...pdfPlan, pdfFile:file }); setFileName(file.name); }
   };
 
-  const handleClientSelect = (subId) => {
+  const handleClientSelect = async (subId) => {
     const sub = subscriptions.find(s => s.id === subId);
     setSelectedClient(subId);
     setTrackerPlan(prev => ({
       ...prev,
-      clientId:       sub?.patient?.id || "",
-      subscriptionId: sub?.id         || "",
+      clientId: sub?.patient?.id || "",
+      subscriptionId: sub?.id || "",
     }));
+
+    if (sub?.patient?.id) {
+      try {
+        const res = await authFetch(`${API_URL}/plans/patient/${sub.patient.id}`);
+        const data = await res.json();
+        const plans = data.plans ?? [];
+        const trackerPlans = plans.filter(p => p.isPrivate && p.content?.days);
+
+        if (trackerPlans.length > 0) {
+          const latest = trackerPlans[0];
+          const existingDays = latest.content.days ?? [];
+          const nextDayNumber = existingDays.length + 1;
+          setExistingPlan(latest);
+          setTrackerPlan(prev => ({
+            ...prev,
+            title: latest.title,
+            totalDays: latest.content.totalDays ?? "",
+            days: [{
+              dayNumber: nextDayNumber,
+              meals: [{ ...emptyMeal }],
+              habits: [{ ...emptyHabit }],
+            }],
+          }));
+        } else {
+          setExistingPlan(null);
+        }
+      } catch {
+        setExistingPlan(null);
+      }
+    }
   };
 
   const updateDay = (dayIndex, updater) => {
@@ -56,14 +87,24 @@ export default function PlanPage() {
     });
   };
 
-  const addDay    = () => setTrackerPlan(prev => ({
+  const addDay = () => setTrackerPlan(prev => ({
     ...prev,
-    days: [...prev.days, { dayNumber: prev.days.length + 1, meals:[{ ...emptyMeal }], habits:[{ ...emptyHabit }] }],
+    days: [...prev.days, {
+      dayNumber: existingPlan
+        ? existingPlan.content.days.length + prev.days.length + 1
+        : prev.days.length + 1,
+      meals: [{ ...emptyMeal }],
+      habits: [{ ...emptyHabit }],
+    }],
   }));
-  const removeDay = (i) => setTrackerPlan(prev => ({
-    ...prev,
-    days: prev.days.filter((_,idx) => idx !== i).map((d,idx) => ({ ...d, dayNumber:idx+1 })),
-  }));
+
+  const removeDay = (i) => setTrackerPlan(prev => {
+    const base = existingPlan ? existingPlan.content.days.length : 0;
+    return {
+      ...prev,
+      days: prev.days.filter((_,idx) => idx !== i).map((d,idx) => ({ ...d, dayNumber: base + idx + 1 })),
+    };
+  });
 
   const addMeal    = (di) => updateDay(di, d => ({ ...d, meals:[...d.meals, { ...emptyMeal }] }));
   const removeMeal = (di, mi) => updateDay(di, d => ({ ...d, meals:d.meals.filter((_,i) => i !== mi) }));
@@ -92,58 +133,74 @@ export default function PlanPage() {
       fd.append("pdfFile", pdfPlan.pdfFile);
       res = await authFetch(`${API_URL}/plans`, { method:"POST", credentials:"include", body:fd });
     } else {
-      if (!trackerPlan.title)                                     { alert("Enter a plan title"); return; }
-      if (!trackerPlan.clientId || !trackerPlan.subscriptionId)  { alert("Select a subscribed client"); return; }
+      if (!trackerPlan.title) { alert("Enter a plan title"); return; }
+      if (!trackerPlan.clientId || !trackerPlan.subscriptionId) { alert("Select a subscribed client"); return; }
       if (!trackerPlan.totalDays || Number(trackerPlan.totalDays) < 1) { alert("Enter the total plan duration in days"); return; }
 
       const totalDays = Number(trackerPlan.totalDays);
-      const startDate = new Date();
 
-      const content = {
-        totalDays, // ← saved here so client can read it
-        days: trackerPlan.days.map((day, index) => {
-          const date = new Date(startDate);
-          date.setDate(startDate.getDate() + index);
-          return {
-            dayNumber:   day.dayNumber,
-            date:        date.toISOString().split("T")[0],
-            meals:  day.meals.filter(m => m.name.trim() !== "").map(m => ({
-              name:        m.name,
-              time:        m.time        || null,
-              description: m.description || null,
-              calories:    m.calories    ? Number(m.calories) : null,
-              protein:     m.protein     ? Number(m.protein)  : null,
-              carbs:       m.carbs       ? Number(m.carbs)    : null,
-              fat:         m.fat         ? Number(m.fat)      : null,
-            })),
-            habits: day.habits.filter(h => h.name.trim() !== "").map(h => ({
-              name:        h.name,
-              description: h.description || null,
-            })),
-          };
-        }),
-      };
+      let startDate = new Date();
+      if (existingPlan && existingPlan.content.days.length > 0) {
+        const lastDay = existingPlan.content.days[existingPlan.content.days.length - 1];
+        startDate = new Date(lastDay.date);
+        startDate.setDate(startDate.getDate() + 1);
+      }
 
-      res = await authFetch(`${API_URL}/plans/assign`, {
-        method:"POST", credentials:"include",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({
-          patientId:         trackerPlan.clientId,
-          subscriptionId:    trackerPlan.subscriptionId,
-          title:             trackerPlan.title,
-          content,
-          offerDurationDays: totalDays,
-        }),
+      const newDays = trackerPlan.days.map((day, index) => {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + index);
+        return {
+          dayNumber: day.dayNumber,
+          date: date.toISOString().split("T")[0],
+          meals: day.meals.filter(m => m.name.trim() !== "").map(m => ({
+            name: m.name,
+            time: m.time || null,
+            description: m.description || null,
+            calories: m.calories ? Number(m.calories) : null,
+            protein: m.protein ? Number(m.protein) : null,
+            carbs: m.carbs ? Number(m.carbs) : null,
+            fat: m.fat ? Number(m.fat) : null,
+          })),
+          habits: day.habits.filter(h => h.name.trim() !== "").map(h => ({
+            name: h.name,
+            description: h.description || null,
+          })),
+        };
       });
+
+      if (existingPlan) {
+        const updatedDays = [...existingPlan.content.days, ...newDays];
+        const updatedContent = { ...existingPlan.content, days: updatedDays };
+        res = await authFetch(`${API_URL}/plans/${existingPlan.id}`, {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: updatedContent }),
+        });
+      } else {
+        const content = { totalDays, days: newDays };
+        res = await authFetch(`${API_URL}/plans/assign`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patientId: trackerPlan.clientId,
+            subscriptionId: trackerPlan.subscriptionId,
+            title: trackerPlan.title,
+            content,
+            offerDurationDays: totalDays,
+          }),
+        });
+      }
     }
 
     const ct   = res.headers.get("content-type");
     const data = ct?.includes("application/json") ? await res.json() : {};
     if (!res.ok) { alert(data.message || `Error ${res.status}`); }
     else {
-      alert("Plan created successfully!");
+      alert(existingPlan ? "Day(s) added to existing plan!" : "Plan created successfully!");
       setPdfPlan(emptyPDF); setTrackerPlan(emptyTracker);
-      setFileName(""); setSelectedClient("");
+      setFileName(""); setSelectedClient(""); setExistingPlan(null);
     }
   };
 
@@ -152,139 +209,69 @@ export default function PlanPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-
-        .plan-page { min-height:100vh; background:#e8f5ef; padding:40px 20px 60px;   font-family: 'Inter', sans-serif; position:relative; overflow:hidden; }
+        .plan-page { min-height:100vh; background:#e8f5ef; padding:40px 20px 60px; font-family:'Inter',sans-serif; position:relative; overflow:hidden; }
         .plan-page::before { content:''; position:fixed; top:-120px; right:-120px; width:400px; height:400px; background:radial-gradient(circle,rgba(11,102,48,0.15) 0%,transparent 70%); border-radius:50%; pointer-events:none; }
-        .plan-page::after  { content:''; position:fixed; bottom:-100px; left:-100px; width:350px; height:350px; background:radial-gradient(circle,rgba(26,51,41,0.1) 0%,transparent 70%); border-radius:50%; pointer-events:none; }
-
+        .plan-page::after { content:''; position:fixed; bottom:-100px; left:-100px; width:350px; height:350px; background:radial-gradient(circle,rgba(26,51,41,0.1) 0%,transparent 70%); border-radius:50%; pointer-events:none; }
         .plan-container { max-width:700px; margin:0 auto; position:relative; z-index:1; }
         .plan-header { margin-bottom:32px; }
         .plan-eyebrow { font-size:11px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; color:rgba(26,51,41,0.45); margin-bottom:8px; }
-        .plan-h1 {   font-family: 'Inter', sans-serif; font-size:36px; font-weight:800; color:#1a3329; line-height:1.1; }
+        .plan-h1 { font-family:'Inter',sans-serif; font-size:36px; font-weight:800; color:#1a3329; line-height:1.1; }
         .plan-h1 span { color:#0b6630; }
-
-        .switch-box { display:flex; gap:5px; padding:5px; border-radius:16px; margin-bottom:24px;
-          background:rgba(255,255,255,0.55); backdrop-filter:blur(16px);
-          border-top:1.5px solid rgba(168,224,44,0.7); border-left:1.5px solid rgba(168,224,44,0.7);
-          border-bottom:1.5px solid rgba(0,168,84,0.6); border-right:1.5px solid rgba(0,168,84,0.6);
-          box-shadow:0 4px 20px rgba(15,89,47,0.1), inset 0 0 8px rgba(255,255,255,0.5);
-        }
-        .switch-btn { flex:1; padding:11px 16px; border:none; border-radius:12px; background:transparent; cursor:pointer;   font-family: 'Inter', sans-serif; font-size:14px; font-weight:700; color:rgba(26,51,41,0.5); transition:all 0.22s; display:flex; align-items:center; justify-content:center; gap:8px; }
-        .switch-btn:hover  { color:#1a3329; background:rgba(255,255,255,0.5); }
+        .switch-box { display:flex; gap:5px; padding:5px; border-radius:16px; margin-bottom:24px; background:rgba(255,255,255,0.55); backdrop-filter:blur(16px); border-top:1.5px solid rgba(168,224,44,0.7); border-left:1.5px solid rgba(168,224,44,0.7); border-bottom:1.5px solid rgba(0,168,84,0.6); border-right:1.5px solid rgba(0,168,84,0.6); box-shadow:0 4px 20px rgba(15,89,47,0.1),inset 0 0 8px rgba(255,255,255,0.5); }
+        .switch-btn { flex:1; padding:11px 16px; border:none; border-radius:12px; background:transparent; cursor:pointer; font-family:'Inter',sans-serif; font-size:14px; font-weight:700; color:rgba(26,51,41,0.5); transition:all 0.22s; display:flex; align-items:center; justify-content:center; gap:8px; }
+        .switch-btn:hover { color:#1a3329; background:rgba(255,255,255,0.5); }
         .switch-btn.active { background:#0b6630; color:#a8e02c; box-shadow:0 4px 14px rgba(11,102,48,0.3); }
-
-        .glass-card { background:rgba(255,255,255,0.22); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
-          border-top:1.5px solid rgba(168,224,44,0.85); border-left:1.5px solid rgba(168,224,44,0.85);
-          border-bottom:1.5px solid rgba(0,168,84,0.75); border-right:1.5px solid rgba(0,168,84,0.75);
-          border-radius:22px; padding:28px;
-          box-shadow:0 8px 32px rgba(15,89,47,0.1), inset 0 0 12px rgba(255,255,255,0.5);
-          margin-bottom:20px;
-        }
-        .card-title { f  font-family: 'Inter', sans-serif; font-size:20px; font-weight:800; color:#1a3329; margin-bottom:22px; display:flex; align-items:center; gap:10px; }
+        .glass-card { background:rgba(255,255,255,0.22); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); border-top:1.5px solid rgba(168,224,44,0.85); border-left:1.5px solid rgba(168,224,44,0.85); border-bottom:1.5px solid rgba(0,168,84,0.75); border-right:1.5px solid rgba(0,168,84,0.75); border-radius:22px; padding:28px; box-shadow:0 8px 32px rgba(15,89,47,0.1),inset 0 0 12px rgba(255,255,255,0.5); margin-bottom:20px; }
+        .card-title { font-family:'Inter',sans-serif; font-size:20px; font-weight:800; color:#1a3329; margin-bottom:22px; display:flex; align-items:center; gap:10px; }
         .card-title::after { content:''; flex:1; height:1px; background:linear-gradient(to right,rgba(0,168,84,0.3),transparent); }
-
-        /* ── Total days highlight box ── */
-        .total-days-box {
-          background: rgba(11,102,48,0.07);
-          border: 1.5px solid rgba(168,224,44,0.4);
-          border-radius: 14px;
-          padding: 16px 18px;
-          margin-bottom: 16px;
-          display: flex;
-          align-items: center;
-          gap: 14px;
-        }
-        .total-days-icon {
-          width: 40px; height: 40px; border-radius: 11px;
-          background: #0b6630;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 18px; flex-shrink: 0;
-        }
-        .total-days-label { font-size: 12px; font-weight: 700; color: #5a7a6e; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.8px; }
-        .total-days-input {
-          width: 100%; padding: 8px 12px;
-          border: 1.5px solid rgba(0,168,84,0.25);
-          border-radius: 9px;
-          background: rgba(255,255,255,0.5);
-          font-family: 'Inter', sans-serif;
-          font-size: 18px; font-weight: 800; color: #0b6630;
-          outline: none; transition: all 0.2s;
-          max-width: 120px;
-        }
-        .total-days-input:focus { border-color: rgba(168,224,44,0.7); background: rgba(255,255,255,0.8); }
-        .total-days-hint { font-size: 11.5px; color: #5a7a6e; margin-top: 3px; line-height: 1.4; }
-
+        .total-days-box { background:rgba(11,102,48,0.07); border:1.5px solid rgba(168,224,44,0.4); border-radius:14px; padding:16px 18px; margin-bottom:16px; display:flex; align-items:center; gap:14px; }
+        .total-days-icon { width:40px; height:40px; border-radius:11px; background:#0b6630; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+        .total-days-label { font-size:12px; font-weight:700; color:#5a7a6e; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.8px; }
+        .total-days-input { width:100%; padding:8px 12px; border:1.5px solid rgba(0,168,84,0.25); border-radius:9px; background:rgba(255,255,255,0.5); font-family:'Inter',sans-serif; font-size:18px; font-weight:800; color:#0b6630; outline:none; transition:all 0.2s; max-width:120px; }
+        .total-days-input:focus { border-color:rgba(168,224,44,0.7); background:rgba(255,255,255,0.8); }
+        .total-days-hint { font-size:11.5px; color:#5a7a6e; margin-top:3px; line-height:1.4; }
         .field-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
         .field-grid-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:10px; }
         .field-wrap { display:flex; flex-direction:column; gap:5px; }
         .field-label { font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:#5a7a6e; }
-
-        .plan-input, .plan-select, .plan-textarea {
-          width:100%; padding:10px 13px;
-          border:1.5px solid rgba(0,168,84,0.22);
-          border-radius:11px;
-          background:rgba(255,255,255,0.4); backdrop-filter:blur(8px);
-            font-family: 'Inter', sans-serif; font-size:13.5px; color:#1a3329;
-          outline:none; transition:all 0.2s; appearance:none;
-        }
-        .plan-input::placeholder, .plan-textarea::placeholder { color:rgba(26,51,41,0.3); }
-        .plan-input:focus, .plan-select:focus, .plan-textarea:focus {
-          border-color:rgba(168,224,44,0.7); background:rgba(255,255,255,0.65);
-        }
+        .plan-input,.plan-select,.plan-textarea { width:100%; padding:10px 13px; border:1.5px solid rgba(0,168,84,0.22); border-radius:11px; background:rgba(255,255,255,0.4); backdrop-filter:blur(8px); font-family:'Inter',sans-serif; font-size:13.5px; color:#1a3329; outline:none; transition:all 0.2s; appearance:none; }
+        .plan-input::placeholder,.plan-textarea::placeholder { color:rgba(26,51,41,0.3); }
+        .plan-input:focus,.plan-select:focus,.plan-textarea:focus { border-color:rgba(168,224,44,0.7); background:rgba(255,255,255,0.65); }
         .plan-textarea { min-height:80px; resize:vertical; }
         .plan-select { cursor:pointer; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230b6630' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 13px center; padding-right:34px; }
-
         .file-upload-zone { width:100%; padding:18px 16px; border:2px dashed rgba(0,168,84,0.3); border-radius:12px; background:rgba(255,255,255,0.3); cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:12px; position:relative; }
-        .file-upload-zone:hover, .file-upload-zone.has-file { border-color:rgba(168,224,44,0.7); background:rgba(255,255,255,0.5); }
+        .file-upload-zone:hover,.file-upload-zone.has-file { border-color:rgba(168,224,44,0.7); background:rgba(255,255,255,0.5); }
         .file-input-hidden { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
         .file-upload-title { font-size:13px; font-weight:600; color:#1a3329; margin-bottom:2px; }
-        .file-upload-sub   { font-size:11px; color:#5a7a6e; }
+        .file-upload-sub { font-size:11px; color:#5a7a6e; }
         .file-badge { font-size:10.5px; font-weight:700; background:#0b6630; color:#a8e02c; padding:3px 10px; border-radius:20px; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
         .section-divider { display:flex; align-items:center; gap:12px; margin:22px 0 16px; color:#5a7a6e; font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
-        .section-divider::before, .section-divider::after { content:''; flex:1; height:1px; background:rgba(0,168,84,0.2); }
-
-        /* Day cards info bar */
-        .day-info-bar {
-          background: rgba(168,224,44,0.08);
-          border: 1px solid rgba(168,224,44,0.25);
-          border-radius: 10px;
-          padding: 8px 14px;
-          font-size: 12px; font-weight: 600; color: #5a7a6e;
-          margin-bottom: 14px;
-        }
-        .day-info-bar strong { color: #0b6630; }
-
+        .section-divider::before,.section-divider::after { content:''; flex:1; height:1px; background:rgba(0,168,84,0.2); }
+        .day-info-bar { background:rgba(168,224,44,0.08); border:1px solid rgba(168,224,44,0.25); border-radius:10px; padding:8px 14px; font-size:12px; font-weight:600; color:#5a7a6e; margin-bottom:14px; }
+        .day-info-bar strong { color:#0b6630; }
+        .existing-plan-box { margin-top:8px; padding:12px 16px; background:rgba(11,102,48,0.08); border-radius:11px; border:1px solid rgba(0,168,84,0.25); }
         .day-card { background:rgba(255,255,255,0.28); backdrop-filter:blur(10px); border:1px solid rgba(0,168,84,0.18); border-radius:16px; padding:18px; margin-bottom:12px; transition:border-color 0.2s; }
         .day-card:hover { border-color:rgba(168,224,44,0.5); }
         .day-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
         .day-badge { display:inline-flex; align-items:center; gap:6px; background:#0b6630; color:#a8e02c; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:4px 13px; border-radius:20px; }
-
-        .btn-remove-day { background:rgba(192,57,43,0.1); border:1px solid rgba(192,57,43,0.2); border-radius:9px; padding:5px 12px; font-size:11.5px; font-weight:700; color:#c0392b; cursor:pointer;   font-family: 'Inter', sans-serif; transition:all 0.2s; }
+        .btn-remove-day { background:rgba(192,57,43,0.1); border:1px solid rgba(192,57,43,0.2); border-radius:9px; padding:5px 12px; font-size:11.5px; font-weight:700; color:#c0392b; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
         .btn-remove-day:hover { background:rgba(192,57,43,0.2); }
         .btn-remove-small { width:32px; height:32px; background:rgba(192,57,43,0.1); border:1px solid rgba(192,57,43,0.15); border-radius:8px; cursor:pointer; font-size:13px; color:#c0392b; display:flex; align-items:center; justify-content:center; transition:all 0.18s; flex-shrink:0; }
         .btn-remove-small:hover { background:rgba(192,57,43,0.2); }
-
-        .btn-add-small { padding:6px 14px; background:rgba(255,255,255,0.4); border:1.5px dashed rgba(0,168,84,0.35); border-radius:9px; cursor:pointer;   font-family: 'Inter', sans-serif; font-size:12px; font-weight:700; color:#0b6630; transition:all 0.2s; margin-top:6px; }
+        .btn-add-small { padding:6px 14px; background:rgba(255,255,255,0.4); border:1.5px dashed rgba(0,168,84,0.35); border-radius:9px; cursor:pointer; font-family:'Inter',sans-serif; font-size:12px; font-weight:700; color:#0b6630; transition:all 0.2s; margin-top:6px; }
         .btn-add-small:hover { background:rgba(255,255,255,0.7); border-color:rgba(168,224,44,0.6); }
-        .btn-add-day { width:100%; padding:11px; background:rgba(255,255,255,0.3); border:1.5px dashed rgba(0,168,84,0.3); border-radius:13px; cursor:pointer;   font-family: 'Inter', sans-serif; font-size:13px; font-weight:700; color:#0b6630; transition:all 0.2s; }
+        .btn-add-day { width:100%; padding:11px; background:rgba(255,255,255,0.3); border:1.5px dashed rgba(0,168,84,0.3); border-radius:13px; cursor:pointer; font-family:'Inter',sans-serif; font-size:13px; font-weight:700; color:#0b6630; transition:all 0.2s; }
         .btn-add-day:hover { background:rgba(255,255,255,0.55); border-color:rgba(168,224,44,0.6); }
-
         .meal-block { background:rgba(255,255,255,0.3); border-radius:12px; padding:12px 14px; margin-bottom:10px; border:1px solid rgba(0,168,84,0.1); }
         .meal-block-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
         .meal-block-title { font-size:12px; font-weight:700; color:#5a7a6e; text-transform:uppercase; letter-spacing:0.8px; }
-
         .client-info { background:rgba(11,102,48,0.08); border-radius:11px; padding:11px 15px; margin-top:8px; border:1px solid rgba(0,168,84,0.18); }
         .client-info-label { font-size:10.5px; font-weight:700; color:#5a7a6e; text-transform:uppercase; letter-spacing:1px; margin-bottom:3px; }
         .client-info-value { font-size:13.5px; font-weight:700; color:#1a3329; }
-
-        .btn-submit { width:100%; padding:15px; background:#0b6630; color:#a8e02c; border:none; border-radius:16px; cursor:pointer;   font-family: 'Inter', sans-serif;
- font-size:16px; font-weight:800; box-shadow:0 6px 24px rgba(11,102,48,0.3); transition:all 0.22s; }
+        .btn-submit { width:100%; padding:15px; background:#0b6630; color:#a8e02c; border:none; border-radius:16px; cursor:pointer; font-family:'Inter',sans-serif; font-size:16px; font-weight:800; box-shadow:0 6px 24px rgba(11,102,48,0.3); transition:all 0.22s; }
         .btn-submit:hover { background:#0d7a38; transform:translateY(-2px); box-shadow:0 10px 32px rgba(11,102,48,0.4); }
         .btn-submit:active { transform:translateY(0); }
-
-        .warn-box { margin-top:8px; padding:10px 14px; background:rgba(184,162,0,0.1); border-radius:9px; border:1px solid rgba(184,162,0,0.25); font-size:12px; color:#8a7200;   font-family: 'Inter', sans-serif;
- }
+        .warn-box { margin-top:8px; padding:10px 14px; background:rgba(184,162,0,0.1); border-radius:9px; border:1px solid rgba(184,162,0,0.25); font-size:12px; color:#8a7200; font-family:'Inter',sans-serif; }
       `}</style>
 
       <div className="plan-page">
@@ -345,7 +332,6 @@ export default function PlanPage() {
             <div className="glass-card">
               <h2 className="card-title">📅 Tracker Plan</h2>
 
-              {/* Client select */}
               <div className="field-wrap" style={{ marginBottom:16 }}>
                 <label className="field-label">👤 Select Package Client</label>
                 <select className="plan-select" value={selectedClient} onChange={e => handleClientSelect(e.target.value)}>
@@ -368,15 +354,24 @@ export default function PlanPage() {
                     </div>
                   </div>
                 )}
+                {existingPlan && (
+                  <div className="existing-plan-box">
+                    <div style={{ fontSize:11, fontWeight:700, color:"#5a7a6e", textTransform:"uppercase", letterSpacing:1, marginBottom:3 }}>📋 Existing Plan Found</div>
+                    <div style={{ fontSize:13.5, fontWeight:700, color:"#0b6630" }}>
+                      {existingPlan.title} — {existingPlan.content.days.length} days added so far
+                    </div>
+                    <div style={{ fontSize:12, color:"#5a7a6e", marginTop:2 }}>
+                      New days will be appended starting from Day {existingPlan.content.days.length + 1}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Plan title */}
               <div className="field-wrap" style={{ marginBottom:16 }}>
                 <label className="field-label">Plan Title</label>
                 <input className="plan-input" placeholder="e.g. 20-Day Weight Loss Tracker" value={trackerPlan.title} onChange={e => setTrackerPlan({...trackerPlan,title:e.target.value})} />
               </div>
 
-              {/* ── Total duration — the key new field ── */}
               <div className="total-days-box">
                 <div className="total-days-icon">📆</div>
                 <div style={{ flex:1 }}>
@@ -384,10 +379,7 @@ export default function PlanPage() {
                   <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:4 }}>
                     <input
                       className="total-days-input"
-                      type="number"
-                      min="1"
-                      max="365"
-                      placeholder="20"
+                      type="number" min="1" max="365" placeholder="20"
                       value={trackerPlan.totalDays}
                       onChange={e => setTrackerPlan({...trackerPlan, totalDays: e.target.value})}
                     />
@@ -395,24 +387,21 @@ export default function PlanPage() {
                   </div>
                   <div className="total-days-hint">
                     The client will see <strong>"Day X of {trackerPlan.totalDays || "?"}"</strong> each day.
-                    You only need to fill in the unique day patterns below — they will cycle automatically.
                   </div>
                 </div>
               </div>
 
               <div className="section-divider">Daily Schedule</div>
 
-              {/* Info bar showing cycle info */}
               {trackerPlan.totalDays && trackerPlan.days.length > 0 && (
                 <div className="day-info-bar">
-                  You've added <strong>{trackerPlan.days.length}</strong> day pattern{trackerPlan.days.length > 1 ? "s" : ""} for a <strong>{trackerPlan.totalDays}-day</strong> plan.
-                  {Number(trackerPlan.totalDays) > trackerPlan.days.length
-                    ? ` Days will cycle every ${trackerPlan.days.length} day${trackerPlan.days.length > 1 ? "s" : ""}.`
-                    : " Each day has a unique meal plan."}
+                  Adding <strong>{trackerPlan.days.length}</strong> new day{trackerPlan.days.length > 1 ? "s" : ""}.
+                  {existingPlan
+                    ? ` Plan will have ${existingPlan.content.days.length + trackerPlan.days.length} days total.`
+                    : ` For a ${trackerPlan.totalDays}-day plan.`}
                 </div>
               )}
 
-              {/* Days */}
               {trackerPlan.days.map((day, di) => (
                 <div key={di} className="day-card">
                   <div className="day-header">
@@ -422,7 +411,6 @@ export default function PlanPage() {
                     )}
                   </div>
 
-                  {/* Meals */}
                   <div style={{ marginBottom:14 }}>
                     <div style={{ fontSize:11, fontWeight:700, color:"#5a7a6e", textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>🍽 Meals</div>
                     {day.meals.map((meal, mi) => (
@@ -470,7 +458,6 @@ export default function PlanPage() {
                     <button className="btn-add-small" onClick={() => addMeal(di)}>+ Add Meal</button>
                   </div>
 
-                  {/* Habits */}
                   <div>
                     <div style={{ fontSize:11, fontWeight:700, color:"#5a7a6e", textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>✅ Habits</div>
                     {day.habits.map((habit, hi) => (
@@ -501,10 +488,11 @@ export default function PlanPage() {
             </div>
           )}
 
-          <button className="btn-submit" onClick={handleSubmit}>Create Plan →</button>
+          <button className="btn-submit" onClick={handleSubmit}>
+            {existingPlan ? "Add Days to Plan →" : "Create Plan →"}
+          </button>
         </div>
       </div>
     </>
   );
 }
-
