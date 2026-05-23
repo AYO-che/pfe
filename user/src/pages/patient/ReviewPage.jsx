@@ -241,7 +241,7 @@ export default function ReviewPage() {
     if (!selected) { setError("Please select a nutritionist."); return; }
     setSubmitting(true); setError("");
     try {
-      const res  = await authauthFetch(`${API_URL}/nutritionists/${selected.nutritionist.id}/review`, {
+      const res  = await authFetch(`${API_URL}/nutritionists/${selected.nutritionist.id}/review`, {
         method:"POST", credentials:"include",
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ rating, comment }),
