@@ -1,4 +1,4 @@
-import { authFetch } from "../../context/Authcontext";
+import { authFetch } from "../context/Authcontext";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import logo from "../assets/logo.jpg";

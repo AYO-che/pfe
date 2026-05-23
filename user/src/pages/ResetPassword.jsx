@@ -1,4 +1,4 @@
-import { authFetch } from "../../context/Authcontext";
+import { authFetch } from "../context/Authcontext";
 import { useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 
