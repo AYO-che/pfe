@@ -245,7 +245,7 @@ function BookModal({ session, onClose, onBooked }) {
   useEffect(() => {
     if (!session?.nutritionId) return;
     setLoadingSlots(true);
-    fetch(`https://chrysalise-server.onrender.com/sessions/occupied/${session.nutritionId}?date=${selDate}`, { credentials: "include" })
+    authFetch(`https://chrysalise-server.onrender.com/sessions/occupied/${session.nutritionId}?date=${selDate}`, { credentials: "include" })
       .then(r => r.json())
       .then(data => setBookedKeys(
         (data.occupiedSlots ?? []).map(s => {
@@ -265,7 +265,7 @@ function BookModal({ session, onClose, onBooked }) {
     const slotHour    = parseInt(selSlot.key.split("_")[1], 10);
     const sessionDate = new Date(`${selDate}T${String(slotHour).padStart(2,"0")}:00:00`).toISOString();
     try {
-      const res  = await authFetch(`https://chrysalise-server.onrender.com/sessions/${session.id}/schedule`, {
+      const res  = await authauthFetch(`https://chrysalise-server.onrender.com/sessions/${session.id}/schedule`, {
         method: "PATCH", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionDate }),
@@ -411,7 +411,7 @@ export default function SessionsPage() {
   };
 
   useEffect(() => {
-    fetch("https://chrysalise-server.onrender.com/sessions/mine", { credentials: "include" })
+    authFetch("https://chrysalise-server.onrender.com/sessions/mine", { credentials: "include" })
       .then(r => r.json())
       .then(data => setSessions(data.sessions ?? []))
       .catch(() => setSessions([]))
