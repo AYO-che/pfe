@@ -1,4 +1,4 @@
-import { authFetch } from "../../../context/Authcontext";
+import { authFetch } from "../../context/Authcontext";
 // StripeRedirect.jsx
 import { useEffect } from "react";
 
