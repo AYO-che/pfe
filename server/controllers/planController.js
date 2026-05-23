@@ -382,6 +382,7 @@ export const assignPlanToPatient = async (req, res) => {
           price: 0,
           durationDays: offerDurationDays ?? 30,
           isActive: true,
+          isDeleted: false,
         },
       });
 
@@ -456,3 +457,4 @@ export const getPatientPlans = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
