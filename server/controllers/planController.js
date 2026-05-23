@@ -131,6 +131,7 @@ export const createPlan = async (req, res) => {
           durationDays: parseInt(offerDurationDays),
           hasFreeTrial: hasFreeTrial === "true",
           isActive: true,
+          isDeleted: false,
         },
       });
 
@@ -457,4 +458,5 @@ export const getPatientPlans = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
