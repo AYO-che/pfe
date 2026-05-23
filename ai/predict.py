@@ -4,17 +4,13 @@ import cv2
 import numpy as np
 import base64
 
-# ── Load model ────────────────────────────────────────────────
 model = YOLO("best.pt")
 
-# ── Load nutrition data ───────────────────────────────────────
 with open("nutrition_lookup.json", "r") as f:
     nutrition_lookup = json.load(f)
 
-# ── Use model's real class names ──────────────────────────────
 CLASS_NAMES = model.names
 
-# ── Name mapping for mismatches between YOLO and nutrition DB ─
 NAME_MAP = {
     "French beans":   "green beans",
     "french fries":   "potato",
@@ -47,7 +43,6 @@ NAME_MAP = {
     "chicken duck":   "chicken duck",
 }
 
-# ── Realistic minimum weights per food type (grams) ───────────
 WEIGHT_MINIMUMS = {
     "chicken duck":  120,
     "steak":         150,
@@ -68,32 +63,29 @@ WEIGHT_MINIMUMS = {
     "default":        50,
 }
 
-# ── Nutrition lookup with fallback ────────────────────────────
 def get_nutrition(food_name):
-    # try exact match first
     if food_name in nutrition_lookup:
         return nutrition_lookup[food_name]
-    # try mapped name
     mapped = NAME_MAP.get(food_name)
     if mapped and mapped in nutrition_lookup:
         return nutrition_lookup[mapped]
-    # nothing found
     return None
 
-# ── Main predict function ─────────────────────────────────────
 def predict(image_path):
+    # Resize image to reduce memory
+    img = cv2.imread(image_path)
+    if img is not None:
+        h, w = img.shape[:2]
+        if max(h, w) > 640:
+            scale = 640 / max(h, w)
+            img = cv2.resize(img, (int(w*scale), int(h*scale)))
+            cv2.imwrite(image_path, img)
+
     results = model(image_path, conf=0.25)
     r = results[0]
 
     detections = []
-    total = {
-        "calories": 0,
-        "fat":      0,
-        "carbs":    0,
-        "protein":  0
-    }
-
-    # group all detections by food class
+    total = {"calories": 0, "fat": 0, "carbs": 0, "protein": 0}
     food_groups = {}
 
     if r.masks is not None:
@@ -103,52 +95,35 @@ def predict(image_path):
             cls       = int(r.boxes.cls[i])
             conf      = float(r.boxes.conf[i])
             food_name = CLASS_NAMES[cls]
-
             mask      = r.masks.data[i]
             mask_area = (mask > 0.5).sum().item()
 
             if food_name not in food_groups:
-                food_groups[food_name] = {
-                    "total_mask_area": 0,
-                    "confidence":      conf
-                }
+                food_groups[food_name] = {"total_mask_area": 0, "confidence": conf}
             food_groups[food_name]["total_mask_area"] += mask_area
 
-        # calculate nutrition per food group
         for food_name, group in food_groups.items():
-
             ratio    = group["total_mask_area"] / img_area
-            weight_g = ratio * 800  # assume full plate = 800g
-
-            # apply realistic minimum weight
-            min_weight = WEIGHT_MINIMUMS.get(
-                food_name,
-                WEIGHT_MINIMUMS["default"]
-            )
+            weight_g = ratio * 800
+            min_weight = WEIGHT_MINIMUMS.get(food_name, WEIGHT_MINIMUMS["default"])
             weight_g = max(weight_g, min_weight)
-
             nutrition = get_nutrition(food_name)
 
             item = {
-                "food":      food_name,
+                "food":       food_name,
                 "confidence": round(group["confidence"], 2),
-                "weight_g":  round(weight_g, 1),
-                "calories":  0,
-                "fat_g":     0,
-                "carbs_g":   0,
-                "protein_g": 0
+                "weight_g":   round(weight_g, 1),
+                "calories":   0,
+                "fat_g":      0,
+                "carbs_g":    0,
+                "protein_g":  0
             }
 
             if nutrition:
-                item["calories"]  = round(
-                    weight_g * nutrition["calories_per_g"], 1)
-                item["fat_g"]     = round(
-                    weight_g * nutrition["fat_per_g"], 1)
-                item["carbs_g"]   = round(
-                    weight_g * nutrition["carb_per_g"], 1)
-                item["protein_g"] = round(
-                    weight_g * nutrition["protein_per_g"], 1)
-
+                item["calories"]  = round(weight_g * nutrition["calories_per_g"], 1)
+                item["fat_g"]     = round(weight_g * nutrition["fat_per_g"], 1)
+                item["carbs_g"]   = round(weight_g * nutrition["carb_per_g"], 1)
+                item["protein_g"] = round(weight_g * nutrition["protein_per_g"], 1)
                 total["calories"] += item["calories"]
                 total["fat"]      += item["fat_g"]
                 total["carbs"]    += item["carbs_g"]
@@ -156,10 +131,9 @@ def predict(image_path):
 
             detections.append(item)
 
-    # annotated image
-    annotated        = r.plot()
-    _, buffer        = cv2.imencode(".jpg", annotated)
-    img_base64       = base64.b64encode(buffer).decode("utf-8")
+    annotated  = r.plot()
+    _, buffer  = cv2.imencode(".jpg", annotated)
+    img_base64 = base64.b64encode(buffer).decode("utf-8")
 
     return {
         "detections": detections,
