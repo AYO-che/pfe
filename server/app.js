@@ -20,9 +20,10 @@ process.on("unhandledRejection", (err) => {
 ======================== */
 app.use(cors({
   origin: [
-    "https://chrysalise-user.onrender.com",
+  "https://chrysalise-user.onrender.com",
     "https://chrysalise-a4400.web.app",
     "http://localhost:5173",
+    "http://192.168.1.4:5173"
   ],
   credentials: true
 }))
