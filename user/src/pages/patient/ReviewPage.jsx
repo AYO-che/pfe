@@ -199,7 +199,7 @@ export default function ReviewPage() {
   const [successMsg,    setSuccessMsg]    = useState("");
 
   useEffect(() => {
-    fetch(`${API_URL}/subscriptions/mine`, { credentials: "include" })
+    authFetch(`${API_URL}/subscriptions/mine`, { credentials: "include" })
       .then(r => r.json())
       .then(data => {
         const subs = data.subscriptions ?? [];
@@ -241,7 +241,7 @@ export default function ReviewPage() {
     if (!selected) { setError("Please select a nutritionist."); return; }
     setSubmitting(true); setError("");
     try {
-      const res  = await authFetch(`${API_URL}/nutritionists/${selected.nutritionist.id}/review`, {
+      const res  = await authauthFetch(`${API_URL}/nutritionists/${selected.nutritionist.id}/review`, {
         method:"POST", credentials:"include",
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ rating, comment }),

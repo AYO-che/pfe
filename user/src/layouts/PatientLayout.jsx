@@ -394,7 +394,7 @@ export default function PatientLayout() {
 
   useEffect(() => {
     if (!user?.id) return;
-    fetch(`${API_URL}/subscriptions/mine`, { credentials: "include" })
+    authFetch(`${API_URL}/subscriptions/mine`, { credentials: "include" })
       .then(r => r.json())
       .then(data => {
         const subs = data.subscriptions ?? [];
